@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pach</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #2b2b2b;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #333;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: move;
+            user-select: none;
+            -webkit-app-region: drag;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 500;
+        }
+
+        .close-btn {
+            width: 20px;
+            height: 20px;
+            background: #ff5f56;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            -webkit-app-region: no-drag;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .close-btn:hover {
+            opacity: 0.8;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .drop-zone {
+            flex: 1;
+            border: 3px dashed #555;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .drop-zone.active {
+            border-color: #ff9500;
+            background: rgba(255, 149, 0, 0.1);
+        }
+
+        .drop-zone.success {
+            border-color: #4cd964;
+            background: rgba(76, 217, 100, 0.1);
+        }
+
+        .drop-zone.error {
+            border-color: #ff3b30;
+            background: rgba(255, 59, 48, 0.1);
+        }
+
+        .drop-text {
+            font-size: 20px;
+            color: #999;
+        }
+
+        .path-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .path-input {
+            background: #3a3a3a;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #e0e0e0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .path-input:hover {
+            border-color: #ff9500;
+        }
+
+        .path-input.active {
+            border-color: #4cd964;
+        }
+
+        .message {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background: #4cd964;
+            color: white;
+        }
+
+        .message.error {
+            background: #ff3b30;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Pach</h1>
+        <button class="close-btn" onclick="closeApp()">×</button>
+    </div>
+    
+    <div class="content">
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-text">
+                Click to Paste<br>
+                <span style="font-size: 14px; opacity: 0.6;">or Ctrl+V</span>
+            </div>
+        </div>
+        
+        <div class="path-section">
+            <div class="path-input" id="pathInput" onclick="selectPath()">
+                <span id="pathText">Select Directory</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="message" id="message"></div>
+
+    <script type="module">
+        import { invoke } from '@tauri-apps/api/core';
+        import { open } from '@tauri-apps/plugin-dialog';
+        import { readText } from '@tauri-apps/plugin-clipboard-manager';
+        import { getCurrent } from '@tauri-apps/api/window';
+        
+        let currentPath = '';
+        const dropZone = document.getElementById('dropZone');
+        const pathInput = document.getElementById('pathInput');
+        const pathText = document.getElementById('pathText');
+        const message = document.getElementById('message');
+        
+        window.selectPath = async function() {
+            try {
+                const selected = await open({
+                    directory: true,
+                    multiple: false,
+                });
+                
+                if (selected) {
+                    currentPath = selected;
+                    const info = await invoke('get_directory_info', { path: selected });
+                    pathText.textContent = info;
+                    pathInput.classList.add('active');
+                }
+            } catch (err) {
+                showMessage('Failed to open directory dialog: ' + err, 'error');
+            }
+        }
+        
+        // Handle paste when clicking in drop zone
+        dropZone.addEventListener('click', async () => {
+            try {
+                const text = await readText();
+                if (text && currentPath) {
+                    applyPatch(text);
+                } else if (!currentPath) {
+                    showMessage('Please select a directory first', 'error');
+                } else {
+                    showMessage('No text in clipboard', 'error');
+                }
+            } catch (err) {
+                showMessage('Failed to read clipboard: ' + err, 'error');
+            }
+        });
+        
+        // Handle Ctrl+V
+        document.addEventListener('keydown', async (e) => {
+            if (e.ctrlKey && e.key === 'v') {
+                e.preventDefault();
+                try {
+                    const text = await readText();
+                    if (text && currentPath) {
+                        applyPatch(text);
+                    } else if (!currentPath) {
+                        showMessage('Please select a directory first', 'error');
+                    }
+                } catch (err) {
+                    showMessage('Failed to read clipboard: ' + err, 'error');
+                }
+            }
+        });
+        
+        // Close button
+        window.closeApp = async () => {
+            const appWindow = getCurrent();
+            await appWindow.close();
+        }
+        
+        async function applyPatch(patchContent) {
+            try {
+                const result = await invoke('apply_patch', {
+                    patchContent: patchContent,
+                    basePath: currentPath
+                });
+                
+                if (result.success) {
+                    dropZone.classList.add('success');
+                    showMessage(result.message + '\n' + result.files_patched.join(', '), 'success');
+                    setTimeout(() => dropZone.classList.remove('success'), 2000);
+                } else {
+                    dropZone.classList.add('error');
+                    showMessage(result.message, 'error');
+                    setTimeout(() => dropZone.classList.remove('error'), 2000);
+                }
+            } catch (err) {
+                dropZone.classList.add('error');
+                showMessage('Error: ' + err, 'error');
+                setTimeout(() => dropZone.classList.remove('error'), 2000);
+            }
+        }
+        
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = 'message ' + type;
+            message.style.display = 'block';
+            
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
