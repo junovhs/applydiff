@@ -1,0 +1,10 @@
+[package]
+name = "applydiff"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+egui = "0.28"
+eframe = "0.28"
+rfd = "0.15"
+arboard = "3.4"
