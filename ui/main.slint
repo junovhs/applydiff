@@ -1,0 +1,93 @@
+import { VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+
+export component MainWindow inherits Window {
+    title: "applydiff   |   Fuzzy Patch Applier";
+
+    in-out property <string> target_dir: "";
+    in-out property <string> patch_input: "";
+    in-out property <string> log_output: "";
+    in-out property <bool>   is_processing: false;
+
+    callback pick_folder();
+    callback preview_patch();
+    callback apply_patch();
+    callback run_self_test();
+    callback copy_ai_prompt();   // NEW
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 12px;
+
+        // Top row: folder chooser + actions
+        HorizontalBox {
+            spacing: 8px;
+
+            LineEdit {
+                text <=> target_dir;
+                read-only: true;
+                placeholder-text: "Select a directory to patch…";
+                horizontal-stretch: 1;
+            }
+
+            Button {
+                text: "📁 Browse";
+                enabled: !is_processing;
+                clicked => { pick_folder(); }
+            }
+
+            Button {
+                text: "🧪 Run Self-Test";
+                enabled: !is_processing;
+                clicked => { run_self_test(); }
+            }
+
+            Button {
+                text: "📋 Copy AI Prompt";   // NEW
+                enabled: !is_processing;
+                clicked => { copy_ai_prompt(); }
+            }
+        }
+
+        // Patch input area (stretches)
+        VerticalBox {
+            spacing: 6px;
+            Text { text: "Patch Input"; color: #aab; }
+            TextEdit {
+                text <=> patch_input;
+                wrap: TextWrap.word-wrap;
+                vertical-stretch: 3;
+                min-height: 200px;
+                enabled: !is_processing;
+            }
+        }
+
+        // Actions row
+        HorizontalBox {
+            spacing: 12px;
+            Button {
+                text: "👁 Preview";
+                enabled: !is_processing;
+                clicked => { preview_patch(); }
+            }
+            Button {
+                text: "✓ Apply Patch";
+                enabled: !is_processing;
+                clicked => { apply_patch(); }
+            }
+            Rectangle { horizontal-stretch: 1; height: 1px; opacity: 0%; }
+        }
+
+        // Output log (stretches)
+        VerticalBox {
+            spacing: 6px;
+            Text { text: "Output"; color: #aab; }
+            TextEdit {
+                text <=> log_output;
+                read-only: true;
+                wrap: TextWrap.word-wrap;
+                vertical-stretch: 2;
+                min-height: 140px;
+            }
+        }
+    }
+}

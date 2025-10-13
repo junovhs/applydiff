@@ -4,7 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-egui = "0.28"
-eframe = "0.28"
+# UI
+slint = { version = "1", features = ["renderer-skia"] }
 rfd = "0.15"
-arboard = "3.4"
+
+# Core
+regex = "1"
+thiserror = "1"
+similar = "2"
+strsim = "0.10"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+
+[build-dependencies]
+slint-build = "1"
+
+[profile.release]
+panic = "abort"
+
+[profile.dev]
+panic = "abort"
