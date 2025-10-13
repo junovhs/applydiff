@@ -1,10 +1,12 @@
 #![deny(warnings)]
+
 mod apply;
 mod error;
 mod logger;
 mod matcher;
 mod parser;
-mod gauntlet; // NEW
+mod gauntlet;
+mod prompts;
 
 use apply::Applier;
 use error::{ErrorCode, PatchError, Result as PatchResult};
@@ -117,6 +119,22 @@ fn main() -> Result<(), slint::PlatformError> {
                     ui.set_is_processing(false);
                 }).ok();
             });
+        });
+    }
+
+    // Copy AI Prompt (clipboard) — uses arboard
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_copy_ai_prompt(move || {
+            let ui = ui_handle.unwrap();
+            let prompt = prompts::build_ai_prompt();
+            match copy_to_clipboard(&prompt) {
+                Ok(()) => {
+                    append_log(&ui, "📋 Copied AI prompt to clipboard.\n");
+                    append_log(&ui, &prompt);
+                }
+                Err(e) => append_log(&ui, &format!("❌ Clipboard error: {}", e)),
+            }
         });
     }
 
@@ -284,4 +302,10 @@ fn append_log(ui: &MainWindow, msg: &str) {
 
 fn clear_log(ui: &MainWindow) {
     ui.set_log_output("".into());
+}
+
+fn copy_to_clipboard(text: &str) -> Result<(), String> {
+    // Cross-platform clipboard using arboard
+    let mut cb = arboard::Clipboard::new().map_err(|e| e.to_string())?;
+    cb.set_text(text.to_string()).map_err(|e| e.to_string())
 }

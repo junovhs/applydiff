@@ -7,7 +7,7 @@ edition = "2021"
 # UI
 slint = { version = "1", features = ["renderer-skia"] }
 rfd = "0.15"
-
+arboard = "3"
 # Core
 regex = "1"
 thiserror = "1"

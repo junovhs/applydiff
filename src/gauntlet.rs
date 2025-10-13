@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 /// - append-only (empty from)
 /// - multi-line with CRLF vs LF normalization
 /// - multi-file batch
+/// - prompt example must parse (keeps clipboard prompt honest)
 ///
 /// Returns a markdown-ish log string. Cleans up the temp directory at the end.
 pub fn run() -> String {
@@ -154,6 +155,17 @@ Hello brave new world
     );
 
     logln(&mut log, format!("\n🧾 **Verification**: {} passed, {} failed", verify_pass, verify_fail));
+
+    // 5b) Prompt example must parse (sanity for the clipboard prompt)
+    {
+        use crate::prompts::example_patch;
+        let parser2 = Parser::new();
+        match parser2.parse(&example_patch()) {
+            Ok(v) if !v.is_empty() => logln(&mut log, "🧩 Prompt example: ✓ parser accepted"),
+            Ok(_) => logln(&mut log, "🧩 Prompt example: ❌ no blocks found"),
+            Err(e) => logln(&mut log, format!("🧩 Prompt example: ❌ parse failed: {}", e)),
+        }
+    }
 
     // 6) Cleanup
     log_cleanup(&mut log, &base);

@@ -1,0 +1,8 @@
+# Normalize to LF in repo; convert to native on checkout
+* text=auto
+
+# Keep these always LF (Rust tooling prefers LF)
+*.rs   text eol=lf
+*.toml text eol=lf
+*.slint text eol=lf
+*.md   text eol=lf
