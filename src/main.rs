@@ -1,165 +1,287 @@
-use eframe::egui;
-use std::path::PathBuf;
+#![deny(warnings)]
+mod apply;
+mod error;
+mod logger;
+mod matcher;
+mod parser;
+mod gauntlet; // NEW
+
+use apply::Applier;
+use error::{ErrorCode, PatchError, Result as PatchResult};
+use logger::Logger;
+use parser::Parser;
+
 use std::fs;
+use std::io;
+use std::path::{Path, PathBuf};
+use chrono::Local;
 
-#[derive(Default)]
-struct PachApp {
-    selected_path: Option<PathBuf>,
-    last_result: String,
-}
+slint::include_modules!();
 
-impl eframe::App for PachApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Pach - Diff Applier");
-            
-            ui.separator();
-            
-            // Directory selection
-            if ui.button("📁 Select Directory").clicked() {
-                if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                    self.selected_path = Some(path);
-                }
-            }
-            
-            if let Some(path) = &self.selected_path {
-                ui.label(format!("Selected: {}", path.display()));
-            } else {
-                ui.label("No directory selected");
-            }
-            
-            ui.separator();
-            
-            // Apply patch button
-            let can_apply = self.selected_path.is_some();
-            
-            if ui.add_enabled(can_apply, egui::Button::new("📋 Apply Patch from Clipboard")).clicked() {
-                self.apply_patch_from_clipboard();
-            }
-            
-            if !can_apply {
-                ui.label("Select a directory first");
-            }
-            
-            ui.separator();
-            
-            // Results
-            if !self.last_result.is_empty() {
-                ui.label("Last Result:");
-                ui.text_edit_multiline(&mut self.last_result);
+const MAX_INPUT_SIZE: usize = 100_000_000;
+
+fn main() -> Result<(), slint::PlatformError> {
+    let ui = MainWindow::new()?;
+
+    // Folder picker
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_pick_folder(move || {
+            let ui = ui_handle.unwrap();
+            if let Some(path) = rfd::FileDialog::new().pick_folder() {
+                ui.set_target_dir(path.display().to_string().into());
+                append_log(&ui, &format!("📁 Selected: {}", path.display()));
             }
         });
     }
-}
 
-impl PachApp {
-    fn apply_patch_from_clipboard(&mut self) {
-        let clipboard_text = match arboard::Clipboard::new().and_then(|mut cb| cb.get_text()) {
-            Ok(text) => text,
-            Err(e) => {
-                self.last_result = format!("Failed to read clipboard: {}", e);
+    // Preview
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_preview_patch(move || {
+            let ui = ui_handle.unwrap();
+            let target = ui.get_target_dir().to_string();
+            let patch = ui.get_patch_input().to_string();
+
+            if target.is_empty() || patch.is_empty() {
+                append_log(&ui, "❌ Error: Please select directory and enter patch");
                 return;
             }
-        };
-        
-        if let Some(base_path) = &self.selected_path {
-            match apply_patch(&clipboard_text, base_path) {
-                Ok(files) => {
-                    self.last_result = format!("✅ Successfully patched {} files:\n{}", files.len(), files.join("\n"));
-                }
-                Err(e) => {
-                    self.last_result = format!("❌ Error: {}", e);
-                }
-            }
-        }
-    }
-}
 
-fn apply_patch(patch_content: &str, base_path: &PathBuf) -> Result<Vec<String>, String> {
-    let mut files_patched = Vec::new();
-    let lines: Vec<&str> = patch_content.lines().collect();
-    let mut i = 0;
-    
-    while i < lines.len() {
-        if lines[i].starts_with("--- ") && i + 1 < lines.len() && lines[i + 1].starts_with("+++ ") {
-            let mut file_path = lines[i + 1][4..].trim().to_string();
-            if file_path.starts_with("b/") {
-                file_path = file_path[2..].to_string();
-            }
-            
-            let full_path = base_path.join(&file_path);
-            if !full_path.exists() {
-                return Err(format!("File {} does not exist", file_path));
-            }
-            
-            let original_content = fs::read_to_string(&full_path)
-                .map_err(|e| format!("Failed to read {}: {}", file_path, e))?;
-            
-            let mut original_lines: Vec<String> = original_content.lines().map(|s| s.to_string()).collect();
-            let mut offset: i32 = 0;
-            
-            i += 2;
-            
-            while i < lines.len() && lines[i].starts_with("@@") {
-                let hunk_header = lines[i];
-                let parts: Vec<&str> = hunk_header.split_whitespace().collect();
-                if parts.len() < 3 {
-                    i += 1;
-                    continue;
-                }
-                
-                let old_range = parts[1];
-                let old_start = if let Some(comma_pos) = old_range.find(',') {
-                    old_range[1..comma_pos].parse::<i32>().unwrap_or(1) - 1
-                } else {
-                    old_range[1..].parse::<i32>().unwrap_or(1) - 1
-                };
-                
-                i += 1;
-                let mut old_line_num = (old_start + offset) as usize;
-                
-                while i < lines.len() && !lines[i].starts_with("@@") && !lines[i].starts_with("--- ") {
-                    if lines[i].starts_with("-") {
-                        if old_line_num < original_lines.len() {
-                            original_lines.remove(old_line_num);
-                            offset -= 1;
-                        }
-                    } else if lines[i].starts_with("+") {
-                        let new_line = lines[i][1..].to_string();
-                        if old_line_num <= original_lines.len() {
-                            original_lines.insert(old_line_num, new_line);
-                            old_line_num += 1;
-                            offset += 1;
-                        }
-                    } else if lines[i].starts_with(" ") {
-                        old_line_num += 1;
+            ui.set_is_processing(true);
+            clear_log(&ui);
+            append_log(&ui, "👁 Previewing patch...\n");
+
+            let ui_weak = ui.as_weak();
+            std::thread::spawn(move || {
+                let result = preview_patch(&target, &patch);
+                slint::invoke_from_event_loop(move || {
+                    let ui = ui_weak.unwrap();
+                    match result {
+                        Ok(msg) => append_log(&ui, &msg),
+                        Err(e) => append_log(&ui, &format!("❌ Error: {}", e)),
                     }
-                    i += 1;
-                }
+                    ui.set_is_processing(false);
+                }).ok();
+            });
+        });
+    }
+
+    // Apply
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_apply_patch(move || {
+            let ui = ui_handle.unwrap();
+            let target = ui.get_target_dir().to_string();
+            let patch = ui.get_patch_input().to_string();
+
+            if target.is_empty() || patch.is_empty() {
+                append_log(&ui, "❌ Error: Please select directory and enter patch");
+                return;
             }
-            
-            let patched_content = original_lines.join("\n");
-            fs::write(&full_path, patched_content)
-                .map_err(|e| format!("Failed to write {}: {}", file_path, e))?;
-            
-            files_patched.push(file_path);
-        } else {
-            i += 1;
+
+            ui.set_is_processing(true);
+            clear_log(&ui);
+            append_log(&ui, "⚙️ Applying patch...\n");
+
+            let ui_weak = ui.as_weak();
+            std::thread::spawn(move || {
+                let result = apply_patch(&target, &patch);
+                slint::invoke_from_event_loop(move || {
+                    let ui = ui_weak.unwrap();
+                    match result {
+                        Ok(msg) => append_log(&ui, &msg),
+                        Err(e) => append_log(&ui, &format!("❌ Error: {}", e)),
+                    }
+                    ui.set_is_processing(false);
+                }).ok();
+            });
+        });
+    }
+
+    // Self-test gauntlet
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_run_self_test(move || {
+            let ui = ui_handle.unwrap();
+            ui.set_is_processing(true);
+            clear_log(&ui);
+            append_log(&ui, "🧪 Running self-test gauntlet…\n");
+
+            let ui_weak = ui.as_weak();
+            std::thread::spawn(move || {
+                let log = gauntlet::run();
+                slint::invoke_from_event_loop(move || {
+                    let ui = ui_weak.unwrap();
+                    append_log(&ui, &log);
+                    ui.set_is_processing(false);
+                }).ok();
+            });
+        });
+    }
+
+    ui.run()
+}
+
+/* ========================== Core operations ========================== */
+
+fn preview_patch(target: &str, patch: &str) -> PatchResult<String> {
+    let rid = generate_rid();
+    let logger = Logger::new(rid);
+    let mut output = String::new();
+
+    // Validate target
+    let target_path = PathBuf::from(target);
+    if !target_path.exists() || !target_path.is_dir() {
+        return Err(PatchError::Validation {
+            code: ErrorCode::ValidationFailed,
+            message: "Target directory does not exist".to_string(),
+            context: target.to_string(),
+        });
+    }
+
+    // Bound input size
+    if patch.len() > MAX_INPUT_SIZE {
+        return Err(PatchError::Validation {
+            code: ErrorCode::BoundsExceeded,
+            message: format!("Input exceeds max size {}", MAX_INPUT_SIZE),
+            context: "input".to_string(),
+        });
+    }
+
+    // Parse blocks
+    let parser = Parser::new();
+    let blocks = parser.parse(patch)?;
+    output.push_str(&format!("✓ Parsed {} patch block(s)\n\n", blocks.len()));
+
+    // Dry-run matching
+    let applier = Applier::new(&logger, target_path.clone(), true);
+    for (idx, block) in blocks.iter().enumerate() {
+        output.push_str(&format!("Block {}: {}\n", idx + 1, block.file.display()));
+        match applier.apply_block(block) {
+            Ok(result) => {
+                output.push_str(&format!(
+                    "  ✓ Preview match at offset {} (score: {:.2})\n",
+                    result.matched_at, result.score
+                ));
+            }
+            Err(e) => {
+                output.push_str(&format!("  ❌ {}\n", e));
+            }
         }
     }
 
-    Ok(files_patched)
+    output.push_str("\n💡 Preview complete. Press 'Apply Patch' to make changes.");
+    Ok(output)
 }
 
-fn main() -> Result<(), eframe::Error> {
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([400.0, 300.0]),
-        ..Default::default()
-    };
-    
-    eframe::run_native(
-        "Pach",
-        options,
-        Box::new(|_cc| Ok(Box::new(PachApp::default()))),
-    )
+fn apply_patch(target: &str, patch: &str) -> PatchResult<String> {
+    let rid = generate_rid();
+    let logger = Logger::new(rid);
+    let mut output = String::new();
+
+    // Validate target
+    let target_path = PathBuf::from(target);
+    if !target_path.exists() || !target_path.is_dir() {
+        return Err(PatchError::Validation {
+            code: ErrorCode::ValidationFailed,
+            message: "Target directory does not exist".to_string(),
+            context: target.to_string(),
+        });
+    }
+
+    // Bound input size
+    if patch.len() > MAX_INPUT_SIZE {
+        return Err(PatchError::Validation {
+            code: ErrorCode::BoundsExceeded,
+            message: format!("Input exceeds max size {}", MAX_INPUT_SIZE),
+            context: "input".to_string(),
+        });
+    }
+
+    // Parse blocks
+    let parser = Parser::new();
+    let blocks = parser.parse(patch)?;
+    output.push_str(&format!("✓ Parsed {} patch block(s)\n", blocks.len()));
+
+    // Safety: backup all target files referenced by blocks (no Git required)
+    let files_to_backup: Vec<PathBuf> = blocks.iter().map(|b| b.file.clone()).collect();
+    let backup_dir = create_backup(&target_path, &files_to_backup)?;
+    output.push_str(&format!("✓ Backup created at {}\n", backup_dir.display()));
+
+    // Apply
+    let applier = Applier::new(&logger, target_path.clone(), false);
+    let mut success = 0usize;
+    let mut failed = 0usize;
+
+    for (idx, block) in blocks.iter().enumerate() {
+        output.push_str(&format!("Block {}: {}\n", idx + 1, block.file.display()));
+        match applier.apply_block(block) {
+            Ok(result) => {
+                success += 1;
+                output.push_str(&format!(
+                    "  ✓ Applied at offset {} (score: {:.2})\n",
+                    result.matched_at, result.score
+                ));
+            }
+            Err(e) => {
+                failed += 1;
+                output.push_str(&format!("  ❌ {}\n", e));
+            }
+        }
+    }
+
+    assert!(success + failed > 0, "No blocks processed");
+    output.push_str(&format!("\n✅ Done. {} applied, {} failed.\n", success, failed));
+    output.push_str("↩ To restore, copy files back from the backup directory.\n");
+
+    Ok(output)
+}
+
+/* ========================== Helpers ========================== */
+
+fn create_backup(base: &Path, files: &[PathBuf]) -> PatchResult<PathBuf> {
+    let stamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
+    let dir = base.join(format!(".applydiff_backup_{}", stamp));
+    fs::create_dir_all(&dir).map_err(to_file_write_error("create_backup_dir", &dir))?;
+
+    for rel in files {
+        let src = base.join(rel);
+        if !src.exists() || !src.is_file() {
+            continue; // nothing to back up
+        }
+        let dst = dir.join(rel);
+        if let Some(parent) = dst.parent() {
+            fs::create_dir_all(parent).map_err(to_file_write_error("create_backup_parent", parent))?;
+        }
+        fs::copy(&src, &dst).map_err(to_file_write_error("backup_copy", &dst))?;
+    }
+
+    Ok(dir)
+}
+
+fn to_file_write_error(action: &'static str, path: &Path) -> impl Fn(io::Error) -> PatchError {
+    let p = path.to_path_buf();
+    move |e| PatchError::File {
+        code: ErrorCode::FileWriteFailed,
+        message: format!("{} failed: {}", action, e),
+        path: p.clone(),
+    }
+}
+
+fn generate_rid() -> u64 {
+    (Local::now().timestamp_millis() as u64) ^ (std::process::id() as u64)
+}
+
+fn append_log(ui: &MainWindow, msg: &str) {
+    let mut buf = ui.get_log_output().to_string();
+    if !buf.is_empty() && !buf.ends_with('\n') {
+        buf.push('\n');
+    }
+    buf.push_str(msg);
+    ui.set_log_output(buf.into());
+}
+
+fn clear_log(ui: &MainWindow) {
+    ui.set_log_output("".into());
 }
