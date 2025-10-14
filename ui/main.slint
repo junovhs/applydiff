@@ -2,7 +2,7 @@ import { VerticalBox, HorizontalBox, LineEdit, TextEdit, ScrollView } from "std-
 
 export component MainWindow inherits Window {
     title: "applydiff   |   Fuzzy Patch Applier";
-    background: #1a1a1a;
+    background: #0d0d0d;
     
     in-out property <string> target_dir: "";
     in-out property <string> patch_input: "";
@@ -31,15 +31,17 @@ export component MainWindow inherits Window {
             height: 50px;
             
             Rectangle {
-                background: #f5f5f5;
+                background: #1a1a1a;
                 border-radius: 8px;
+                border-width: 1px;
+                border-color: #333;
                 horizontal-stretch: 1;
                 
                 LineEdit {
                     text <=> target_dir;
                     read-only: true;
                     placeholder-text: "Select a directory to patch…";
-                    font-size: 14px;
+                    font-size: 13px;
                 }
             }
             
@@ -63,7 +65,7 @@ export component MainWindow inherits Window {
                 top-browse-txt := Text {
                     text: "📁 Browse";
                     color: is_processing ? #555 : #aaa;
-                    font-size: 14px;
+                    font-size: 13px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
@@ -89,7 +91,7 @@ export component MainWindow inherits Window {
                 top-test-txt := Text {
                     text: "🧪 Self-Test";
                     color: is_processing ? #555 : #aaa;
-                    font-size: 14px;
+                    font-size: 13px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
@@ -115,68 +117,62 @@ export component MainWindow inherits Window {
                 top-prompt-txt := Text {
                     text: "📋 AI Prompt";
                     color: is_processing ? #555 : #aaa;
-                    font-size: 14px;
+                    font-size: 13px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
             }
         }
         
-        // Patch input - light bg for typing visibility
+        // Patch input - DARK with proper sizing
         VerticalBox {
             spacing: 8px;
             
             Text { 
-                text: "Patch input"; 
-                color: #888;
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 0.5px;
+                text: "PATCH INPUT"; 
+                color: #666;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 1px;
             }
             
-            Rectangle {
-                background: #f5f5f5;
-                border-radius: 8px;
+            TextEdit {
+                text <=> patch_input;
+                wrap: TextWrap.word-wrap;
+                enabled: !is_processing;
+                font-size: 12px;
                 vertical-stretch: 3;
                 min-height: 200px;
-                
-                TextEdit {
-                    text <=> patch_input;
-                    wrap: TextWrap.word-wrap;
-                    enabled: !is_processing;
-                    font-size: 13px;
-                }
             }
         }
         
-        // Output - styled for readability
+        // Output
         VerticalBox {
             spacing: 8px;
             
             Text { 
-                text: "Output"; 
-                color: #888;
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 0.5px;
+                text: "OUTPUT"; 
+                color: #666;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 1px;
             }
             
             Rectangle {
-                background: #0d1117;
-                border-radius: 8px;
+                background: #0a0a0a;
+                border-radius: 6px;
                 border-width: 1px;
-                border-color: #30363d;
+                border-color: #222;
                 vertical-stretch: 2;
                 min-height: 140px;
                 
                 ScrollView {
-                    viewport-width: parent.width - 20px;
                     VerticalLayout {
                         padding: 12px;
                         Text {
                             text: log_output;
-                            color: #c9d1d9;
-                            font-size: 13px;
+                            color: #d0d0d0;
+                            font-size: 12px;
                             wrap: word-wrap;
                             horizontal-alignment: left;
                         }
@@ -185,16 +181,16 @@ export component MainWindow inherits Window {
             }
         }
         
-        // Diff preview - monospace code styling
+        // Diff preview
         VerticalBox {
             spacing: 12px;
             
             Text { 
-                text: "Diff Preview"; 
-                color: #888;
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 0.5px;
+                text: "DIFF PREVIEW"; 
+                color: #666;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 1px;
             }
             
             HorizontalBox {
@@ -202,48 +198,46 @@ export component MainWindow inherits Window {
                 alignment: start;
                 
                 Rectangle {
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 8px;
+                    width: 55px;
+                    height: 55px;
+                    border-radius: 6px;
                     border-width: 2px;
-                    border-color: #404040;
-                    background: transparent;
+                    border-color: #333;
                     Text {
                         text: "V1";
-                        color: #888;
-                        font-size: 16px;
+                        color: #666;
+                        font-size: 14px;
                         horizontal-alignment: center;
                         vertical-alignment: center;
                     }
                 }
                 
                 Rectangle {
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 8px;
+                    width: 55px;
+                    height: 55px;
+                    border-radius: 6px;
                     border-width: 2px;
-                    border-color: #404040;
-                    background: transparent;
+                    border-color: #333;
                     Text {
                         text: "V2";
-                        color: #888;
-                        font-size: 16px;
+                        color: #666;
+                        font-size: 14px;
                         horizontal-alignment: center;
                         vertical-alignment: center;
                     }
                 }
                 
                 Rectangle {
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 8px;
+                    width: 55px;
+                    height: 55px;
+                    border-radius: 6px;
                     border-width: 2px;
                     border-color: #3b9eff;
                     background: #3b9eff;
                     Text {
                         text: "V3";
                         color: #ffffff;
-                        font-size: 16px;
+                        font-size: 14px;
                         font-weight: 700;
                         horizontal-alignment: center;
                         vertical-alignment: center;
@@ -251,45 +245,36 @@ export component MainWindow inherits Window {
                 }
                 
                 Rectangle {
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 8px;
+                    width: 55px;
+                    height: 55px;
+                    border-radius: 6px;
                     border-width: 2px;
-                    border-color: #404040;
-                    background: transparent;
+                    border-color: #333;
                     Text {
                         text: "V4";
-                        color: #888;
-                        font-size: 16px;
+                        color: #666;
+                        font-size: 14px;
                         horizontal-alignment: center;
                         vertical-alignment: center;
                     }
                 }
-                
-                Text {
-                    text: "Active selection";
-                    color: #666;
-                    font-size: 13px;
-                    vertical-alignment: center;
-                }
             }
             
             Rectangle {
-                background: #0d1117;
-                border-radius: 8px;
+                background: #0a0a0a;
+                border-radius: 6px;
                 border-width: 1px;
-                border-color: #30363d;
+                border-color: #222;
                 vertical-stretch: 2;
-                min-height: 160px;
+                min-height: 180px;
                 
                 ScrollView {
-                    viewport-width: parent.width - 20px;
                     VerticalLayout {
                         padding: 12px;
                         Text {
                             text: diff_output;
-                            color: #c9d1d9;
-                            font-size: 12px;
+                            color: #d0d0d0;
+                            font-size: 11px;
                             wrap: no-wrap;
                             horizontal-alignment: left;
                         }
@@ -300,11 +285,11 @@ export component MainWindow inherits Window {
         
         // Bottom buttons
         HorizontalBox {
-            spacing: 20px;
-            height: 50px;
+            spacing: 18px;
+            height: 48px;
             
             Rectangle {
-                width: 100px;
+                width: 95px;
                 browse-ta := TouchArea {
                     enabled: !is_processing;
                     clicked => { pick_folder(); }
@@ -317,20 +302,20 @@ export component MainWindow inherits Window {
                 ]
                 browse-bg := Rectangle {
                     opacity: 0;
-                    background: #333;
+                    background: #2a2a2a;
                     border-radius: 6px;
                 }
                 browse-txt := Text {
                     text: "📁 Browse";
-                    color: is_processing ? #555 : #aaa;
-                    font-size: 15px;
+                    color: is_processing ? #444 : #999;
+                    font-size: 13px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
             }
             
             Rectangle {
-                width: 120px;
+                width: 110px;
                 prompt-ta := TouchArea {
                     enabled: !is_processing;
                     clicked => { copy_ai_prompt(); }
@@ -343,20 +328,20 @@ export component MainWindow inherits Window {
                 ]
                 prompt-bg := Rectangle {
                     opacity: 0;
-                    background: #333;
+                    background: #2a2a2a;
                     border-radius: 6px;
                 }
                 prompt-txt := Text {
                     text: "📋 AI Prompt";
-                    color: is_processing ? #555 : #aaa;
-                    font-size: 15px;
+                    color: is_processing ? #444 : #999;
+                    font-size: 13px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
             }
             
             Rectangle {
-                width: 100px;
+                width: 95px;
                 preview-ta := TouchArea {
                     enabled: !is_processing;
                     clicked => { preview_patch(); }
@@ -369,20 +354,20 @@ export component MainWindow inherits Window {
                 ]
                 preview-bg := Rectangle {
                     opacity: 0;
-                    background: #333;
+                    background: #2a2a2a;
                     border-radius: 6px;
                 }
                 preview-txt := Text {
                     text: "👁 Preview";
-                    color: is_processing ? #555 : #aaa;
-                    font-size: 15px;
+                    color: is_processing ? #444 : #999;
+                    font-size: 13px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
             }
             
             Rectangle {
-                width: 130px;
+                width: 120px;
                 apply-ta := TouchArea {
                     enabled: !is_processing;
                     clicked => { apply_patch(); }
@@ -393,13 +378,13 @@ export component MainWindow inherits Window {
                     }
                 ]
                 apply-bg := Rectangle {
-                    background: is_processing ? #555 : #3b9eff;
+                    background: is_processing ? #444 : #3b9eff;
                     border-radius: 6px;
                 }
                 Text {
                     text: "Apply patch";
                     color: #ffffff;
-                    font-size: 15px;
+                    font-size: 13px;
                     font-weight: 700;
                     horizontal-alignment: center;
                     vertical-alignment: center;
@@ -409,7 +394,7 @@ export component MainWindow inherits Window {
             Rectangle { horizontal-stretch: 1; }
             
             Rectangle {
-                width: 100px;
+                width: 85px;
                 demo-ta := TouchArea {
                     enabled: !is_processing;
                     clicked => { load_demo(); }
@@ -422,13 +407,13 @@ export component MainWindow inherits Window {
                 ]
                 demo-bg := Rectangle {
                     opacity: 0;
-                    background: #333;
+                    background: #2a2a2a;
                     border-radius: 6px;
                 }
                 demo-txt := Text {
                     text: "🎛 Demo";
-                    color: is_processing ? #555 : #aaa;
-                    font-size: 15px;
+                    color: is_processing ? #444 : #999;
+                    font-size: 13px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
