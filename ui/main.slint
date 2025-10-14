@@ -1,14 +1,15 @@
-import { VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+import { VerticalBox, HorizontalBox, LineEdit, TextEdit, ScrollView } from "std-widgets.slint";
 
 export component MainWindow inherits Window {
     title: "applydiff   |   Fuzzy Patch Applier";
-
+    background: #1a1a1a;
+    
     in-out property <string> target_dir: "";
     in-out property <string> patch_input: "";
     in-out property <string> log_output: "";
     in-out property <string> diff_output: "";
     in-out property <bool>   is_processing: false;
-
+    
     callback pick_folder();
     callback preview_patch();
     callback apply_patch();
@@ -16,77 +17,421 @@ export component MainWindow inherits Window {
     callback copy_ai_prompt();
     callback copy_output();
     callback load_demo();
-    callback open_latest_backup();     // NEW
-    callback restore_latest_backup();  // NEW
-
+    callback open_latest_backup();
+    callback restore_latest_backup();
+    
     VerticalBox {
-        padding: 16px;
-        spacing: 12px;
-
+        padding: 24px;
+        spacing: 20px;
+        
         // Top row
         HorizontalBox {
-            spacing: 8px;
-
-            LineEdit {
-                text <=> target_dir;
-                read-only: true;
-                placeholder-text: "Select a directory to patch…";
+            spacing: 12px;
+            alignment: center;
+            height: 50px;
+            
+            Rectangle {
+                background: #f5f5f5;
+                border-radius: 8px;
                 horizontal-stretch: 1;
+                
+                LineEdit {
+                    text <=> target_dir;
+                    read-only: true;
+                    placeholder-text: "Select a directory to patch…";
+                    font-size: 14px;
+                }
             }
-
-            Button { text: "📁 Browse";        enabled: !is_processing; clicked => { pick_folder(); } }
-            Button { text: "🧪 Run Self-Test";  enabled: !is_processing; clicked => { run_self_test(); } }
-            Button { text: "📋 Copy AI Prompt"; enabled: !is_processing; clicked => { copy_ai_prompt(); } }
+            
+            Rectangle {
+                width: 110px;
+                top-browse-ta := TouchArea {
+                    enabled: !is_processing;
+                    clicked => { pick_folder(); }
+                }
+                states [
+                    hover when top-browse-ta.has-hover && !is_processing: {
+                        top-browse-txt.color: #ffffff;
+                        top-browse-bg.opacity: 1;
+                    }
+                ]
+                top-browse-bg := Rectangle {
+                    opacity: 0;
+                    background: #333;
+                    border-radius: 6px;
+                }
+                top-browse-txt := Text {
+                    text: "📁 Browse";
+                    color: is_processing ? #555 : #aaa;
+                    font-size: 14px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            
+            Rectangle {
+                width: 120px;
+                top-test-ta := TouchArea {
+                    enabled: !is_processing;
+                    clicked => { run_self_test(); }
+                }
+                states [
+                    hover when top-test-ta.has-hover && !is_processing: {
+                        top-test-txt.color: #ffffff;
+                        top-test-bg.opacity: 1;
+                    }
+                ]
+                top-test-bg := Rectangle {
+                    opacity: 0;
+                    background: #333;
+                    border-radius: 6px;
+                }
+                top-test-txt := Text {
+                    text: "🧪 Self-Test";
+                    color: is_processing ? #555 : #aaa;
+                    font-size: 14px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            
+            Rectangle {
+                width: 130px;
+                top-prompt-ta := TouchArea {
+                    enabled: !is_processing;
+                    clicked => { copy_ai_prompt(); }
+                }
+                states [
+                    hover when top-prompt-ta.has-hover && !is_processing: {
+                        top-prompt-txt.color: #ffffff;
+                        top-prompt-bg.opacity: 1;
+                    }
+                ]
+                top-prompt-bg := Rectangle {
+                    opacity: 0;
+                    background: #333;
+                    border-radius: 6px;
+                }
+                top-prompt-txt := Text {
+                    text: "📋 AI Prompt";
+                    color: is_processing ? #555 : #aaa;
+                    font-size: 14px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
         }
-
-        // Patch input
+        
+        // Patch input - light bg for typing visibility
         VerticalBox {
-            spacing: 6px;
-            Text { text: "Patch Input"; color: #aab; }
-            TextEdit {
-                text <=> patch_input;
-                wrap: TextWrap.word-wrap;
+            spacing: 8px;
+            
+            Text { 
+                text: "Patch input"; 
+                color: #888;
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+            }
+            
+            Rectangle {
+                background: #f5f5f5;
+                border-radius: 8px;
                 vertical-stretch: 3;
                 min-height: 200px;
-                enabled: !is_processing;
+                
+                TextEdit {
+                    text <=> patch_input;
+                    wrap: TextWrap.word-wrap;
+                    enabled: !is_processing;
+                    font-size: 13px;
+                }
             }
         }
-
-        // Actions
-        HorizontalBox {
-            spacing: 12px;
-            Button { text: "🎛 Load Demo";            enabled: !is_processing; clicked => { load_demo(); } }
-            Button { text: "👁 Preview";              enabled: !is_processing; clicked => { preview_patch(); } }
-            Button { text: "✓ Apply Patch";           enabled: !is_processing; clicked => { apply_patch(); } }
-            Button { text: "📋 Copy Output";          enabled: !is_processing; clicked => { copy_output(); } }
-            Button { text: "📂 Open Latest Backup";   enabled: !is_processing; clicked => { open_latest_backup(); } }   // NEW
-            Button { text: "↩ Restore Latest Backup";enabled: !is_processing; clicked => { restore_latest_backup(); } } // NEW
-            Rectangle { horizontal-stretch: 1; height: 1px; opacity: 0%; }
-        }
-
-        // Output log
+        
+        // Output - styled for readability
         VerticalBox {
-            spacing: 6px;
-            Text { text: "Output"; color: #aab; }
-            TextEdit {
-                text <=> log_output;
-                read-only: true;
-                wrap: TextWrap.word-wrap;
+            spacing: 8px;
+            
+            Text { 
+                text: "Output"; 
+                color: #888;
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+            }
+            
+            Rectangle {
+                background: #0d1117;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #30363d;
                 vertical-stretch: 2;
                 min-height: 140px;
+                
+                ScrollView {
+                    viewport-width: parent.width - 20px;
+                    VerticalLayout {
+                        padding: 12px;
+                        Text {
+                            text: log_output;
+                            color: #c9d1d9;
+                            font-size: 13px;
+                            wrap: word-wrap;
+                            horizontal-alignment: left;
+                        }
+                    }
+                }
             }
         }
-
-        // Diff preview
+        
+        // Diff preview - monospace code styling
         VerticalBox {
-            spacing: 6px;
-            Text { text: "Diff Preview (read-only)"; color: #aab; }
-            TextEdit {
-                text <=> diff_output;
-                read-only: true;
-                wrap: TextWrap.no-wrap;
+            spacing: 12px;
+            
+            Text { 
+                text: "Diff Preview"; 
+                color: #888;
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+            }
+            
+            HorizontalBox {
+                spacing: 8px;
+                alignment: start;
+                
+                Rectangle {
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 8px;
+                    border-width: 2px;
+                    border-color: #404040;
+                    background: transparent;
+                    Text {
+                        text: "V1";
+                        color: #888;
+                        font-size: 16px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                Rectangle {
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 8px;
+                    border-width: 2px;
+                    border-color: #404040;
+                    background: transparent;
+                    Text {
+                        text: "V2";
+                        color: #888;
+                        font-size: 16px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                Rectangle {
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 8px;
+                    border-width: 2px;
+                    border-color: #3b9eff;
+                    background: #3b9eff;
+                    Text {
+                        text: "V3";
+                        color: #ffffff;
+                        font-size: 16px;
+                        font-weight: 700;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                Rectangle {
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 8px;
+                    border-width: 2px;
+                    border-color: #404040;
+                    background: transparent;
+                    Text {
+                        text: "V4";
+                        color: #888;
+                        font-size: 16px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                Text {
+                    text: "Active selection";
+                    color: #666;
+                    font-size: 13px;
+                    vertical-alignment: center;
+                }
+            }
+            
+            Rectangle {
+                background: #0d1117;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #30363d;
                 vertical-stretch: 2;
                 min-height: 160px;
+                
+                ScrollView {
+                    viewport-width: parent.width - 20px;
+                    VerticalLayout {
+                        padding: 12px;
+                        Text {
+                            text: diff_output;
+                            color: #c9d1d9;
+                            font-size: 12px;
+                            wrap: no-wrap;
+                            horizontal-alignment: left;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Bottom buttons
+        HorizontalBox {
+            spacing: 20px;
+            height: 50px;
+            
+            Rectangle {
+                width: 100px;
+                browse-ta := TouchArea {
+                    enabled: !is_processing;
+                    clicked => { pick_folder(); }
+                }
+                states [
+                    hover when browse-ta.has-hover && !is_processing: {
+                        browse-txt.color: #ffffff;
+                        browse-bg.opacity: 1;
+                    }
+                ]
+                browse-bg := Rectangle {
+                    opacity: 0;
+                    background: #333;
+                    border-radius: 6px;
+                }
+                browse-txt := Text {
+                    text: "📁 Browse";
+                    color: is_processing ? #555 : #aaa;
+                    font-size: 15px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            
+            Rectangle {
+                width: 120px;
+                prompt-ta := TouchArea {
+                    enabled: !is_processing;
+                    clicked => { copy_ai_prompt(); }
+                }
+                states [
+                    hover when prompt-ta.has-hover && !is_processing: {
+                        prompt-txt.color: #ffffff;
+                        prompt-bg.opacity: 1;
+                    }
+                ]
+                prompt-bg := Rectangle {
+                    opacity: 0;
+                    background: #333;
+                    border-radius: 6px;
+                }
+                prompt-txt := Text {
+                    text: "📋 AI Prompt";
+                    color: is_processing ? #555 : #aaa;
+                    font-size: 15px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            
+            Rectangle {
+                width: 100px;
+                preview-ta := TouchArea {
+                    enabled: !is_processing;
+                    clicked => { preview_patch(); }
+                }
+                states [
+                    hover when preview-ta.has-hover && !is_processing: {
+                        preview-txt.color: #ffffff;
+                        preview-bg.opacity: 1;
+                    }
+                ]
+                preview-bg := Rectangle {
+                    opacity: 0;
+                    background: #333;
+                    border-radius: 6px;
+                }
+                preview-txt := Text {
+                    text: "👁 Preview";
+                    color: is_processing ? #555 : #aaa;
+                    font-size: 15px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            
+            Rectangle {
+                width: 130px;
+                apply-ta := TouchArea {
+                    enabled: !is_processing;
+                    clicked => { apply_patch(); }
+                }
+                states [
+                    hover when apply-ta.has-hover && !is_processing: {
+                        apply-bg.background: #5eb3ff;
+                    }
+                ]
+                apply-bg := Rectangle {
+                    background: is_processing ? #555 : #3b9eff;
+                    border-radius: 6px;
+                }
+                Text {
+                    text: "Apply patch";
+                    color: #ffffff;
+                    font-size: 15px;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            
+            Rectangle { horizontal-stretch: 1; }
+            
+            Rectangle {
+                width: 100px;
+                demo-ta := TouchArea {
+                    enabled: !is_processing;
+                    clicked => { load_demo(); }
+                }
+                states [
+                    hover when demo-ta.has-hover && !is_processing: {
+                        demo-txt.color: #ffffff;
+                        demo-bg.opacity: 1;
+                    }
+                ]
+                demo-bg := Rectangle {
+                    opacity: 0;
+                    background: #333;
+                    border-radius: 6px;
+                }
+                demo-txt := Text {
+                    text: "🎛 Demo";
+                    color: is_processing ? #555 : #aaa;
+                    font-size: 15px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
             }
         }
     }
