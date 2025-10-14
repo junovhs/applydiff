@@ -5,12 +5,17 @@ pub type Result<T> = std::result::Result<T, PatchError>;
 
 #[derive(Debug, Clone)]
 pub enum ErrorCode {
-    ValidationFailed,
-    BoundsExceeded,
-    FileReadFailed,
-    FileWriteFailed,
+    // Parse / matching
     ParseFailed,
     NoMatch,
+
+    // File I/O
+    FileReadFailed,
+    FileWriteFailed,
+
+    // Validation / bounds
+    ValidationFailed,
+    BoundsExceeded,
 }
 
 #[derive(Debug, Error)]

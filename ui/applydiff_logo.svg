@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 723 146" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-2725,-2170.2)">
+        <g transform="matrix(0.844311,0,0,0.844311,446.204,351.552)">
+            <path d="M2822,2198L2822,2205.69C2822,2245.07 2790.07,2277 2750.69,2277L2743,2277L2743,2321L2866,2321L2866,2198L2822,2198Z" style="fill:white;"/>
+            <path d="M2822,2198L2822,2154L2699,2154L2699,2277L2743,2277L2743,2269.31C2743,2229.93 2774.93,2198 2814.31,2198L2822,2198Z" style="fill:white;"/>
+        </g>
+        <g transform="matrix(1.03495,0,0,1.03495,-114.354,-83.2079)">
+            <text x="2923px" y="2289px" style="font-family:'FilsonPro-Medium', 'Filson Pro';font-weight:500;font-size:125.875px;fill:white;">A<tspan x="3001.55px 3074.93px 3148.32px 3173.37px 3237.06px 3322.03px 3347.07px 3387.1px " y="2289px 2289px 2289px 2289px 2289px 2289px 2289px 2289px ">pplyDiff</tspan></text>
+        </g>
+    </g>
+</svg>

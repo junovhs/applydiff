@@ -7,7 +7,7 @@ mod matcher;
 mod parser;
 mod gauntlet;
 mod prompts;
-mod backup; // NEW
+mod backup;
 
 use apply::Applier;
 use error::{ErrorCode, PatchError, Result as PatchResult};
@@ -17,8 +17,7 @@ use parser::Parser;
 use chrono::Local;
 use similar::TextDiff;
 use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::PathBuf;
 
 slint::include_modules!();
 
@@ -175,51 +174,6 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     }
 
-    // Open latest backup (File Explorer / Finder / xdg-open)
-    {
-        let ui_handle = ui.as_weak();
-        ui.on_open_latest_backup(move || {
-            let ui = ui_handle.unwrap();
-            let dir = ui.get_target_dir().to_string();
-            if dir.is_empty() {
-                append_log(&ui, "❌ Error: No target directory selected.");
-                return;
-            }
-            let base = PathBuf::from(&dir);
-            match backup::latest_backup(&base) {
-                Some(b) => {
-                    if let Err(e) = open_dir(&b) {
-                        append_log(&ui, &format!("❌ Open failed: {}", e));
-                    } else {
-                        append_log(&ui, &format!("📂 Opened latest backup: {}", b.display()));
-                    }
-                }
-                None => append_log(&ui, "ℹ️ No backups found in the selected directory."),
-            }
-        });
-    }
-
-    // Restore latest backup
-    {
-        let ui_handle = ui.as_weak();
-        ui.on_restore_latest_backup(move || {
-            let ui = ui_handle.unwrap();
-            let dir = ui.get_target_dir().to_string();
-            if dir.is_empty() {
-                append_log(&ui, "❌ Error: No target directory selected.");
-                return;
-            }
-            let base = PathBuf::from(&dir);
-            match backup::latest_backup(&base) {
-                Some(b) => match backup::restore_backup(&base, &b) {
-                    Ok(()) => append_log(&ui, &format!("↩ Restored from backup: {}", b.display())),
-                    Err(e) => append_log(&ui, &format!("❌ Restore failed: {}", e)),
-                },
-                None => append_log(&ui, "ℹ️ No backups to restore."),
-            }
-        });
-    }
-
     ui.run()
 }
 
@@ -230,6 +184,8 @@ struct PreviewOut { log: String, diff: String }
 fn preview_patch(target: &str, patch: &str) -> PatchResult<PreviewOut> {
     let rid = generate_rid();
     let logger = Logger::new(rid);
+    logger.info("ui", "preview", "start");
+
     let mut log = String::new();
     let mut diffs = String::new();
 
@@ -255,6 +211,7 @@ fn preview_patch(target: &str, patch: &str) -> PatchResult<PreviewOut> {
     // Parse blocks
     let parser = Parser::new();
     let blocks = parser.parse(patch)?;
+    logger.info("parser", "parsed_blocks", &format!("{}", blocks.len()));
     log.push_str(&format!("✓ Parsed {} patch block(s)\n\n", blocks.len()));
 
     // Dry-run & slice diffs
@@ -313,6 +270,8 @@ fn preview_patch(target: &str, patch: &str) -> PatchResult<PreviewOut> {
 fn apply_patch(target: &str, patch: &str) -> PatchResult<String> {
     let rid = generate_rid();
     let logger = Logger::new(rid);
+    logger.info("ui", "apply", "start");
+
     let mut output = String::new();
 
     // Validate target
@@ -337,6 +296,7 @@ fn apply_patch(target: &str, patch: &str) -> PatchResult<String> {
     // Parse blocks
     let parser = Parser::new();
     let blocks = parser.parse(patch)?;
+    logger.info("parser", "parsed_blocks", &format!("{}", blocks.len()));
     output.push_str(&format!("✓ Parsed {} patch block(s)\n", blocks.len()));
 
     // Backup
@@ -368,7 +328,7 @@ fn apply_patch(target: &str, patch: &str) -> PatchResult<String> {
 
     assert!(success + failed > 0, "No blocks processed");
     output.push_str(&format!("\n✅ Done. {} applied, {} failed.\n", success, failed));
-    output.push_str("↩ To restore, use “Restore Latest Backup” or copy files back from the backup directory.\n");
+    output.push_str("↩ Backups live next to your files in a timestamped .applydiff_backup_* folder.\n");
 
     Ok(output)
 }
@@ -440,25 +400,4 @@ fn clear_log(ui: &MainWindow) {
 fn copy_to_clipboard(text: &str) -> Result<(), String> {
     let mut cb = arboard::Clipboard::new().map_err(|e| e.to_string())?;
     cb.set_text(text.to_string()).map_err(|e| e.to_string())
-}
-
-fn open_dir(path: &Path) -> Result<(), String> {
-    if !path.exists() {
-        return Err(format!("path does not exist: {}", path.display()));
-    }
-    #[cfg(target_os = "windows")]
-    {
-        Command::new("explorer").arg(path).status().map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-    #[cfg(target_os = "macos")]
-    {
-        Command::new("open").arg(path).status().map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-    #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        Command::new("xdg-open").arg(path).status().map_err(|e| e.to_string())?;
-        return Ok(());
-    }
 }

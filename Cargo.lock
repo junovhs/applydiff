@@ -201,6 +201,8 @@ dependencies = [
  "chrono",
  "regex",
  "rfd",
+ "serde",
+ "serde_json",
  "similar",
  "slint",
  "slint-build",

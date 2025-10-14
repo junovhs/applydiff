@@ -66,15 +66,12 @@ impl<'a> Applier<'a> {
         let mut to_text = blk.to.clone();
         if !matched_nl.is_empty() {
             if to_text.ends_with("\r\n") && matched_nl == "\n" {
-                // convert CRLF -> LF
-                to_text.truncate(to_text.len() - 2);
+                to_text.truncate(to_text.len().saturating_sub(2));
                 to_text.push('\n');
             } else if to_text.ends_with('\n') && matched_nl == "\r\n" {
-                // convert LF -> CRLF
-                to_text.pop(); // remove '\n'
+                to_text.pop();
                 to_text.push_str("\r\n");
             } else if !to_text.ends_with('\n') && !to_text.ends_with("\r\n") {
-                // no trailing newline in 'to', but file had one: add it
                 to_text.push_str(matched_nl);
             }
         }

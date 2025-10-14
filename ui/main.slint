@@ -1,401 +1,187 @@
-import { VerticalBox, HorizontalBox, LineEdit, TextEdit, ScrollView } from "std-widgets.slint";
+import { Button, TextEdit } from "std-widgets.slint";
+
+/* Reusable card chrome */
+component Card inherits Rectangle {
+    background: #111111;
+    border-color: #e7b56f;
+    border-width: 2px;
+    border-radius: 10px;
+}
 
 export component MainWindow inherits Window {
-    title: "applydiff";
-    background: #0a0a0a;
-    
-    in-out property <string> target_dir: "";
-    in-out property <string> patch_input: "";
-    in-out property <string> log_output: "";
-    in-out property <string> diff_output: "";
-    in-out property <bool>   is_processing: false;
-    in-out property <bool>   show_console: false;
-    
+    preferred-width: 1120px;
+    preferred-height: 720px;
+    min-width: 900px;
+    min-height: 600px;
+
+    /* Replace the default Windows icon */
+    icon: @image-url("applydiff_logo.svg");
+    title: "";
+
+    /* App state (Rust) */
+    in-out property <string> target_dir;
+    in-out property <string> patch_input;
+    in-out property <string> diff_output;
+    in-out property <string> log_output;
+    in-out property <bool>   is_processing;
+
+    /* UI state */
+    in-out property <bool>   show_console: true;
+    in-out property <int>    selected_version: 1;     // exactly one active
+    in-out property <length> console_width: 360px;    // resized via drag
+    in-out property <length> console_min: 260px;
+    in-out property <length> console_max: 640px;
+
+    /* Callbacks (Rust) */
     callback pick_folder();
+    callback load_demo();
     callback preview_patch();
     callback apply_patch();
     callback run_self_test();
     callback copy_ai_prompt();
     callback copy_output();
-    callback load_demo();
-    callback open_latest_backup();
-    callback restore_latest_backup();
-    
-    VerticalBox {
-        padding: 32px;
-        spacing: 24px;
-        
-        // Top bar - directory + actions
-        HorizontalBox {
+
+    /* Layout: left main column + splitter + right console */
+    HorizontalLayout {
+        spacing: 12px;
+        padding: 12px;
+
+        /* ============== LEFT: MAIN ============== */
+        VerticalLayout {
             spacing: 12px;
-            height: 44px;
-            
-            Rectangle {
-                background: #1a1a1a;
-                border-radius: 8px;
-                border-width: 1px;
-                border-color: #2a2a2a;
-                horizontal-stretch: 1;
-                
-                LineEdit {
-                    text <=> target_dir;
-                    read-only: true;
-                    placeholder-text: "Select target directory…";
-                    font-size: 13px;
+            horizontal-stretch: 1;
+
+            /* Header pinned left: logo + buttons */
+            HorizontalLayout {
+                spacing: 8px;
+
+                Image {
+                    source: @image-url("applydiff_logo.svg");
+                    height: 28px;   // keeps aspect
                 }
+                Button { text: "Browse";  enabled: !root.is_processing; clicked => { root.pick_folder(); } }
+                Button { text: "Console"; enabled: !root.is_processing; clicked => { root.show_console = !root.show_console; } }
+                Button { text: "Demo";    enabled: !root.is_processing; clicked => { root.load_demo(); } }
             }
-            
-            // Browse button
-            Rectangle {
-                width: 110px;
-                browse-ta := TouchArea {
-                    enabled: !is_processing;
-                    clicked => { pick_folder(); }
-                }
-                states [
-                    hover when browse-ta.has-hover && !is_processing: {
-                        browse-bg.background: #3a3a3a;
-                    }
-                ]
-                browse-bg := Rectangle {
-                    background: #2a2a2a;
-                    border-radius: 6px;
-                    border-width: 1px;
-                    border-color: #3a3a3a;
-                }
-                Text {
-                    text: "📁 Browse";
-                    color: is_processing ? #555 : #d4a574;
-                    font-size: 13px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-            
-            // Console toggle
-            Rectangle {
-                width: 100px;
-                console-ta := TouchArea {
-                    clicked => { show_console = !show_console; }
-                }
-                states [
-                    hover when console-ta.has-hover: {
-                        console-bg.background: #3a3a3a;
-                    }
-                ]
-                console-bg := Rectangle {
-                    background: show_console ? #d4a574 : #2a2a2a;
-                    border-radius: 6px;
-                    border-width: 1px;
-                    border-color: show_console ? #d4a574 : #3a3a3a;
-                }
-                Text {
-                    text: "🖥 Console";
-                    color: show_console ? #0a0a0a : #999;
-                    font-size: 13px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-            
-            // Demo button
-            Rectangle {
-                width: 90px;
-                demo-ta := TouchArea {
-                    enabled: !is_processing;
-                    clicked => { load_demo(); }
-                }
-                states [
-                    hover when demo-ta.has-hover && !is_processing: {
-                        demo-bg.background: #3a3a3a;
-                    }
-                ]
-                demo-bg := Rectangle {
-                    background: #2a2a2a;
-                    border-radius: 6px;
-                    border-width: 1px;
-                    border-color: #3a3a3a;
-                }
-                Text {
-                    text: "🎛 Demo";
-                    color: is_processing ? #555 : #999;
-                    font-size: 13px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-        }
-        
-        // Main patch input area - inviting clickable zone
-        VerticalBox {
-            spacing: 12px;
-            vertical-stretch: 1;
-            
-            Text { 
-                text: "PATCH"; 
-                color: #666;
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 1.5px;
-            }
-            
-            Rectangle {
-                background: #0f0f0f;
-                border-radius: 12px;
-                border-width: 2px;
-                border-color: patch_input == "" ? #d4a574 : #2a2a2a;
-                vertical-stretch: 1;
-                min-height: 280px;
-                
-                // Dashed border effect when empty
-                if patch_input == "": Rectangle {
-                    x: 2px;
-                    y: 2px;
-                    width: parent.width - 4px;
-                    height: parent.height - 4px;
-                    border-radius: 10px;
-                    border-width: 2px;
-                    border-color: #d4a574;
-                    
-                    // Placeholder text
-                    VerticalLayout {
-                        alignment: center;
-                        Text {
-                            text: "Click to Paste Patch";
-                            color: #d4a574;
-                            font-size: 18px;
-                            font-weight: 600;
-                            horizontal-alignment: center;
-                        }
-                        Text {
-                            text: "or start typing...";
-                            color: #666;
-                            font-size: 13px;
-                            horizontal-alignment: center;
-                        }
-                    }
-                }
-                
-                TextEdit {
-                    text <=> patch_input;
-                    wrap: TextWrap.word-wrap;
-                    enabled: !is_processing;
-                    font-size: 12px;
-                    opacity: patch_input == "" ? 0 : 1;
-                }
-            }
-        }
-        
-        // Action buttons
-        HorizontalBox {
-            spacing: 16px;
-            height: 48px;
-            
-            // Preview button
-            Rectangle {
-                width: 110px;
-                preview-ta := TouchArea {
-                    enabled: !is_processing && patch_input != "";
-                    clicked => { preview_patch(); }
-                }
-                states [
-                    hover when preview-ta.has-hover && !is_processing && patch_input != "": {
-                        preview-bg.background: #3a3a3a;
-                    }
-                ]
-                preview-bg := Rectangle {
-                    background: #2a2a2a;
-                    border-radius: 6px;
-                    border-width: 1px;
-                    border-color: #3a3a3a;
-                    opacity: patch_input == "" ? 0.3 : 1;
-                }
-                Text {
-                    text: "👁 Preview";
-                    color: (is_processing || patch_input == "") ? #444 : #999;
-                    font-size: 14px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-            
-            // Apply Patch - PRIMARY ACTION
-            Rectangle {
-                width: 140px;
-                apply-ta := TouchArea {
-                    enabled: !is_processing && patch_input != "";
-                    clicked => { apply_patch(); }
-                }
-                states [
-                    hover when apply-ta.has-hover && !is_processing && patch_input != "": {
-                        apply-bg.background: #e4b584;
-                    }
-                ]
-                apply-bg := Rectangle {
-                    background: (is_processing || patch_input == "") ? #444 : #d4a574;
-                    border-radius: 6px;
-                }
-                Text {
-                    text: "Apply Patch";
-                    color: #0a0a0a;
-                    font-size: 14px;
-                    font-weight: 700;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-            
-            Rectangle { horizontal-stretch: 1; }
-            
-            // AI Prompt button
-            Rectangle {
-                width: 110px;
-                prompt-ta := TouchArea {
-                    enabled: !is_processing;
-                    clicked => { copy_ai_prompt(); }
-                }
-                states [
-                    hover when prompt-ta.has-hover && !is_processing: {
-                        prompt-bg.background: #3a3a3a;
-                    }
-                ]
-                prompt-bg := Rectangle {
-                    background: #2a2a2a;
-                    border-radius: 6px;
-                    border-width: 1px;
-                    border-color: #3a3a3a;
-                }
-                Text {
-                    text: "📋 AI Prompt";
-                    color: is_processing ? #444 : #999;
-                    font-size: 13px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-        }
-        
-        // Console output (optional, toggleable)
-        if show_console: VerticalBox {
-            spacing: 8px;
-            
-            Text { 
-                text: "CONSOLE"; 
-                color: #666;
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 1.5px;
-            }
-            
-            Rectangle {
-                background: #0f0f0f;
-                border-radius: 8px;
-                border-width: 1px;
-                border-color: #1a1a1a;
-                height: 140px;
-                
-                ScrollView {
-                    VerticalLayout {
-                        padding: 12px;
-                        Text {
-                            text: log_output == "" ? "No output yet..." : log_output;
-                            color: log_output == "" ? #444 : #c0c0c0;
-                            font-size: 11px;
-                            wrap: word-wrap;
-                            horizontal-alignment: left;
-                        }
+
+            /* PATCH editor — same chrome as diff */
+            Card {
+                VerticalLayout {
+                    spacing: 8px; padding: 10px;
+                    Text { text: "PATCH"; color: #e7b56f; font-size: 12px; }
+
+                    TextEdit {
+                        text <=> root.patch_input;
+                        enabled: !root.is_processing;
+                        font-size: 13px;
+                        min-height: 220px;
                     }
                 }
             }
-        }
-        
-        // Diff preview (progressive disclosure - only when content exists)
-        if diff_output != "": VerticalBox {
-            spacing: 12px;
-            
-            HorizontalBox {
+
+            /* Actions */
+            HorizontalLayout {
                 spacing: 12px;
-                
-                Text { 
-                    text: "DIFF PREVIEW"; 
-                    color: #d4a574;
-                    font-size: 11px;
-                    font-weight: 700;
-                    letter-spacing: 1.5px;
+
+                Button {
+                    text: "👁 Preview";
+                    enabled: !root.is_processing && root.target_dir != "" && root.patch_input != "";
+                    clicked => { root.preview_patch(); }
                 }
-                
-                // Version selector buttons
-                HorizontalBox {
-                    spacing: 6px;
-                    
-                    Rectangle {
-                        width: 50px;
-                        height: 50px;
-                        border-radius: 6px;
-                        border-width: 2px;
-                        border-color: #3a3a3a;
-                        Text {
-                            text: "V1";
-                            color: #666;
-                            font-size: 13px;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
-                        }
+                Button {
+                    text: "Apply Patch";
+                    enabled: !root.is_processing && root.target_dir != "" && root.patch_input != "";
+                    clicked => { root.apply_patch(); }
+                }
+                Button {
+                    text: "AI Prompt";
+                    enabled: !root.is_processing;
+                    clicked => { root.copy_ai_prompt(); }
+                }
+            }
+
+            /* DIFF PREVIEW */
+            Text { text: "DIFF PREVIEW"; color: #e7b56f; font-size: 12px; }
+
+            Card {
+                VerticalLayout {
+                    spacing: 8px; padding: 10px;
+
+                    /* radio-like tabs: one always selected */
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Button { text: "V1"; enabled: root.selected_version != 1; clicked => { root.selected_version = 1; } }
+                        Button { text: "V2"; enabled: root.selected_version != 2; clicked => { root.selected_version = 2; } }
+                        Button { text: "V3"; enabled: root.selected_version != 3; clicked => { root.selected_version = 3; } }
                     }
-                    
-                    Rectangle {
-                        width: 50px;
-                        height: 50px;
-                        border-radius: 6px;
-                        border-width: 2px;
-                        border-color: #3a3a3a;
-                        Text {
-                            text: "V2";
-                            color: #666;
-                            font-size: 13px;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
-                        }
-                    }
-                    
-                    Rectangle {
-                        width: 50px;
-                        height: 50px;
-                        border-radius: 6px;
-                        border-width: 2px;
-                        border-color: #d4a574;
-                        background: #d4a574;
-                        Text {
-                            text: "V3";
-                            color: #0a0a0a;
-                            font-size: 13px;
-                            font-weight: 700;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
-                        }
+
+                    TextEdit {
+                        text <=> root.diff_output;
+                        enabled: false;  // read-only
+                        font-size: 12px;
+                        min-height: 220px;
                     }
                 }
             }
-            
-            Rectangle {
-                background: #0f0f0f;
-                border-radius: 8px;
-                border-width: 1px;
-                border-color: #d4a574;
-                height: 220px;
-                
-                ScrollView {
-                    VerticalLayout {
-                        padding: 12px;
-                        Text {
-                            text: diff_output;
-                            color: #c0c0c0;
-                            font-size: 11px;
-                            wrap: no-wrap;
-                            horizontal-alignment: left;
+        }
+
+        /* ============== SPLITTER: draggable handle (1.13-safe) ============== */
+        if (root.show_console) : Rectangle {
+            width: 6px;
+            background: #2a2a2a;
+            border-color: #444;
+            border-width: 1px;
+            border-radius: 3px;
+
+            TouchArea {
+                mouse-cursor: col-resize;
+
+                /* lazy-init on first move while pressed */
+                property <bool>   dragging: false;
+                property <length> start_x: 0px;
+                property <length> start_w: 0px;
+
+                moved => {
+                    if (self.pressed) {
+                        if (!dragging) {
+                            start_x = self.mouse-x;
+                            start_w = root.console_width;
+                            dragging = true;
                         }
+                        let delta = self.mouse-x - start_x;
+                        let raw   = start_w - delta;
+                        /* clamp */
+                        root.console_width =
+                            max(root.console_min, min(root.console_max, raw));
+                    } else {
+                        dragging = false;
                     }
                 }
+            }
+        }
+
+        /* ============== RIGHT: CONSOLE ============== */
+        if (root.show_console) : Rectangle {
+            width: root.console_width;
+            background: #151515;
+            border-color: #333;
+            border-width: 1px;
+            border-radius: 8px;
+
+            VerticalLayout {
+                padding: 10px; spacing: 6px;
+
+                Text { text: "CONSOLE"; color: #e7b56f; font-size: 12px; }
+
+                TextEdit {
+                    text <=> root.log_output;
+                    enabled: false;   // read-only
+                    font-size: 12px;
+                    vertical-stretch: 1;
+                    min-height: 120px;
+                }
+
+                Button { text: "Run Self-Test"; enabled: !root.is_processing; clicked => { root.run_self_test(); } }
             }
         }
     }
