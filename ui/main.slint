@@ -6,19 +6,24 @@ export component MainWindow inherits Window {
     in-out property <string> target_dir: "";
     in-out property <string> patch_input: "";
     in-out property <string> log_output: "";
+    in-out property <string> diff_output: "";
     in-out property <bool>   is_processing: false;
 
     callback pick_folder();
     callback preview_patch();
     callback apply_patch();
     callback run_self_test();
-    callback copy_ai_prompt();   // NEW
+    callback copy_ai_prompt();
+    callback copy_output();
+    callback load_demo();
+    callback open_latest_backup();     // NEW
+    callback restore_latest_backup();  // NEW
 
     VerticalBox {
         padding: 16px;
         spacing: 12px;
 
-        // Top row: folder chooser + actions
+        // Top row
         HorizontalBox {
             spacing: 8px;
 
@@ -29,26 +34,12 @@ export component MainWindow inherits Window {
                 horizontal-stretch: 1;
             }
 
-            Button {
-                text: "📁 Browse";
-                enabled: !is_processing;
-                clicked => { pick_folder(); }
-            }
-
-            Button {
-                text: "🧪 Run Self-Test";
-                enabled: !is_processing;
-                clicked => { run_self_test(); }
-            }
-
-            Button {
-                text: "📋 Copy AI Prompt";   // NEW
-                enabled: !is_processing;
-                clicked => { copy_ai_prompt(); }
-            }
+            Button { text: "📁 Browse";        enabled: !is_processing; clicked => { pick_folder(); } }
+            Button { text: "🧪 Run Self-Test";  enabled: !is_processing; clicked => { run_self_test(); } }
+            Button { text: "📋 Copy AI Prompt"; enabled: !is_processing; clicked => { copy_ai_prompt(); } }
         }
 
-        // Patch input area (stretches)
+        // Patch input
         VerticalBox {
             spacing: 6px;
             Text { text: "Patch Input"; color: #aab; }
@@ -61,23 +52,19 @@ export component MainWindow inherits Window {
             }
         }
 
-        // Actions row
+        // Actions
         HorizontalBox {
             spacing: 12px;
-            Button {
-                text: "👁 Preview";
-                enabled: !is_processing;
-                clicked => { preview_patch(); }
-            }
-            Button {
-                text: "✓ Apply Patch";
-                enabled: !is_processing;
-                clicked => { apply_patch(); }
-            }
+            Button { text: "🎛 Load Demo";            enabled: !is_processing; clicked => { load_demo(); } }
+            Button { text: "👁 Preview";              enabled: !is_processing; clicked => { preview_patch(); } }
+            Button { text: "✓ Apply Patch";           enabled: !is_processing; clicked => { apply_patch(); } }
+            Button { text: "📋 Copy Output";          enabled: !is_processing; clicked => { copy_output(); } }
+            Button { text: "📂 Open Latest Backup";   enabled: !is_processing; clicked => { open_latest_backup(); } }   // NEW
+            Button { text: "↩ Restore Latest Backup";enabled: !is_processing; clicked => { restore_latest_backup(); } } // NEW
             Rectangle { horizontal-stretch: 1; height: 1px; opacity: 0%; }
         }
 
-        // Output log (stretches)
+        // Output log
         VerticalBox {
             spacing: 6px;
             Text { text: "Output"; color: #aab; }
@@ -87,6 +74,19 @@ export component MainWindow inherits Window {
                 wrap: TextWrap.word-wrap;
                 vertical-stretch: 2;
                 min-height: 140px;
+            }
+        }
+
+        // Diff preview
+        VerticalBox {
+            spacing: 6px;
+            Text { text: "Diff Preview (read-only)"; color: #aab; }
+            TextEdit {
+                text <=> diff_output;
+                read-only: true;
+                wrap: TextWrap.no-wrap;
+                vertical-stretch: 2;
+                min-height: 160px;
             }
         }
     }

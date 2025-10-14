@@ -7,16 +7,18 @@ mod matcher;
 mod parser;
 mod gauntlet;
 mod prompts;
+mod backup; // NEW
 
 use apply::Applier;
 use error::{ErrorCode, PatchError, Result as PatchResult};
 use logger::Logger;
 use parser::Parser;
 
-use std::fs;
-use std::io;
-use std::path::{Path, PathBuf};
 use chrono::Local;
+use similar::TextDiff;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 slint::include_modules!();
 
@@ -37,7 +39,23 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     }
 
-    // Preview
+    // Load Demo
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_load_demo(move || {
+            let ui = ui_handle.unwrap();
+            match create_demo() {
+                Ok((dir, patch)) => {
+                    ui.set_target_dir(dir.into());
+                    ui.set_patch_input(patch.into());
+                    append_log(&ui, "🎛 Demo loaded. Click 👁 Preview to see the diff, then ✓ Apply Patch.");
+                }
+                Err(e) => append_log(&ui, &format!("❌ Demo error: {}", e)),
+            }
+        });
+    }
+
+    // Preview (builds unified diff)
     {
         let ui_handle = ui.as_weak();
         ui.on_preview_patch(move || {
@@ -46,12 +64,13 @@ fn main() -> Result<(), slint::PlatformError> {
             let patch = ui.get_patch_input().to_string();
 
             if target.is_empty() || patch.is_empty() {
-                append_log(&ui, "❌ Error: Please select directory and enter patch");
+                append_log(&ui, "❌ Error: Please select directory and enter patch (or click 🎛 Load Demo).");
                 return;
             }
 
             ui.set_is_processing(true);
             clear_log(&ui);
+            ui.set_diff_output("".into());
             append_log(&ui, "👁 Previewing patch...\n");
 
             let ui_weak = ui.as_weak();
@@ -60,7 +79,10 @@ fn main() -> Result<(), slint::PlatformError> {
                 slint::invoke_from_event_loop(move || {
                     let ui = ui_weak.unwrap();
                     match result {
-                        Ok(msg) => append_log(&ui, &msg),
+                        Ok(out) => {
+                            append_log(&ui, &out.log);
+                            ui.set_diff_output(out.diff.into());
+                        }
                         Err(e) => append_log(&ui, &format!("❌ Error: {}", e)),
                     }
                     ui.set_is_processing(false);
@@ -78,12 +100,13 @@ fn main() -> Result<(), slint::PlatformError> {
             let patch = ui.get_patch_input().to_string();
 
             if target.is_empty() || patch.is_empty() {
-                append_log(&ui, "❌ Error: Please select directory and enter patch");
+                append_log(&ui, "❌ Error: Please select directory and enter patch (or click 🎛 Load Demo).");
                 return;
             }
 
             ui.set_is_processing(true);
             clear_log(&ui);
+            ui.set_diff_output("".into());
             append_log(&ui, "⚙️ Applying patch...\n");
 
             let ui_weak = ui.as_weak();
@@ -108,6 +131,7 @@ fn main() -> Result<(), slint::PlatformError> {
             let ui = ui_handle.unwrap();
             ui.set_is_processing(true);
             clear_log(&ui);
+            ui.set_diff_output("".into());
             append_log(&ui, "🧪 Running self-test gauntlet…\n");
 
             let ui_weak = ui.as_weak();
@@ -122,7 +146,7 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     }
 
-    // Copy AI Prompt (clipboard) — uses arboard
+    // Copy AI Prompt
     {
         let ui_handle = ui.as_weak();
         ui.on_copy_ai_prompt(move || {
@@ -138,15 +162,76 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     }
 
+    // Copy Output
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_copy_output(move || {
+            let ui = ui_handle.unwrap();
+            let text = ui.get_log_output().to_string();
+            match copy_to_clipboard(&text) {
+                Ok(()) => append_log(&ui, "📋 Output copied to clipboard."),
+                Err(e) => append_log(&ui, &format!("❌ Clipboard error: {}", e)),
+            }
+        });
+    }
+
+    // Open latest backup (File Explorer / Finder / xdg-open)
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_open_latest_backup(move || {
+            let ui = ui_handle.unwrap();
+            let dir = ui.get_target_dir().to_string();
+            if dir.is_empty() {
+                append_log(&ui, "❌ Error: No target directory selected.");
+                return;
+            }
+            let base = PathBuf::from(&dir);
+            match backup::latest_backup(&base) {
+                Some(b) => {
+                    if let Err(e) = open_dir(&b) {
+                        append_log(&ui, &format!("❌ Open failed: {}", e));
+                    } else {
+                        append_log(&ui, &format!("📂 Opened latest backup: {}", b.display()));
+                    }
+                }
+                None => append_log(&ui, "ℹ️ No backups found in the selected directory."),
+            }
+        });
+    }
+
+    // Restore latest backup
+    {
+        let ui_handle = ui.as_weak();
+        ui.on_restore_latest_backup(move || {
+            let ui = ui_handle.unwrap();
+            let dir = ui.get_target_dir().to_string();
+            if dir.is_empty() {
+                append_log(&ui, "❌ Error: No target directory selected.");
+                return;
+            }
+            let base = PathBuf::from(&dir);
+            match backup::latest_backup(&base) {
+                Some(b) => match backup::restore_backup(&base, &b) {
+                    Ok(()) => append_log(&ui, &format!("↩ Restored from backup: {}", b.display())),
+                    Err(e) => append_log(&ui, &format!("❌ Restore failed: {}", e)),
+                },
+                None => append_log(&ui, "ℹ️ No backups to restore."),
+            }
+        });
+    }
+
     ui.run()
 }
 
 /* ========================== Core operations ========================== */
 
-fn preview_patch(target: &str, patch: &str) -> PatchResult<String> {
+struct PreviewOut { log: String, diff: String }
+
+fn preview_patch(target: &str, patch: &str) -> PatchResult<PreviewOut> {
     let rid = generate_rid();
     let logger = Logger::new(rid);
-    let mut output = String::new();
+    let mut log = String::new();
+    let mut diffs = String::new();
 
     // Validate target
     let target_path = PathBuf::from(target);
@@ -170,27 +255,59 @@ fn preview_patch(target: &str, patch: &str) -> PatchResult<String> {
     // Parse blocks
     let parser = Parser::new();
     let blocks = parser.parse(patch)?;
-    output.push_str(&format!("✓ Parsed {} patch block(s)\n\n", blocks.len()));
+    log.push_str(&format!("✓ Parsed {} patch block(s)\n\n", blocks.len()));
 
-    // Dry-run matching
+    // Dry-run & slice diffs
     let applier = Applier::new(&logger, target_path.clone(), true);
     for (idx, block) in blocks.iter().enumerate() {
-        output.push_str(&format!("Block {}: {}\n", idx + 1, block.file.display()));
+        log.push_str(&format!("Block {}: {}\n", idx + 1, block.file.display()));
         match applier.apply_block(block) {
             Ok(result) => {
-                output.push_str(&format!(
+                log.push_str(&format!(
                     "  ✓ Preview match at offset {} (score: {:.2})\n",
                     result.matched_at, result.score
                 ));
+
+                let file_path = target_path.join(&block.file);
+                if let Ok(content) = fs::read_to_string(&file_path) {
+                    let start = result.matched_at as usize;
+                    let end = start.saturating_add(block.from.len());
+                    if start <= content.len() && end <= content.len() && start <= end {
+                        let before = &content[start..end];
+                        let matched_nl = if before.ends_with("\r\n") { "\r\n" }
+                                         else if before.ends_with('\n') { "\n" }
+                                         else { "" };
+                        let mut to_text = block.to.clone();
+                        if !matched_nl.is_empty() {
+                            if to_text.ends_with("\r\n") && matched_nl == "\n" {
+                                let new_len = to_text.len().saturating_sub(2);
+                                to_text.truncate(new_len);
+                                to_text.push('\n');
+                            } else if to_text.ends_with('\n') && matched_nl == "\r\n" {
+                                to_text.pop();
+                                to_text.push_str("\r\n");
+                            } else if !to_text.ends_with('\n') && !to_text.ends_with("\r\n") {
+                                to_text.push_str(matched_nl);
+                            }
+                        }
+                        let udiff = TextDiff::from_lines(before, &to_text)
+                            .unified_diff()
+                            .header(&format!("a/{}", block.file.display()),
+                                    &format!("b/{}", block.file.display()))
+                            .to_string();
+                        if !udiff.trim().is_empty() {
+                            diffs.push_str(&udiff);
+                            if !diffs.ends_with('\n') { diffs.push('\n'); }
+                        }
+                    }
+                }
             }
-            Err(e) => {
-                output.push_str(&format!("  ❌ {}\n", e));
-            }
+            Err(e) => { log.push_str(&format!("  ❌ {}\n", e)); }
         }
     }
 
-    output.push_str("\n💡 Preview complete. Press 'Apply Patch' to make changes.");
-    Ok(output)
+    log.push_str("\n💡 Preview complete. Press 'Apply Patch' to make changes.");
+    Ok(PreviewOut { log, diff: diffs })
 }
 
 fn apply_patch(target: &str, patch: &str) -> PatchResult<String> {
@@ -222,9 +339,9 @@ fn apply_patch(target: &str, patch: &str) -> PatchResult<String> {
     let blocks = parser.parse(patch)?;
     output.push_str(&format!("✓ Parsed {} patch block(s)\n", blocks.len()));
 
-    // Safety: backup all target files referenced by blocks (no Git required)
+    // Backup
     let files_to_backup: Vec<PathBuf> = blocks.iter().map(|b| b.file.clone()).collect();
-    let backup_dir = create_backup(&target_path, &files_to_backup)?;
+    let backup_dir = backup::create_backup(&target_path, &files_to_backup)?;
     output.push_str(&format!("✓ Backup created at {}\n", backup_dir.display()));
 
     // Apply
@@ -251,40 +368,56 @@ fn apply_patch(target: &str, patch: &str) -> PatchResult<String> {
 
     assert!(success + failed > 0, "No blocks processed");
     output.push_str(&format!("\n✅ Done. {} applied, {} failed.\n", success, failed));
-    output.push_str("↩ To restore, copy files back from the backup directory.\n");
+    output.push_str("↩ To restore, use “Restore Latest Backup” or copy files back from the backup directory.\n");
 
     Ok(output)
 }
 
-/* ========================== Helpers ========================== */
+/* ========================== Demo + Helpers ========================== */
 
-fn create_backup(base: &Path, files: &[PathBuf]) -> PatchResult<PathBuf> {
-    let stamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
-    let dir = base.join(format!(".applydiff_backup_{}", stamp));
-    fs::create_dir_all(&dir).map_err(to_file_write_error("create_backup_dir", &dir))?;
+fn create_demo() -> Result<(String, String), String> {
+    let base = std::env::temp_dir().join(format!(
+        "applydiff_demo_{}",
+        Local::now().format("%Y%m%d_%H%M%S")
+    ));
+    fs::create_dir_all(&base).map_err(|e| e.to_string())?;
 
-    for rel in files {
-        let src = base.join(rel);
-        if !src.exists() || !src.is_file() {
-            continue; // nothing to back up
-        }
-        let dst = dir.join(rel);
-        if let Some(parent) = dst.parent() {
-            fs::create_dir_all(parent).map_err(to_file_write_error("create_backup_parent", parent))?;
-        }
-        fs::copy(&src, &dst).map_err(to_file_write_error("backup_copy", &dst))?;
-    }
+    let hello = base.join("hello.txt");
+    let js    = base.join("web/app.js");
+    let md    = base.join("docs/readme.md");
 
-    Ok(dir)
-}
+    if let Some(p) = js.parent() { fs::create_dir_all(p).map_err(|e| e.to_string())?; }
+    if let Some(p) = md.parent() { fs::create_dir_all(p).map_err(|e| e.to_string())?; }
 
-fn to_file_write_error(action: &'static str, path: &Path) -> impl Fn(io::Error) -> PatchError {
-    let p = path.to_path_buf();
-    move |e| PatchError::File {
-        code: ErrorCode::FileWriteFailed,
-        message: format!("{} failed: {}", action, e),
-        path: p.clone(),
-    }
+    fs::write(&hello, "Hello world\n").map_err(|e| e.to_string())?;
+    fs::write(&js,    "function greet(){\r\n  console.log('Hello world');\r\n}\r\n").map_err(|e| e.to_string())?;
+    fs::write(&md,    "# Title\r\n\r\n- item A\r\n- item B\r\n").map_err(|e| e.to_string())?;
+
+    let patch = [
+        ">>> file: hello.txt | fuzz=1.0",
+        "--- from",
+        "Hello world",
+        "--- to",
+        "Hello brave new world",
+        "<<<",
+        "",
+        ">>> file: web/app.js | fuzz=0.85",
+        "--- from",
+        "  console.log('Hello world');",
+        "--- to",
+        "  console.log('Hello brave new world');",
+        "<<<",
+        "",
+        ">>> file: docs/readme.md | fuzz=1.0",
+        "--- from",
+        "",
+        "--- to",
+        "## Changelog",
+        "- Added greeting",
+        "<<<",
+    ].join("\n");
+
+    Ok((base.display().to_string(), patch))
 }
 
 fn generate_rid() -> u64 {
@@ -305,7 +438,27 @@ fn clear_log(ui: &MainWindow) {
 }
 
 fn copy_to_clipboard(text: &str) -> Result<(), String> {
-    // Cross-platform clipboard using arboard
     let mut cb = arboard::Clipboard::new().map_err(|e| e.to_string())?;
     cb.set_text(text.to_string()).map_err(|e| e.to_string())
+}
+
+fn open_dir(path: &Path) -> Result<(), String> {
+    if !path.exists() {
+        return Err(format!("path does not exist: {}", path.display()));
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer").arg(path).status().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open").arg(path).status().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        Command::new("xdg-open").arg(path).status().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
 }
