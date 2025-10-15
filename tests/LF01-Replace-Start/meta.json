@@ -1,0 +1,6 @@
+{
+  "description": "LF01: Verifies correct patch application at the beginning of a large file.",
+  "expect_ok": 1,
+  "expect_fail": 0,
+  "expected_log_contains": "\"action\":\"fast_path_match\""
+}

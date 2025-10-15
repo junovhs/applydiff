@@ -35,6 +35,7 @@ pub fn create_backup(base: &Path, files: &[PathBuf]) -> Result<PathBuf> {
     Ok(dir)
 }
 
+#[allow(dead_code)] // UI feature for this is not currently connected
 pub fn latest_backup(base: &Path) -> Option<PathBuf> {
     let entries = match fs::read_dir(base) {
         Ok(v) => v,
@@ -58,6 +59,7 @@ pub fn latest_backup(base: &Path) -> Option<PathBuf> {
     best.map(|(_, p)| p)
 }
 
+#[allow(dead_code)] // UI feature for this is not currently connected
 pub fn restore_backup(base: &Path, backup_root: &Path) -> Result<()> {
     // Recursively copy files from backup_root back into base.
     fn walk_copy(base: &Path, root: &Path, cur: &Path) -> Result<()> {

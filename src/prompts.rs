@@ -29,6 +29,7 @@ pub fn build_ai_prompt() -> String {
 }
 
 /// A tiny example block used by tests to ensure our parser handles the format.
+#[allow(dead_code)] // No longer used by the new test orchestrator
 pub fn example_patch() -> String {
     [
         ">>> file: hello.txt | fuzz=1.0",

@@ -49,7 +49,7 @@ impl<'a> Applier<'a> {
         }
 
         // Find best match (exact or fuzzy)
-        let Some(m) = find_best_match(&content, &blk.from, blk.fuzz) else {
+        let Some(m) = find_best_match(&content, &blk.from, blk.fuzz, self.logger) else {
             return Err(PatchError::Apply {
                 code: ErrorCode::NoMatch,
                 message: format!("No match >= {:.2} for block", blk.fuzz),

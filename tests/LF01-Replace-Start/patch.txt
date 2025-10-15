@@ -1,0 +1,6 @@
+>>> file: large_file.txt | fuzz=1.0
+--- from
+--- START OF FILE ---
+--- to
+--- PATCHED START OF FILE ---
+<<<

@@ -1,3 +1,4 @@
+use crate::logger::Logger;
 use strsim::normalized_damerau_levenshtein;
 
 /// Result of locating the best match of `needle` within `haystack`
@@ -9,16 +10,19 @@ pub struct MatchResult {
 
 /// Normalize line endings to '\n' for scoring, but compute byte offsets
 /// on the original haystack so replacements write correctly on Windows (CRLF) too.
-pub fn find_best_match(haystack: &str, needle: &str, min_score: f32) -> Option<MatchResult> {
+pub fn find_best_match(haystack: &str, needle: &str, min_score: f32, logger: &Logger) -> Option<MatchResult> {
     if needle.is_empty() {
         return Some(MatchResult { start: haystack.len(), end: haystack.len(), score: 1.0 });
     }
 
     // Fast path: exact substring (works for single-line or exact EOL matches)
     if let Some(idx) = haystack.find(needle) {
+        logger.info("matcher", "fast_path_match", &format!("Found exact match for needle of length {}", needle.len()));
         return Some(MatchResult { start: idx, end: idx + needle.len(), score: 1.0 });
     }
 
+    logger.info("matcher", "fuzzy_search_start", &format!("No exact match. Starting fuzzy search for needle of length {}", needle.len()));
+    
     // Prepare line ranges with byte indices in the ORIGINAL haystack.
     let ranges = line_ranges(haystack); // each range includes its newline(s)
     if ranges.is_empty() {
