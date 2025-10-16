@@ -14,7 +14,6 @@ export component MainWindow inherits Window {
     min-width: 900px;
     min-height: 600px;
 
-    /* Replace the default Windows icon */
     icon: @image-url("applydiff_logo.svg");
     title: "";
 
@@ -27,8 +26,8 @@ export component MainWindow inherits Window {
 
     /* UI state */
     in-out property <bool>   show_console: true;
-    in-out property <int>    selected_version: 1;     // exactly one active
-    in-out property <length> console_width: 360px;    // resized via drag
+    in-out property <int>    selected_version: 1;
+    in-out property <length> console_width: 360px;
     in-out property <length> console_min: 260px;
     in-out property <length> console_max: 640px;
 
@@ -41,7 +40,6 @@ export component MainWindow inherits Window {
     callback copy_ai_prompt();
     callback copy_output();
 
-    /* Layout: left main column + splitter + right console */
     HorizontalLayout {
         spacing: 12px;
         padding: 12px;
@@ -50,31 +48,36 @@ export component MainWindow inherits Window {
         VerticalLayout {
             spacing: 12px;
             horizontal-stretch: 1;
+            min-width: 350px; // Solves the "can't resize when console is hidden" issue.
 
             /* Header pinned left: logo + buttons */
             HorizontalLayout {
+                horizontal-stretch: 1; // THIS FORCES THE HEADER BAR TO FILL THE WIDTH.
                 spacing: 8px;
 
                 Image {
                     source: @image-url("applydiff_logo.svg");
-                    height: 28px;   // keeps aspect
+                    height: 28px;
                 }
                 Button { text: "Browse";  enabled: !root.is_processing; clicked => { root.pick_folder(); } }
                 Button { text: "Console"; enabled: !root.is_processing; clicked => { root.show_console = !root.show_console; } }
                 Button { text: "Demo";    enabled: !root.is_processing; clicked => { root.load_demo(); } }
+
+                // This invisible spacer takes all extra space, forcing the logo and buttons left.
+                Rectangle { horizontal-stretch: 1; }
             }
 
             /* PATCH editor — same chrome as diff */
             Card {
+                // This makes the card grow and shrink vertically with the window.
+                vertical-stretch: 1;
                 VerticalLayout {
                     spacing: 8px; padding: 10px;
                     Text { text: "PATCH"; color: #e7b56f; font-size: 12px; }
-
                     TextEdit {
                         text <=> root.patch_input;
                         enabled: !root.is_processing;
                         font-size: 13px;
-                        min-height: 220px;
                     }
                 }
             }
@@ -82,7 +85,6 @@ export component MainWindow inherits Window {
             /* Actions */
             HorizontalLayout {
                 spacing: 12px;
-
                 Button {
                     text: "👁 Preview";
                     enabled: !root.is_processing && root.target_dir != "" && root.patch_input != "";
@@ -104,43 +106,37 @@ export component MainWindow inherits Window {
             Text { text: "DIFF PREVIEW"; color: #e7b56f; font-size: 12px; }
 
             Card {
+                // This makes the card grow and shrink vertically with the window.
+                vertical-stretch: 1;
                 VerticalLayout {
                     spacing: 8px; padding: 10px;
-
-                    /* radio-like tabs: one always selected */
                     HorizontalLayout {
                         spacing: 8px;
                         Button { text: "V1"; enabled: root.selected_version != 1; clicked => { root.selected_version = 1; } }
                         Button { text: "V2"; enabled: root.selected_version != 2; clicked => { root.selected_version = 2; } }
                         Button { text: "V3"; enabled: root.selected_version != 3; clicked => { root.selected_version = 3; } }
                     }
-
                     TextEdit {
                         text <=> root.diff_output;
-                        enabled: false;  // read-only
+                        enabled: false;
                         font-size: 12px;
-                        min-height: 220px;
                     }
                 }
             }
         }
 
-        /* ============== SPLITTER: draggable handle (1.13-safe) ============== */
+        /* ============== SPLITTER ============== */
         if (root.show_console) : Rectangle {
             width: 6px;
             background: #2a2a2a;
             border-color: #444;
             border-width: 1px;
             border-radius: 3px;
-
             TouchArea {
                 mouse-cursor: col-resize;
-
-                /* lazy-init on first move while pressed */
                 property <bool>   dragging: false;
                 property <length> start_x: 0px;
                 property <length> start_w: 0px;
-
                 moved => {
                     if (self.pressed) {
                         if (!dragging) {
@@ -150,9 +146,7 @@ export component MainWindow inherits Window {
                         }
                         let delta = self.mouse-x - start_x;
                         let raw   = start_w - delta;
-                        /* clamp */
-                        root.console_width =
-                            max(root.console_min, min(root.console_max, raw));
+                        root.console_width = max(root.console_min, min(root.console_max, raw));
                     } else {
                         dragging = false;
                     }
@@ -167,20 +161,14 @@ export component MainWindow inherits Window {
             border-color: #333;
             border-width: 1px;
             border-radius: 8px;
-
             VerticalLayout {
                 padding: 10px; spacing: 6px;
-
                 Text { text: "CONSOLE"; color: #e7b56f; font-size: 12px; }
-
                 TextEdit {
                     text <=> root.log_output;
-                    enabled: false;   // read-only
+                    enabled: false;
                     font-size: 12px;
-                    vertical-stretch: 1;
-                    min-height: 120px;
                 }
-
                 Button { text: "Run Self-Test"; enabled: !root.is_processing; clicked => { root.run_self_test(); } }
             }
         }
