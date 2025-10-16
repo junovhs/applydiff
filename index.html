@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ApplyDiff</title>
+  <style>
+    /* Fonts */
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("/JetBrainsMono-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("/JetBrainsMono-Thin.ttf") format("truetype");
+      font-weight: 200;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("/JetBrainsMono-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    /* Base */
+    :root {
+      --bg: #0a0a0a;
+      --panel-bg: #141414;
+      --border: #333333;
+      --border-dashed: #2a2a2a;
+      --text: #e0e0e0;
+      --text-muted: #6b6b6b;
+      --accent: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* CHANGED: Set initial "compact" window size and add a transition */
+    html, body {
+      width: 855px;
+      height: 800px;
+      overflow: hidden;
+      transition: width 0.3s ease-in-out;
+    }
+
+    /* NEW: Define the "expanded" window size when console is open */
+    body.console-open {
+      width: 1276px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* Layout */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      height: 38px;
+      width: auto;
+      display: block;
+      filter: brightness(0) saturate(100%) invert(78%) sepia(34%) saturate(624%) hue-rotate(349deg) brightness(93%) contrast(91%);
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text);
+    }
+
+    .header-center {
+      display: none;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: absolute;
+      /* This calculation correctly keeps the buttons from moving when the body resizes */
+      right: calc(100% - 760px);
+    }
+
+    .console-label {
+      display: none;
+    }
+
+    .header-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #1A1A1A;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .header-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .header-btn.icon-only {
+      padding: 6px 10px;
+    }
+
+    .btn-icon {
+      width: 14px;
+      height: 14px;
+      opacity: 0.9;
+    }
+
+    /* Labels Row */
+    .labels-row {
+      display: flex;
+      align-items: center;
+      padding: 22px 20px 8px 20px;
+      position: relative;
+    }
+
+    .labels-container {
+      display: flex;
+      position: relative;
+      width: 100%;
+      align-items: center;
+    }
+
+    .panel-label {
+      font-size: 9pt;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      color: #E7B56F;
+      position: absolute;
+      transition: left 0.1s linear;
+    }
+
+    .panel-label:nth-child(1) {
+      left: 0;
+    }
+
+    .console-label-item {
+      display: none;
+      left: 800px;
+    }
+
+    .console-label-item.visible {
+      display: block;
+    }
+
+    .self-test-btn {
+      display: none;
+      position: absolute;
+      left: 1070px;
+      background: none;
+      border: none;
+      padding: 0;
+      color: #E7B56F;
+      font-family: inherit;
+      font-size: 9pt;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .self-test-btn:hover {
+      opacity: 0.7;
+    }
+
+    .self-test-btn.visible {
+      display: block;
+    }
+
+    /* Main Content */
+    .main-content {
+      display: flex;
+      gap: 20px;
+      padding: 0 20px 20px 20px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panels-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
+      margin-top: 18px;
+    }
+
+    .panels-top {
+      display: flex;
+      gap: 20px;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      flex: 1; 
+    }
+
+    .panel-title {
+      display: none;
+    }
+
+    /* Patch Panel */
+    .patch-panel {
+      display: flex;
+      flex-direction: column;
+      width: 360px;
+    }
+
+    .patch-area {
+      width: 100%; 
+      height: 409px;
+      border: 2px dashed #454545;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      background: #1A1A1A;
+    }
+
+    .patch-area:hover {
+      border-color: #E7B56F;
+    }
+
+    .patch-placeholder {
+      font-family: "JetBrains Mono";
+      font-size: 12pt;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.15);
+    }
+
+    .version-tabs-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .version-tabs {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      flex: 1;
+    }
+
+    .version-tab {
+      padding: 6px 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+    }
+
+    .version-tab:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .version-tab.active {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .version-tab.completed {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-muted);
+      border-color: var(--border);
+      opacity: 0.6;
+    }
+
+    .version-tab.empty-socket {
+      background: transparent;
+      border: 1px dashed var(--border-dashed);
+      color: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    .pagination-btn {
+      padding: 6px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .pagination-info {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 0 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Diff Panel */
+    .diff-panel {
+      display: flex;
+      flex-direction: column;
+      width: 360px;
+    }
+
+    .diff-area {
+      width: 100%;
+      height: 409px;
+      border: 1px solid #2D2D2D;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #1A1A1A;
+      min-height: 0;
+    }
+
+    /* Console Panel */
+    .console-panel {
+      display: none; /* Initially hidden */
+      flex-direction: column;
+      width: 440px; /* Adjusted width for better fit */
+      flex-shrink: 0;
+      margin-top: 18px;
+    }
+
+    .console-panel.visible {
+      display: flex; /* Made visible via JS */
+    }
+
+    .console-area {
+      width: 100%; /* Take full width of its parent */
+      height: 558px;
+      border: 1px solid #2D2D2D;
+      border-radius: 6px;
+      padding: 12px;
+      overflow: auto;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.6;
+      background: #1A1A1A;
+      min-height: 0;
+    }
+
+    /* Scrollbar */
+    .console-area::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .console-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .console-area::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .console-area::-webkit-scrollbar-thumb:hover {
+      background: #444444;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-left">
+        <img src="/applydiff_logo.svg" alt="ApplyDiff" class="logo" />
+      </div>
+      <div class="header-right">
+        <button class="header-btn">
+          <img src="/icon_ai.svg" class="btn-icon" />
+          Copy Prompt
+        </button>
+        <button class="header-btn">
+          <img src="/icon_folder.svg" class="btn-icon" />
+          Select Directory
+        </button>
+        <button class="header-btn icon-only" id="console-toggle">
+          <img src="/icon_console.svg" class="btn-icon" />
+        </button>
+      </div>
+    </header>
+    <div class="labels-row">
+      <div class="labels-container">
+        <span class="panel-label">PATCH</span>
+        <span class="panel-label" id="diff-label">DIFF PREVIEW</span>
+        <span class="panel-label console-label-item" id="console-label">CONSOLE</span>
+        <button class="self-test-btn" id="self-test-btn">Run Self-Test</button>
+      </div>
+    </div>
+    <main class="main-content">
+      <div class="panels-container">
+        <div class="panels-top">
+          <section class="panel patch-panel">
+            <div class="patch-area">
+              <span class="patch-placeholder">Click To Paste</span>
+            </div>
+          </section>
+          <section class="panel diff-panel">
+            <div class="diff-area">
+            </div>
+          </section>
+        </div>
+        <div class="version-tabs-wrapper">
+          <button class="pagination-btn" id="prev-page">←</button>
+          <div class="version-tabs" id="version-tabs">
+            <button class="version-tab">v1</button>
+            <button class="version-tab">v2</button>
+            <button class="version-tab">v3</button>
+            <button class="version-tab">v4</button>
+            <button class="version-tab active">v5</button>
+            <button class="version-tab">v6</button>
+            <button class="version-tab">v7</button>
+            <button class="version-tab">v8</button>
+            <button class="version-tab">v9</button>
+            <button class="version-tab">v10</button>
+            <button class="version-tab">v11</button>
+            <button class="version-tab">v12</button>
+          </div>
+          <span class="pagination-info" id="page-info">1 / 1</span>
+          <button class="pagination-btn" id="next-page">→</button>
+        </div>
+      </div>
+      <section class="panel console-panel" id="console-panel">
+        <div class="console-area"></div>
+      </section>
+    </main>
+  </div>
+<script>
+  const { invoke } = window.__TAURI__.tauri;
+  const consoleToggle = document.getElementById('console-toggle');
+  const consolePanel = document.getElementById('console-panel');
+  const consoleLabel = document.getElementById('console-label');
+  const selfTestBtn = document.getElementById('self-test-btn');
+  
+  let selectedFolder = null;
+
+  // Select folder button
+  document.querySelectorAll('.header-btn')[1]?.addEventListener('click', async () => {
+    try {
+      selectedFolder = await invoke('pick_folder');
+      console.log('Selected folder:', selectedFolder);
+    } catch (e) {
+      console.error('Folder selection failed:', e);
+    }
+  });
+
+  // Copy Prompt button
+  document.querySelectorAll('.header-btn')[0]?.addEventListener('click', () => {
+    const prompt = `You are a code editor. Output ONLY patch blocks in this exact format:
+
+>>> file: RELATIVE/PATH | fuzz=0.85
+--- from
+<exact old text (may be empty to append)>
+--- to
+<new text>
+<
+
+Rules:
+- Paths are relative to the selected folder.
+- One block per file; multiple blocks allowed back-to-back.
+- If appending, leave 'from' empty and put content in 'to'.
+- Keep 'from' minimal & exact where possible; set fuzz 0.0..1.0 as needed.
+- No code fences, no commentary, no leading or trailing text.`;
+    
+    navigator.clipboard.writeText(prompt).then(() => {
+      console.log('Prompt copied!');
+    });
+  });
+
+  // Console toggle
+  consoleToggle?.addEventListener('click', () => {
+    const isVisible = consolePanel.classList.toggle('visible');
+    consoleLabel.classList.toggle('visible', isVisible);
+    selfTestBtn.classList.toggle('visible', isVisible);
+    document.body.classList.toggle('console-open', isVisible);
+  });
+
+  // Pagination setup (from your existing code)
+  const versionTabsContainer = document.getElementById('version-tabs');
+  const prevPageBtn = document.getElementById('prev-page');
+  const nextPageBtn = document.getElementById('next-page');
+  const pageInfo = document.getElementById('page-info');
+  
+  let currentPage = 1;
+  let totalVersions = 12;
+  let tabsPerPage = 12;
+  let allTabs = [];
+  let currentActiveTab = null;
+
+  function initializePagination() {
+    allTabs = Array.from(versionTabsContainer.querySelectorAll('.version-tab'));
+    totalVersions = allTabs.length;
+    currentActiveTab = allTabs.find(tab => tab.classList.contains('active')) || allTabs[4];
+    updateTabStates();
+    updatePaginationDisplay();
+    attachTabClickHandlers();
+  }
+
+  function updateTabStates() {
+    const activeIndex = allTabs.indexOf(currentActiveTab);
+    allTabs.forEach((tab, idx) => {
+      tab.classList.remove('active', 'completed', 'empty-socket');
+      if (idx === activeIndex) {
+        tab.classList.add('active');
+      } else if (idx < activeIndex) {
+        tab.classList.add('completed');
+      } else {
+        tab.classList.add('empty-socket');
+      }
+    });
+  }
+
+  function attachTabClickHandlers() {
+    allTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        currentActiveTab = tab;
+        updateTabStates();
+      });
+    });
+  }
+
+  function updatePaginationDisplay() {
+    const totalPages = Math.ceil(totalVersions / tabsPerPage);
+    pageInfo.textContent = `${currentPage} / ${totalPages}`;
+    prevPageBtn.disabled = currentPage === 1;
+    nextPageBtn.disabled = currentPage === totalPages;
+  }
+
+  function showPage(pageNum) {
+    const startIdx = (pageNum - 1) * tabsPerPage;
+    const endIdx = startIdx + tabsPerPage;
+    allTabs.forEach((tab, idx) => {
+      tab.style.display = (idx >= startIdx && idx < endIdx) ? 'flex' : 'none';
+    });
+  }
+
+  prevPageBtn?.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      showPage(currentPage);
+      updatePaginationDisplay();
+    }
+  });
+
+  nextPageBtn?.addEventListener('click', () => {
+    const totalPages = Math.ceil(totalVersions / tabsPerPage);
+    if (currentPage < totalPages) {
+      currentPage++;
+      showPage(currentPage);
+      updatePaginationDisplay();
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initializePagination();
+  });
+</script>
+</body>
+</html>
