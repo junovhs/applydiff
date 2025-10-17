@@ -144,7 +144,7 @@
     .labels-row {
       display: flex;
       align-items: center;
-      padding: 22px 20px 8px 20px;
+      padding: 22px 20px 0px 20px; /* Remove bottom padding */
       position: relative;
     }
 
@@ -153,6 +153,7 @@
       position: relative;
       width: 100%;
       align-items: center;
+      margin-bottom: 10px; /* 10px gap above windows */
     }
 
     .panel-label {
@@ -169,14 +170,15 @@
     }
 
     .panel-label:nth-child(2) {
-      left: 50%;
-      transform: translateX(-50%);
+      left: calc(50% + 10px);
     }
 
     .console-label-item {
       display: none;
-      right: 440px;
-      left: auto;
+      position: fixed;
+      left: 40px; /* Align with PATCH (20px main padding + 20px labels padding) */
+      bottom: 265px; /* Console (200px) + version tabs (~40px) + margin (10px) + 2px buffer */
+      z-index: 10;
     }
 
     .console-label-item.visible {
@@ -185,20 +187,21 @@
 
     .self-test-btn {
       display: none;
-      position: absolute;
-      right: 120px;
+      position: fixed;
+      right: 40px;
+      bottom: 265px; /* HIGHER! Push them UP above the console */
       background: none;
       border: none;
       padding: 0;
-      color: #E7B56F;
+      color: #ffffff;
       font-family: inherit;
       font-size: 9pt;
       font-weight: 400;
       letter-spacing: 0.5px;
       cursor: pointer;
       transition: opacity 0.2s;
+      z-index: 10;
     }
-
     .self-test-btn:hover {
       opacity: 0.7;
     }
@@ -210,7 +213,8 @@
     /* Main Content */
     .main-content {
       display: flex;
-      gap: 20px;
+      flex-direction: column;
+      gap: 12px;
       padding: 0 20px 20px 20px;
       flex: 1;
       min-height: 0;
@@ -223,7 +227,8 @@
       gap: 12px;
       flex: 1;
       min-width: 0;
-      margin-top: 18px;
+      margin-top: 0px; /* Remove top margin, handled by labels-container */
+      min-height: 0;
     }
 
     .panels-top {
@@ -279,11 +284,102 @@
       color: rgba(255, 255, 255, 0.15);
     }
 
+    /* Diff Panel */
+    .diff-panel {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .diff-area {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      border: 1px solid #2D2D2D;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #1A1A1A;
+      overflow: auto;
+    }
+
+    /* Console Panel - with proper spacing above for labels */
+    .console-panel {
+      display: none;
+      flex-direction: column;
+      height: 200px;
+      flex-shrink: 0;
+      animation: slideUp 0.3s ease-out;
+      margin-top: 40px; /* Space for console label + 10px margin */
+      position: relative;
+    }
+
+    .console-panel.visible {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .console-area {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #2D2D2D;
+      border-radius: 6px;
+      padding: 12px;
+      overflow: auto;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.6;
+      background: #1A1A1A;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Scrollbar */
+    .console-area::-webkit-scrollbar,
+    .patch-area::-webkit-scrollbar,
+    .diff-area::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .console-area::-webkit-scrollbar-track,
+    .patch-area::-webkit-scrollbar-track,
+    .diff-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .console-area::-webkit-scrollbar-thumb,
+    .patch-area::-webkit-scrollbar-thumb,
+    .diff-area::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .console-area::-webkit-scrollbar-thumb:hover,
+    .patch-area::-webkit-scrollbar-thumb:hover,
+    .diff-area::-webkit-scrollbar-thumb:hover {
+      background: #444444;
+    }
+
+    /* Version tabs */
     .version-tabs-wrapper {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-shrink: 0;
+      padding-bottom: 0;
     }
 
     .version-tabs {
@@ -361,86 +457,6 @@
       white-space: nowrap;
       flex-shrink: 0;
     }
-
-    /* Diff Panel */
-    .diff-panel {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .diff-area {
-      width: 100%;
-      flex: 1;
-      min-height: 0;
-      border: 1px solid #2D2D2D;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      background: #1A1A1A;
-      overflow: auto;
-    }
-
-    /* Console Panel */
-    .console-panel {
-      display: none;
-      flex-direction: column;
-      width: 440px;
-      flex-shrink: 0;
-      margin-top: 18px;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    .console-panel.visible {
-      display: flex;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .console-area {
-      width: 100%;
-      height: 100%;
-      border: 1px solid #2D2D2D;
-      border-radius: 6px;
-      padding: 12px;
-      overflow: auto;
-      font-family: inherit;
-      font-size: 12px;
-      line-height: 1.6;
-      background: #1A1A1A;
-      flex: 1;
-      min-height: 0;
-    }
-
-    /* Scrollbar */
-    .console-area::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .console-area::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .console-area::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-
-    .console-area::-webkit-scrollbar-thumb:hover {
-      background: #444444;
-    }
   </style>
 </head>
 <body>
@@ -484,6 +500,9 @@
             </div>
           </section>
         </div>
+        <section class="console-panel" id="console-panel">
+          <div class="console-area"></div>
+        </section>
         <div class="version-tabs-wrapper">
           <button class="pagination-btn" id="prev-page">←</button>
           <div class="version-tabs" id="version-tabs">
@@ -504,17 +523,14 @@
           <button class="pagination-btn" id="next-page">→</button>
         </div>
       </div>
-      <section class="panel console-panel" id="console-panel">
-        <div class="console-area"></div>
-      </section>
     </main>
   </div>
 <script>
-  // Wait for Tauri API to be ready
-  window.addEventListener('DOMContentLoaded', async () => {
-    // Get Tauri APIs - with fallbacks
-    const invoke = window.__TAURI__?.tauri?.invoke;
-    const clipboardWrite = window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__?.writeText;
+  console.log('Script starting...');
+  
+  // Simple vanilla JS - no modules, no Tauri API needed for toggle
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded');
     
     const consoleToggle = document.getElementById('console-toggle');
     const consolePanel = document.getElementById('console-panel');
@@ -527,7 +543,6 @@
     let selectedFolder = null;
     let currentPatch = '';
     
-    // Helper: Append to console
     function appendConsole(text) {
       if (consoleArea) {
         consoleArea.textContent += text + '\n';
@@ -535,274 +550,170 @@
       }
     }
     
-    // Helper: Clear console
     function clearConsole() {
       if (consoleArea) {
         consoleArea.textContent = '';
       }
     }
     
-    // Console toggle with window resize
+    // CONSOLE TOGGLE - PURE CSS, NO TAURI!
     if (consoleToggle) {
-      consoleToggle.addEventListener('click', async () => {
-        console.log('Console toggle clicked!');
+      consoleToggle.addEventListener('click', () => {
+        console.log('Console button clicked!');
         const isVisible = consolePanel.classList.contains('visible');
         
         if (!isVisible) {
-          console.log('Showing console');
           consolePanel.classList.add('visible');
           consoleLabel.classList.add('visible');
           selfTestBtn.classList.add('visible');
-          
-          // Resize window to fit console
-          if (invoke) {
-            try {
-              const currentWidth = window.innerWidth;
-              const currentHeight = window.innerHeight;
-              const newWidth = currentWidth + 460;
-              console.log(`Resizing from ${currentWidth}x${currentHeight} to ${newWidth}x${currentHeight}`);
-              
-              await invoke('resize_window', { 
-                width: newWidth,
-                height: currentHeight 
-              });
-              
-              console.log('Resize successful!');
-            } catch (e) {
-              console.error('Failed to resize window:', e);
-              appendConsole(`❌ Resize failed: ${e}`);
-            }
-          } else {
-            console.error('invoke not available');
-          }
-          
           appendConsole('✓ Console opened');
         } else {
-          console.log('Hiding console');
-          
-          // Resize window back
-          if (invoke) {
-            try {
-              const currentWidth = window.innerWidth;
-              const currentHeight = window.innerHeight;
-              const newWidth = currentWidth - 460;
-              console.log(`Resizing from ${currentWidth}x${currentHeight} to ${newWidth}x${currentHeight}`);
-              
-              await invoke('resize_window', { 
-                width: newWidth,
-                height: currentHeight 
-              });
-              
-              console.log('Resize successful!');
-            } catch (e) {
-              console.error('Failed to resize window:', e);
-            }
-          }
-          
           consolePanel.classList.remove('visible');
           consoleLabel.classList.remove('visible');
           selfTestBtn.classList.remove('visible');
         }
       });
-      console.log('Console toggle listener attached');
+      console.log('Console toggle attached!');
     }
     
-    // Copy Prompt button
-    const copyPromptBtn = document.querySelectorAll('.header-btn')[0];
-    if (copyPromptBtn) {
-      copyPromptBtn.addEventListener('click', async () => {
+    // Wait for Tauri for other features
+    const waitForTauri = setInterval(() => {
+      if (window.__TAURI__) {
+        clearInterval(waitForTauri);
+        console.log('Tauri loaded!');
+        initTauriFeatures();
+      }
+    }, 100);
+    
+    function initTauriFeatures() {
+      const invoke = window.__TAURI__.tauri.invoke;
+      
+      // Select folder
+      document.querySelectorAll('.header-btn')[1].addEventListener('click', async () => {
         try {
-          if (!invoke) {
-            appendConsole('❌ Tauri API not available');
-            return;
-          }
-          const prompt = await invoke('get_ai_prompt');
-          
-          // Try clipboard plugin first, fallback to navigator
-          if (clipboardWrite) {
-            await clipboardWrite(prompt);
-          } else if (navigator.clipboard) {
-            await navigator.clipboard.writeText(prompt);
-          } else {
-            appendConsole('❌ Clipboard not available');
-            return;
-          }
-          
-          appendConsole('📋 AI prompt copied to clipboard');
+          selectedFolder = await invoke('pick_folder');
+          appendConsole(`📁 Selected: ${selectedFolder}`);
         } catch (e) {
-          appendConsole(`❌ Clipboard error: ${e}`);
+          appendConsole(`❌ ${e}`);
         }
       });
-    }
-    
-    // Patch area - click to paste
-    if (patchArea) {
+      
+      // Copy prompt
+      document.querySelectorAll('.header-btn')[0].addEventListener('click', async () => {
+        try {
+          const prompt = await invoke('get_ai_prompt');
+          await navigator.clipboard.writeText(prompt);
+          appendConsole('📋 AI prompt copied');
+        } catch (e) {
+          appendConsole(`❌ ${e}`);
+        }
+      });
+      
+      // Paste patch
       patchArea.addEventListener('click', async () => {
         try {
           const text = await navigator.clipboard.readText();
           currentPatch = text;
           patchArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;white-space:pre-wrap;word-wrap:break-word;">${text}</pre>`;
-          appendConsole('✓ Patch loaded from clipboard');
+          appendConsole('✓ Patch loaded');
         } catch (e) {
-          appendConsole('❌ Failed to read clipboard. Try pasting manually.');
-          console.error('Clipboard read error:', e);
+          appendConsole('❌ Failed to read clipboard');
         }
       });
-    }
-    
-    // Preview
-    async function previewPatch() {
-      if (!selectedFolder || !currentPatch) {
-        appendConsole('❌ Please select folder and paste patch first');
-        return;
-      }
       
-      clearConsole();
-      appendConsole('👁 Previewing patch...\n');
-      
-      try {
-        if (!invoke) {
-          appendConsole('❌ Tauri API not available');
+      // Preview
+      async function previewPatch() {
+        if (!selectedFolder || !currentPatch) {
+          appendConsole('❌ Select folder and paste patch first');
           return;
         }
-        
-        const result = await invoke('preview_patch', {
-          target: selectedFolder,
-          patch: currentPatch
-        });
-        
-        appendConsole(result.log);
-        diffArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;white-space:pre-wrap;word-wrap:break-word;">${result.diff || '(no changes)'}</pre>`;
-      } catch (e) {
-        appendConsole(`❌ Error: ${e}`);
-      }
-    }
-    
-    // Apply patch
-    async function applyPatch() {
-      if (!selectedFolder || !currentPatch) {
-        appendConsole('❌ Please select folder and paste patch first');
-        return;
+        clearConsole();
+        appendConsole('👁 Previewing...\n');
+        try {
+          const result = await invoke('preview_patch', { target: selectedFolder, patch: currentPatch });
+          appendConsole(result.log);
+          diffArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;white-space:pre-wrap;word-wrap:break-word;">${result.diff || '(no changes)'}</pre>`;
+        } catch (e) {
+          appendConsole(`❌ ${e}`);
+        }
       }
       
-      clearConsole();
-      appendConsole('⚙️ Applying patch...\n');
-      
-      try {
-        if (!invoke) {
-          appendConsole('❌ Tauri API not available');
+      // Apply
+      async function applyPatch() {
+        if (!selectedFolder || !currentPatch) {
+          appendConsole('❌ Select folder and paste patch first');
           return;
         }
-        
-        const result = await invoke('apply_patch', {
-          target: selectedFolder,
-          patch: currentPatch
-        });
-        
-        appendConsole(result);
-      } catch (e) {
-        appendConsole(`❌ Error: ${e}`);
+        clearConsole();
+        appendConsole('⚙️ Applying...\n');
+        try {
+          const result = await invoke('apply_patch', { target: selectedFolder, patch: currentPatch });
+          appendConsole(result);
+        } catch (e) {
+          appendConsole(`❌ ${e}`);
+        }
       }
-    }
-    
-    // Self-test
-    if (selfTestBtn) {
+      
+      // Self-test
       selfTestBtn.addEventListener('click', async () => {
         clearConsole();
-        appendConsole('🧪 Running self-test gauntlet...\n');
-        
+        appendConsole('🧪 Running tests...\n');
         try {
-          if (!invoke) {
-            appendConsole('❌ Tauri API not available');
-            return;
-          }
-          
           const result = await invoke('run_self_test');
           appendConsole(result);
         } catch (e) {
-          appendConsole(`❌ Error: ${e}`);
+          appendConsole(`❌ ${e}`);
         }
       });
+      
+      // Version tabs
+      document.querySelectorAll('.version-tab').forEach((tab, idx) => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.version-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          if (idx === 0) previewPatch();
+          else if (idx === 1) applyPatch();
+        });
+      });
+      
+      appendConsole('✓ ApplyDiff ready\n');
+      appendConsole('1. Click "Select Directory"\n');
+      appendConsole('2. Click "Click To Paste"\n');
+      appendConsole('3. Click v1 to preview, v2 to apply\n');
     }
     
-    // Wire up version tabs
-    document.querySelectorAll('.version-tab').forEach((tab, idx) => {
-      tab.addEventListener('click', () => {
-        // Remove active from all
-        document.querySelectorAll('.version-tab').forEach(t => t.classList.remove('active'));
-        // Add to clicked
-        tab.classList.add('active');
-        
-        // v1 = Preview, v2 = Apply
-        if (idx === 0) {
-          previewPatch();
-        } else if (idx === 1) {
-          applyPatch();
-        }
-      });
-    });
-    
-    // Pagination setup
-    const versionTabsContainer = document.getElementById('version-tabs');
+    // Pagination
     const prevPageBtn = document.getElementById('prev-page');
     const nextPageBtn = document.getElementById('next-page');
     const pageInfo = document.getElementById('page-info');
-    
+    const allTabs = Array.from(document.querySelectorAll('.version-tab'));
     let currentPage = 1;
-    let totalVersions = 12;
-    let tabsPerPage = 12;
-    let allTabs = [];
+    const tabsPerPage = 12;
     
-    function initializePagination() {
-      allTabs = Array.from(versionTabsContainer.querySelectorAll('.version-tab'));
-      totalVersions = allTabs.length;
-      updatePaginationDisplay();
-    }
-    
-    function updatePaginationDisplay() {
-      const totalPages = Math.ceil(totalVersions / tabsPerPage);
+    function updatePagination() {
+      const totalPages = Math.ceil(allTabs.length / tabsPerPage);
       pageInfo.textContent = `${currentPage} / ${totalPages}`;
       prevPageBtn.disabled = currentPage === 1;
       nextPageBtn.disabled = currentPage === totalPages;
     }
     
-    function showPage(pageNum) {
-      const startIdx = (pageNum - 1) * tabsPerPage;
-      const endIdx = startIdx + tabsPerPage;
-      allTabs.forEach((tab, idx) => {
-        tab.style.display = (idx >= startIdx && idx < endIdx) ? 'flex' : 'none';
-      });
-    }
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        updatePagination();
+      }
+    });
     
-    if (prevPageBtn) {
-      prevPageBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-          currentPage--;
-          showPage(currentPage);
-          updatePaginationDisplay();
-        }
-      });
-    }
+    nextPageBtn.addEventListener('click', () => {
+      const totalPages = Math.ceil(allTabs.length / tabsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        updatePagination();
+      }
+    });
     
-    if (nextPageBtn) {
-      nextPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(totalVersions / tabsPerPage);
-        if (currentPage < totalPages) {
-          currentPage++;
-          showPage(currentPage);
-          updatePaginationDisplay();
-        }
-      });
-    }
-    
-    initializePagination();
-    
-    appendConsole('✓ ApplyDiff ready\n');
-    appendConsole('1. Click "Select Directory" to choose your project\n');
-    appendConsole('2. Click "Click To Paste" to paste your patch\n');
-    appendConsole('3. Click v1 to preview, v2 to apply\n');
-    
-    console.log('All event listeners attached!');
+    updatePagination();
+    console.log('Init complete!');
   });
 </script>
 </body>
