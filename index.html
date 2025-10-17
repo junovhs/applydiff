@@ -488,133 +488,140 @@
   </div>
 <script>
   const { invoke } = window.__TAURI__.tauri;
-  const consoleToggle = document.getElementById('console-toggle');
-  const consolePanel = document.getElementById('console-panel');
-  const consoleLabel = document.getElementById('console-label');
-  const selfTestBtn = document.getElementById('self-test-btn');
+const { writeText } = window.__TAURI__.clipboard;
+
+const consoleToggle = document.getElementById('console-toggle');
+const consolePanel = document.getElementById('console-panel');
+const consoleLabel = document.getElementById('console-label');
+const selfTestBtn = document.getElementById('self-test-btn');
+const consoleArea = document.querySelector('.console-area');
+const patchArea = document.querySelector('.patch-area');
+const diffArea = document.querySelector('.diff-area');
+
+let selectedFolder = null;
+let currentPatch = '';
+
+// Helper: Append to console
+function appendConsole(text) {
+  consoleArea.textContent += text + '\n';
+  consoleArea.scrollTop = consoleArea.scrollHeight;
+}
+
+// Helper: Clear console
+function clearConsole() {
+  consoleArea.textContent = '';
+}
+
+// Select folder button
+document.querySelectorAll('.header-btn')[1]?.addEventListener('click', async () => {
+  try {
+    selectedFolder = await invoke('pick_folder');
+    appendConsole(`📁 Selected: ${selectedFolder}`);
+  } catch (e) {
+    appendConsole(`❌ Error: ${e}`);
+  }
+});
+
+// Copy Prompt button
+document.querySelectorAll('.header-btn')[0]?.addEventListener('click', async () => {
+  try {
+    const prompt = await invoke('get_ai_prompt');
+    await writeText(prompt);
+    appendConsole('📋 AI prompt copied to clipboard');
+  } catch (e) {
+    appendConsole(`❌ Error: ${e}`);
+  }
+});
+
+// Patch area - click to paste
+patchArea.addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    currentPatch = text;
+    patchArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;">${text}</pre>`;
+    appendConsole('✓ Patch loaded from clipboard');
+  } catch (e) {
+    appendConsole('❌ Failed to read clipboard');
+  }
+});
+
+// Preview (triggered by version tab clicks for now)
+async function previewPatch() {
+  if (!selectedFolder || !currentPatch) {
+    appendConsole('❌ Please select folder and paste patch first');
+    return;
+  }
   
-  let selectedFolder = null;
-
-  // Select folder button
-  document.querySelectorAll('.header-btn')[1]?.addEventListener('click', async () => {
-    try {
-      selectedFolder = await invoke('pick_folder');
-      console.log('Selected folder:', selectedFolder);
-    } catch (e) {
-      console.error('Folder selection failed:', e);
-    }
-  });
-
-  // Copy Prompt button
-  document.querySelectorAll('.header-btn')[0]?.addEventListener('click', () => {
-    const prompt = `You are a code editor. Output ONLY patch blocks in this exact format:
-
->>> file: RELATIVE/PATH | fuzz=0.85
---- from
-<exact old text (may be empty to append)>
---- to
-<new text>
-<
-
-Rules:
-- Paths are relative to the selected folder.
-- One block per file; multiple blocks allowed back-to-back.
-- If appending, leave 'from' empty and put content in 'to'.
-- Keep 'from' minimal & exact where possible; set fuzz 0.0..1.0 as needed.
-- No code fences, no commentary, no leading or trailing text.`;
+  clearConsole();
+  appendConsole('👁 Previewing patch...\n');
+  
+  try {
+    const result = await invoke('preview_patch', {
+      target: selectedFolder,
+      patch: currentPatch
+    });
     
-    navigator.clipboard.writeText(prompt).then(() => {
-      console.log('Prompt copied!');
-    });
-  });
+    appendConsole(result.log);
+    diffArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;">${result.diff || '(no changes)'}</pre>`;
+  } catch (e) {
+    appendConsole(`❌ Error: ${e}`);
+  }
+}
 
-  // Console toggle
-  consoleToggle?.addEventListener('click', () => {
-    const isVisible = consolePanel.classList.toggle('visible');
-    consoleLabel.classList.toggle('visible', isVisible);
-    selfTestBtn.classList.toggle('visible', isVisible);
-    document.body.classList.toggle('console-open', isVisible);
-  });
-
-  // Pagination setup (from your existing code)
-  const versionTabsContainer = document.getElementById('version-tabs');
-  const prevPageBtn = document.getElementById('prev-page');
-  const nextPageBtn = document.getElementById('next-page');
-  const pageInfo = document.getElementById('page-info');
+// Apply patch
+async function applyPatch() {
+  if (!selectedFolder || !currentPatch) {
+    appendConsole('❌ Please select folder and paste patch first');
+    return;
+  }
   
-  let currentPage = 1;
-  let totalVersions = 12;
-  let tabsPerPage = 12;
-  let allTabs = [];
-  let currentActiveTab = null;
-
-  function initializePagination() {
-    allTabs = Array.from(versionTabsContainer.querySelectorAll('.version-tab'));
-    totalVersions = allTabs.length;
-    currentActiveTab = allTabs.find(tab => tab.classList.contains('active')) || allTabs[4];
-    updateTabStates();
-    updatePaginationDisplay();
-    attachTabClickHandlers();
-  }
-
-  function updateTabStates() {
-    const activeIndex = allTabs.indexOf(currentActiveTab);
-    allTabs.forEach((tab, idx) => {
-      tab.classList.remove('active', 'completed', 'empty-socket');
-      if (idx === activeIndex) {
-        tab.classList.add('active');
-      } else if (idx < activeIndex) {
-        tab.classList.add('completed');
-      } else {
-        tab.classList.add('empty-socket');
-      }
+  clearConsole();
+  appendConsole('⚙️ Applying patch...\n');
+  
+  try {
+    const result = await invoke('apply_patch', {
+      target: selectedFolder,
+      patch: currentPatch
     });
+    
+    appendConsole(result);
+  } catch (e) {
+    appendConsole(`❌ Error: ${e}`);
   }
+}
 
-  function attachTabClickHandlers() {
-    allTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        currentActiveTab = tab;
-        updateTabStates();
-      });
-    });
+// Console toggle
+consoleToggle?.addEventListener('click', () => {
+  const isVisible = consolePanel.classList.toggle('visible');
+  consoleLabel.classList.toggle('visible', isVisible);
+  selfTestBtn.classList.toggle('visible', isVisible);
+  document.body.classList.toggle('console-open', isVisible);
+});
+
+// Self-test
+selfTestBtn?.addEventListener('click', async () => {
+  clearConsole();
+  appendConsole('🧪 Running self-test gauntlet...\n');
+  
+  try {
+    const result = await invoke('run_self_test');
+    appendConsole(result);
+  } catch (e) {
+    appendConsole(`❌ Error: ${e}`);
   }
+});
 
-  function updatePaginationDisplay() {
-    const totalPages = Math.ceil(totalVersions / tabsPerPage);
-    pageInfo.textContent = `${currentPage} / ${totalPages}`;
-    prevPageBtn.disabled = currentPage === 1;
-    nextPageBtn.disabled = currentPage === totalPages;
-  }
-
-  function showPage(pageNum) {
-    const startIdx = (pageNum - 1) * tabsPerPage;
-    const endIdx = startIdx + tabsPerPage;
-    allTabs.forEach((tab, idx) => {
-      tab.style.display = (idx >= startIdx && idx < endIdx) ? 'flex' : 'none';
-    });
-  }
-
-  prevPageBtn?.addEventListener('click', () => {
-    if (currentPage > 1) {
-      currentPage--;
-      showPage(currentPage);
-      updatePaginationDisplay();
+// Wire up version tabs to trigger preview
+document.querySelectorAll('.version-tab').forEach((tab, idx) => {
+  tab.addEventListener('click', () => {
+    if (idx === 0) {
+      previewPatch();
+    } else if (idx === 1) {
+      applyPatch();
     }
+    // You can assign other tabs to different functions
   });
-
-  nextPageBtn?.addEventListener('click', () => {
-    const totalPages = Math.ceil(totalVersions / tabsPerPage);
-    if (currentPage < totalPages) {
-      currentPage++;
-      showPage(currentPage);
-      updatePaginationDisplay();
-    }
-  });
-
-  document.addEventListener('DOMContentLoaded', () => {
-    initializePagination();
-  });
+});
 </script>
 </body>
 </html>
