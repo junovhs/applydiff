@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+applydiff-core = { path = "../crates/applydiff-core" }
 # Tauri v2 with dialog plugin
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"

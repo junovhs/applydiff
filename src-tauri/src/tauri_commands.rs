@@ -1,4 +1,4 @@
-use crate::{apply::Applier, backup, error::Result as PatchResult, logger::Logger, parser::Parser};
+use applydiff_core::{apply::Applier, backup, error::Result as PatchResult, logger::Logger, parser::Parser};
 use chrono::Local;
 use serde::Serialize;
 use similar::TextDiff;
@@ -37,12 +37,12 @@ pub async fn pick_folder(app: tauri::AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 pub fn get_ai_prompt() -> String {
-    crate::prompts::build_ai_prompt()
+    applydiff_core::prompts::build_ai_prompt()
 }
 
 #[tauri::command]
 pub fn run_self_test() -> String {
-    crate::gauntlet::run()
+    applydiff_core::gauntlet::run()
 }
 
 #[tauri::command]
@@ -63,7 +63,7 @@ pub fn apply_patch(target: String, patch: String) -> Result<String, String> {
 /* ========================== Impl ========================== */
 
 fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
-    use crate::error::{ErrorCode, PatchError};
+    use applydiff_core::error::{ErrorCode, PatchError};
 
     let rid = generate_rid();
     let logger = Logger::new(rid);
@@ -161,7 +161,7 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
 }
 
 fn apply_patch_impl(target: &str, patch: &str) -> PatchResult<String> {
-    use crate::error::{ErrorCode, PatchError};
+    use applydiff_core::error::{ErrorCode, PatchError};
 
     let rid = generate_rid();
     let logger = Logger::new(rid);

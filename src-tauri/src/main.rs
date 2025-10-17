@@ -1,21 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![deny(warnings)]
 
-mod apply;
-mod backup;
-mod error;
-mod logger;
-mod matcher;
-mod parser;
-mod prompts;
-mod gauntlet;
 mod tauri_commands;
 
 fn main() {
     tauri::Builder::default()
-        // plugins
         .plugin(tauri_plugin_dialog::init())
-        // commands your UI can invoke
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             tauri_commands::pick_folder,
             tauri_commands::preview_patch,
