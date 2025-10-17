@@ -6,457 +6,79 @@
   <title>ApplyDiff</title>
   <style>
     /* Fonts */
-    @font-face {
-      font-family: "JetBrains Mono";
-      src: url("/JetBrainsMono-Regular.ttf") format("truetype");
-      font-weight: 400;
-      font-style: normal;
-    }
-    @font-face {
-      font-family: "JetBrains Mono";
-      src: url("/JetBrainsMono-Thin.ttf") format("truetype");
-      font-weight: 200;
-      font-style: normal;
-    }
-    @font-face {
-      font-family: "JetBrains Mono";
-      src: url("/JetBrainsMono-Bold.ttf") format("truetype");
-      font-weight: 700;
-      font-style: normal;
-    }
+    @font-face { font-family: "JetBrains Mono"; src: url("/JetBrainsMono-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+    @font-face { font-family: "JetBrains Mono"; src: url("/JetBrainsMono-Thin.ttf") format("truetype"); font-weight: 200; font-style: normal; }
+    @font-face { font-family: "JetBrains Mono"; src: url("/JetBrainsMono-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; }
 
     /* Base */
     :root {
-      --bg: #0a0a0a;
-      --panel-bg: #141414;
-      --border: #333333;
-      --border-dashed: #2a2a2a;
-      --text: #e0e0e0;
-      --text-muted: #6b6b6b;
-      --accent: #f59e0b;
+      --bg:#0a0a0a; --panel-bg:#141414; --border:#333; --border-dashed:#2a2a2a;
+      --text:#e0e0e0; --text-muted:#6b6b6b; --accent:#f59e0b;
+      --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 13px;
-      line-height: 1.6;
-    }
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    html,body{ width:100%; height:100%; overflow:hidden; }
+    body{ background:var(--bg); color:var(--text); font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:13px; line-height:1.6; }
 
     /* Layout */
-    .app {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      width: 100vw;
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-      flex-shrink: 0;
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo {
-      height: 38px;
-      width: auto;
-      display: block;
-      filter: brightness(0) saturate(100%) invert(78%) sepia(34%) saturate(624%) hue-rotate(349deg) brightness(93%) contrast(91%);
-    }
-
-    .brand-name {
-      font-size: 15px;
-      font-weight: 400;
-      color: var(--text);
-    }
-
-    .header-center {
-      display: none;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      position: relative;
-    }
-
-    .console-label {
-      display: none;
-    }
-
-    .header-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      background: #1A1A1A;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .header-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .header-btn.icon-only {
-      padding: 6px 10px;
-    }
-
-    .btn-icon {
-      width: 14px;
-      height: 14px;
-      opacity: 0.9;
-    }
+    .app{ display:flex; flex-direction:column; height:100vh; width:100vw; }
+    .header{ display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg); flex-shrink:0; }
+    .header-left{ display:flex; align-items:center; gap:10px; }
+    .logo{ height:38px; width:auto; display:block; filter: brightness(0) saturate(100%) invert(78%) sepia(34%) saturate(624%) hue-rotate(349deg) brightness(93%) contrast(91%); }
+    .header-right{ display:flex; align-items:center; gap:10px; position:relative; }
+    .header-btn{ display:flex; align-items:center; gap:8px; padding:6px 12px; background:#1A1A1A; border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:12px; cursor:pointer; transition:.2s; white-space:nowrap; }
+    .header-btn:hover{ background:rgba(255,255,255,.05); }
+    .header-btn.icon-only{ padding:6px 10px; }
+    .btn-icon{ width:14px; height:14px; opacity:.9; }
 
     /* Labels Row */
-    .labels-row {
-      display: flex;
-      align-items: center;
-      padding: 22px 20px 0px 20px; /* Remove bottom padding */
-      position: relative;
-    }
-
-    .labels-container {
-      display: flex;
-      position: relative;
-      width: 100%;
-      align-items: center;
-      margin-bottom: 10px; /* 10px gap above windows */
-    }
-
-    .panel-label {
-      font-size: 9pt;
-      font-weight: 400;
-      letter-spacing: 0.5px;
-      color: #E7B56F;
-      position: absolute;
-      transition: left 0.1s linear;
-    }
-
-    .panel-label:nth-child(1) {
-      left: 0;
-    }
-
-    .panel-label:nth-child(2) {
-      left: calc(50% + 10px);
-    }
-
-    .console-label-item {
-      display: none;
-      position: fixed;
-      left: 40px; /* Align with PATCH (20px main padding + 20px labels padding) */
-      bottom: 265px; /* Console (200px) + version tabs (~40px) + margin (10px) + 2px buffer */
-      z-index: 10;
-    }
-
-    .console-label-item.visible {
-      display: block;
-    }
-
-    .self-test-btn {
-      display: none;
-      position: fixed;
-      right: 40px;
-      bottom: 265px; /* HIGHER! Push them UP above the console */
-      background: none;
-      border: none;
-      padding: 0;
-      color: #ffffff;
-      font-family: inherit;
-      font-size: 9pt;
-      font-weight: 400;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      z-index: 10;
-    }
-    .self-test-btn:hover {
-      opacity: 0.7;
-    }
-
-    .self-test-btn.visible {
-      display: block;
-    }
+    .labels-row{ display:flex; align-items:center; padding:22px 20px 0 20px; }
+    .labels-container{ display:flex; position:relative; width:100%; align-items:center; margin-bottom:10px; }
+    .panel-label{ font-size:9pt; letter-spacing:.5px; color:#E7B56F; position:absolute; }
+    .panel-label:nth-child(1){ left:0; }
+    .panel-label:nth-child(2){ left:calc(50% + 10px); }
+    .console-label-item{ display:none; position:fixed; left:40px; bottom:265px; z-index:10; }
+    .console-label-item.visible{ display:block; }
+    .self-test-btn{ display:none; position:fixed; right:40px; bottom:265px; background:none; border:none; padding:0; color:#fff; font-size:9pt; letter-spacing:.5px; cursor:pointer; z-index:10; }
+    .self-test-btn.visible{ display:block; }
 
     /* Main Content */
-    .main-content {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 0 20px 20px 20px;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .panels-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      flex: 1;
-      min-width: 0;
-      margin-top: 0px; /* Remove top margin, handled by labels-container */
-      min-height: 0;
-    }
-
-    .panels-top {
-      display: flex;
-      gap: 20px;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .panel {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-height: 0;
-      flex: 1;
-    }
-
-    .panel-title {
-      display: none;
-    }
+    .main-content{ display:flex; flex-direction:column; gap:12px; padding:0 20px 20px; flex:1; min-height:0; overflow:hidden; }
+    .panels-container{ display:flex; flex-direction:column; gap:12px; flex:1; min-width:0; min-height:0; }
+    .panels-top{ display:flex; gap:20px; flex:1; min-height:0; }
+    .panel{ display:flex; flex-direction:column; gap:12px; min-height:0; flex:1; }
 
     /* Patch Panel */
-    .patch-panel {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .patch-area {
-      width: 100%;
-      flex: 1;
-      min-height: 0;
-      border: 2px dashed #454545;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: border-color 0.2s;
-      background: #1A1A1A;
-      overflow: auto;
-    }
-
-    .patch-area:hover {
-      border-color: #E7B56F;
-    }
-
-    .patch-placeholder {
-      font-family: "JetBrains Mono";
-      font-size: 12pt;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.15);
-    }
+    .patch-panel{ display:flex; flex-direction:column; flex:1; min-width:0; position:relative; }
+    .patch-area{ width:100%; flex:1; min-height:0; border:2px dashed #454545; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .2s; background:#1A1A1A; overflow:auto; position:relative; }
+    .patch-area:hover{ border-color:#E7B56F; }
+    .patch-area.disabled{ opacity:.5; cursor:not-allowed; }
+    .patch-placeholder{ font-size:12pt; font-weight:700; color:rgba(255,255,255,.15); user-select:none; }
+    .patch-editor{ position:absolute; inset:0; width:100%; height:100%; padding:12px; border:0; outline:0; background:transparent; color:var(--text); font:13px/1.5 "JetBrains Mono", ui-monospace, monospace; resize:none; }
+    .status-chip{ position:absolute; top:8px; left:8px; background:#0f0f0f; border:1px solid var(--border); border-radius:9999px; padding:2px 8px; font-size:11px; color:var(--text-muted); }
 
     /* Diff Panel */
-    .diff-panel {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-width: 0;
-    }
+    .diff-panel{ display:flex; flex-direction:column; flex:1; min-width:0; position:relative; }
+    .diff-area{ width:100%; flex:1; min-height:0; border:1px solid #2D2D2D; border-radius:6px; background:#1A1A1A; overflow:auto; position:relative; }
+    .diff-pre{ margin:0; padding:12px; font:12px/1.5 "JetBrains Mono", ui-monospace, monospace; white-space:pre; }
+    .d-hdr{ color:#9aa4b2; } .d-add{ color:#22c55e; } .d-del{ color:#ef4444; } .d-ctx{ color:#8892a0; }
 
-    .diff-area {
-      width: 100%;
-      flex: 1;
-      min-height: 0;
-      border: 1px solid #2D2D2D;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      background: #1A1A1A;
-      overflow: auto;
-    }
+    .apply-btn{ position:absolute; right:12px; bottom:12px; background:var(--ok); color:#111; font-weight:700; border:0; border-radius:6px; padding:8px 12px; cursor:pointer; display:none; }
+    .apply-btn[disabled]{ opacity:.5; cursor:not-allowed; }
 
-    /* Console Panel - with proper spacing above for labels */
-    .console-panel {
-      display: none;
-      flex-direction: column;
-      height: 200px;
-      flex-shrink: 0;
-      animation: slideUp 0.3s ease-out;
-      margin-top: 40px; /* Space for console label + 10px margin */
-      position: relative;
-    }
+    /* Console Panel */
+    .console-panel{ display:none; flex-direction:column; height:200px; flex-shrink:0; margin-top:40px; }
+    .console-panel.visible{ display:flex; }
+    .console-area{ width:100%; height:100%; border:1px solid #2D2D2D; border-radius:6px; padding:12px; overflow:auto; font:12px/1.6 "JetBrains Mono", ui-monospace, monospace; background:#1A1A1A; }
 
-    .console-panel.visible {
-      display: flex;
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .console-area {
-      width: 100%;
-      height: 100%;
-      border: 1px solid #2D2D2D;
-      border-radius: 6px;
-      padding: 12px;
-      overflow: auto;
-      font-family: inherit;
-      font-size: 12px;
-      line-height: 1.6;
-      background: #1A1A1A;
-      flex: 1;
-      min-height: 0;
-    }
-
-    /* Scrollbar */
-    .console-area::-webkit-scrollbar,
-    .patch-area::-webkit-scrollbar,
-    .diff-area::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .console-area::-webkit-scrollbar-track,
-    .patch-area::-webkit-scrollbar-track,
-    .diff-area::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .console-area::-webkit-scrollbar-thumb,
-    .patch-area::-webkit-scrollbar-thumb,
-    .diff-area::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-
-    .console-area::-webkit-scrollbar-thumb:hover,
-    .patch-area::-webkit-scrollbar-thumb:hover,
-    .diff-area::-webkit-scrollbar-thumb:hover {
-      background: #444444;
-    }
-
-    /* Version tabs */
-    .version-tabs-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-      padding-bottom: 0;
-    }
-
-    .version-tabs {
-      display: flex;
-      gap: 8px;
-      flex-shrink: 0;
-      flex: 1;
-      overflow-x: auto;
-      scrollbar-width: thin;
-    }
-
-    .version-tab {
-      padding: 6px 14px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex: 1;
-    }
-
-    .version-tab:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .version-tab.active {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-
-    .version-tab.completed {
-      background: rgba(255, 255, 255, 0.02);
-      color: var(--text-muted);
-      border-color: var(--border);
-      opacity: 0.6;
-    }
-
-    .version-tab.empty-socket {
-      background: transparent;
-      border: 1px dashed var(--border-dashed);
-      color: var(--text-muted);
-      opacity: 0.4;
-    }
-
-    .pagination-btn {
-      padding: 6px 10px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-
-    .pagination-btn:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .pagination-btn:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    .pagination-info {
-      font-size: 12px;
-      color: var(--text-muted);
-      padding: 0 8px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
+    /* Version tabs (kept for now) */
+    .version-tabs-wrapper{ display:flex; align-items:center; gap:8px; }
+    .version-tabs{ display:flex; gap:8px; flex:1; overflow-x:auto; scrollbar-width:thin; }
+    .version-tab{ padding:6px 14px; background:transparent; border:1px solid var(--border); border-radius:4px; color:#aaa; font-size:12px; cursor:pointer; transition:.2s; }
+    .version-tab.active{ background:rgba(245,158,11,.15); color:var(--accent); border-color:var(--accent); }
+    .version-tab:hover{ background:rgba(255,255,255,.05); }
+    .pagination-btn{ padding:6px 10px; background:transparent; border:1px solid var(--border); border-radius:4px; color:#aaa; font-size:12px; cursor:pointer; }
+    .pagination-info{ font-size:12px; color:#777; padding:0 8px; white-space:nowrap; }
   </style>
 </head>
 <body>
@@ -466,11 +88,11 @@
         <img src="/applydiff_logo.svg" alt="ApplyDiff" class="logo" />
       </div>
       <div class="header-right">
-        <button class="header-btn">
+        <button class="header-btn" id="btn-copy-prompt">
           <img src="/icon_ai.svg" class="btn-icon" />
           Copy Prompt
         </button>
-        <button class="header-btn">
+        <button class="header-btn" id="btn-select-dir">
           <img src="/icon_folder.svg" class="btn-icon" />
           Select Directory
         </button>
@@ -479,6 +101,7 @@
         </button>
       </div>
     </header>
+
     <div class="labels-row">
       <div class="labels-container">
         <span class="panel-label">PATCH</span>
@@ -487,37 +110,40 @@
         <button class="self-test-btn" id="self-test-btn">Run Self-Test</button>
       </div>
     </div>
+
     <main class="main-content">
       <div class="panels-container">
         <div class="panels-top">
+          <!-- PATCH -->
           <section class="panel patch-panel">
-            <div class="patch-area">
-              <span class="patch-placeholder">Click To Paste</span>
+            <div class="patch-area disabled" id="patch-area">
+              <span class="status-chip" id="status">idle</span>
+              <span class="patch-placeholder" id="patch-placeholder">Click To Paste</span>
+              <!-- <textarea id="patch-editor" class="patch-editor" style="display:none;"></textarea> -->
             </div>
           </section>
+
+          <!-- DIFF -->
           <section class="panel diff-panel">
-            <div class="diff-area">
+            <div class="diff-area" id="diff-area">
+              <pre class="diff-pre" id="diff-pre" style="color:#777;">No preview yet.</pre>
+              <button class="apply-btn" id="btn-apply">Apply Patch</button>
             </div>
           </section>
         </div>
+
+        <!-- CONSOLE -->
         <section class="console-panel" id="console-panel">
-          <div class="console-area"></div>
+          <div class="console-area" id="console-area">ready.</div>
         </section>
+
+        <!-- Version tabs (placeholder; not required for MVP) -->
         <div class="version-tabs-wrapper">
           <button class="pagination-btn" id="prev-page">←</button>
           <div class="version-tabs" id="version-tabs">
             <button class="version-tab active">v1</button>
             <button class="version-tab">v2</button>
             <button class="version-tab">v3</button>
-            <button class="version-tab">v4</button>
-            <button class="version-tab">v5</button>
-            <button class="version-tab">v6</button>
-            <button class="version-tab">v7</button>
-            <button class="version-tab">v8</button>
-            <button class="version-tab">v9</button>
-            <button class="version-tab">v10</button>
-            <button class="version-tab">v11</button>
-            <button class="version-tab">v12</button>
           </div>
           <span class="pagination-info" id="page-info">1 / 1</span>
           <button class="pagination-btn" id="next-page">→</button>
@@ -525,196 +151,214 @@
       </div>
     </main>
   </div>
-<script>
-  console.log('Script starting...');
-  
-  // Simple vanilla JS - no modules, no Tauri API needed for toggle
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded');
-    
-    const consoleToggle = document.getElementById('console-toggle');
-    const consolePanel = document.getElementById('console-panel');
-    const consoleLabel = document.getElementById('console-label');
-    const selfTestBtn = document.getElementById('self-test-btn');
-    const consoleArea = document.querySelector('.console-area');
-    const patchArea = document.querySelector('.patch-area');
-    const diffArea = document.querySelector('.diff-area');
-    
-    let selectedFolder = null;
-    let currentPatch = '';
-    
-    function appendConsole(text) {
-      if (consoleArea) {
-        consoleArea.textContent += text + '\n';
-        consoleArea.scrollTop = consoleArea.scrollHeight;
-      }
-    }
-    
-    function clearConsole() {
-      if (consoleArea) {
-        consoleArea.textContent = '';
-      }
-    }
-    
-    // CONSOLE TOGGLE - PURE CSS, NO TAURI!
-    if (consoleToggle) {
-      consoleToggle.addEventListener('click', () => {
-        console.log('Console button clicked!');
-        const isVisible = consolePanel.classList.contains('visible');
-        
-        if (!isVisible) {
-          consolePanel.classList.add('visible');
-          consoleLabel.classList.add('visible');
-          selfTestBtn.classList.add('visible');
-          appendConsole('✓ Console opened');
-        } else {
-          consolePanel.classList.remove('visible');
-          consoleLabel.classList.remove('visible');
-          selfTestBtn.classList.remove('visible');
-        }
-      });
-      console.log('Console toggle attached!');
-    }
-    
-    // Wait for Tauri for other features
-    const waitForTauri = setInterval(() => {
-      if (window.__TAURI__) {
-        clearInterval(waitForTauri);
-        console.log('Tauri loaded!');
-        initTauriFeatures();
-      }
-    }, 100);
-    
-    function initTauriFeatures() {
-      const invoke = window.__TAURI__.tauri.invoke;
-      
-      // Select folder
-      document.querySelectorAll('.header-btn')[1].addEventListener('click', async () => {
-        try {
-          selectedFolder = await invoke('pick_folder');
-          appendConsole(`📁 Selected: ${selectedFolder}`);
-        } catch (e) {
-          appendConsole(`❌ ${e}`);
-        }
-      });
-      
-      // Copy prompt
-      document.querySelectorAll('.header-btn')[0].addEventListener('click', async () => {
-        try {
-          const prompt = await invoke('get_ai_prompt');
-          await navigator.clipboard.writeText(prompt);
-          appendConsole('📋 AI prompt copied');
-        } catch (e) {
-          appendConsole(`❌ ${e}`);
-        }
-      });
-      
-      // Paste patch
-      patchArea.addEventListener('click', async () => {
-        try {
-          const text = await navigator.clipboard.readText();
-          currentPatch = text;
-          patchArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;white-space:pre-wrap;word-wrap:break-word;">${text}</pre>`;
-          appendConsole('✓ Patch loaded');
-        } catch (e) {
-          appendConsole('❌ Failed to read clipboard');
-        }
-      });
-      
-      // Preview
-      async function previewPatch() {
-        if (!selectedFolder || !currentPatch) {
-          appendConsole('❌ Select folder and paste patch first');
-          return;
-        }
-        clearConsole();
-        appendConsole('👁 Previewing...\n');
-        try {
-          const result = await invoke('preview_patch', { target: selectedFolder, patch: currentPatch });
-          appendConsole(result.log);
-          diffArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;white-space:pre-wrap;word-wrap:break-word;">${result.diff || '(no changes)'}</pre>`;
-        } catch (e) {
-          appendConsole(`❌ ${e}`);
-        }
-      }
-      
-      // Apply
-      async function applyPatch() {
-        if (!selectedFolder || !currentPatch) {
-          appendConsole('❌ Select folder and paste patch first');
-          return;
-        }
-        clearConsole();
-        appendConsole('⚙️ Applying...\n');
-        try {
-          const result = await invoke('apply_patch', { target: selectedFolder, patch: currentPatch });
-          appendConsole(result);
-        } catch (e) {
-          appendConsole(`❌ ${e}`);
-        }
-      }
-      
-      // Self-test
-      selfTestBtn.addEventListener('click', async () => {
-        clearConsole();
-        appendConsole('🧪 Running tests...\n');
-        try {
-          const result = await invoke('run_self_test');
-          appendConsole(result);
-        } catch (e) {
-          appendConsole(`❌ ${e}`);
-        }
-      });
-      
-      // Version tabs
-      document.querySelectorAll('.version-tab').forEach((tab, idx) => {
-        tab.addEventListener('click', () => {
-          document.querySelectorAll('.version-tab').forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          if (idx === 0) previewPatch();
-          else if (idx === 1) applyPatch();
-        });
-      });
-      
-      appendConsole('✓ ApplyDiff ready\n');
-      appendConsole('1. Click "Select Directory"\n');
-      appendConsole('2. Click "Click To Paste"\n');
-      appendConsole('3. Click v1 to preview, v2 to apply\n');
-    }
-    
-    // Pagination
-    const prevPageBtn = document.getElementById('prev-page');
-    const nextPageBtn = document.getElementById('next-page');
-    const pageInfo = document.getElementById('page-info');
-    const allTabs = Array.from(document.querySelectorAll('.version-tab'));
-    let currentPage = 1;
-    const tabsPerPage = 12;
-    
-    function updatePagination() {
-      const totalPages = Math.ceil(allTabs.length / tabsPerPage);
-      pageInfo.textContent = `${currentPage} / ${totalPages}`;
-      prevPageBtn.disabled = currentPage === 1;
-      nextPageBtn.disabled = currentPage === totalPages;
-    }
-    
-    prevPageBtn.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        updatePagination();
+
+  <script>
+    // ===== helpers =====
+    const logEl = () => document.getElementById('console-area');
+    const log = (m) => {
+      const now = new Date().toISOString();
+      logEl().textContent += `\\n[${now}] ${m}`;
+      logEl().scrollTop = logEl().scrollHeight;
+    };
+    const setStatus = (text, tone='') => {
+      const el = document.getElementById('status');
+      el.textContent = text;
+      el.style.borderColor = tone==='err' ? 'var(--err)' : tone==='ok' ? 'var(--ok)' : tone==='warn' ? 'var(--warn)' : 'var(--border)';
+      el.style.color = tone==='err' ? 'var(--err)' : tone==='ok' ? 'var(--ok)' : tone==='warn' ? 'var(--warn)' : 'var(--text-muted)';
+    };
+    const escapeHtml = s => s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+
+    // ===== state =====
+    let selectedDir = '';
+    let editorEl = null;
+    let typingTimer = null;
+    let previewInFlight = false;
+    let lastPreviewOK = false;
+
+    // ===== tauri v2 invoke =====
+    const invoke = (...args) => {
+      if (!window.__TAURI__ || !window.__TAURI__.core) throw new Error('Tauri v2 core not available');
+      return window.__TAURI__.core.invoke(...args);
+    };
+
+    // ===== console toggle =====
+    document.getElementById('console-toggle').addEventListener('click', () => {
+      const panel = document.getElementById('console-panel');
+      const label = document.getElementById('console-label');
+      const btn = document.getElementById('self-test-btn');
+      const on = !panel.classList.contains('visible');
+      panel.classList.toggle('visible', on);
+      label.classList.toggle('visible', on);
+      btn.classList.toggle('visible', on);
+      if (on) log('✓ Console opened'); 
+    });
+
+    // ===== self-test =====
+    document.getElementById('self-test-btn').addEventListener('click', async () => {
+      try {
+        log('🧪 Running tests…');
+        const out = await invoke('run_self_test');
+        log(out);
+      } catch (e) {
+        log('❌ ' + e);
       }
     });
-    
-    nextPageBtn.addEventListener('click', () => {
-      const totalPages = Math.ceil(allTabs.length / tabsPerPage);
-      if (currentPage < totalPages) {
-        currentPage++;
-        updatePagination();
+
+    // ===== copy prompt =====
+    document.getElementById('btn-copy-prompt').addEventListener('click', async () => {
+      try {
+        const prompt = await invoke('get_ai_prompt');
+        await navigator.clipboard.writeText(String(prompt || ''));
+        log('📋 AI prompt copied.');
+      } catch (e) {
+        log('❌ Copy AI prompt failed: ' + e);
       }
     });
-    
-    updatePagination();
-    console.log('Init complete!');
-  });
-</script>
+
+    // ===== select directory =====
+    const patchArea = document.getElementById('patch-area');
+    const placeholder = document.getElementById('patch-placeholder');
+    document.getElementById('btn-select-dir').addEventListener('click', async () => {
+      try {
+        const dir = await invoke('pick_folder');
+        if (typeof dir === 'string' && dir.length) {
+          selectedDir = dir;
+          patchArea.classList.remove('disabled');
+          log('📁 Selected: ' + dir);
+          setStatus('ready');
+        }
+      } catch (e) {
+        log('❌ Select directory failed: ' + e);
+      }
+    });
+
+    // ===== patch paste / typing =====
+    patchArea.addEventListener('click', async () => {
+      if (!selectedDir) {
+        log('ℹ Select a directory first.'); 
+        return;
+      }
+      // try clipboard
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          ensureEditor();
+          editorEl.value = text;
+          placeholder.style.display = 'none';
+          log('📥 Pasted from clipboard.');
+          setStatus('previewing…','warn');
+          await doPreview('paste');
+          editorEl.focus();
+          return;
+        }
+      } catch (_) { /* fall through to typing mode */ }
+
+      // typing mode
+      ensureEditor();
+      placeholder.style.display = 'none';
+      editorEl.focus();
+      log('⌨️  Typing mode. Auto-preview after 3s idle.');
+    });
+
+    function ensureEditor() {
+      if (editorEl) return;
+      editorEl = document.createElement('textarea');
+      editorEl.id = 'patch-editor';
+      editorEl.className = 'patch-editor';
+      patchArea.appendChild(editorEl);
+      editorEl.addEventListener('input', () => {
+        if (!selectedDir) return;
+        setStatus('typing…','warn');
+        if (typingTimer) clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => doPreview('type'), 3000);
+      });
+    }
+
+    // ===== preview / apply =====
+    const diffPre = document.getElementById('diff-pre');
+    const applyBtn = document.getElementById('btn-apply');
+
+    function renderDiff(udiff) {
+      if (!udiff || !udiff.trim()) {
+        diffPre.style.color = '#777';
+        diffPre.innerHTML = 'No differences.';
+        return;
+      }
+      diffPre.style.color = '';
+      const lines = udiff.replace(/\\r\\n/g,'\\n').split('\\n');
+      diffPre.innerHTML = lines.map(l => {
+        const cls = l.startsWith('+++') || l.startsWith('---') || l.startsWith('@@') ? 'd-hdr'
+                  : l.startsWith('+') ? 'd-add'
+                  : l.startsWith('-') ? 'd-del'
+                  : 'd-ctx';
+        return `<span class="${cls}">${escapeHtml(l)}</span>`;
+      }).join('\\n');
+    }
+
+    async function doPreview(trigger) {
+      if (!selectedDir || !editorEl) return;
+      const patch = editorEl.value;
+      if (!patch.trim()) {
+        renderDiff('');
+        applyBtn.style.display = 'none';
+        setStatus('idle');
+        lastPreviewOK = false;
+        return;
+      }
+      if (previewInFlight) return;
+      previewInFlight = true;
+      setStatus(trigger==='type' ? 'typing…' : 'processing…','warn');
+
+      try {
+        const res = await invoke('preview_patch', { target: selectedDir, patch });
+        // show tail of log in console
+        if (res && res.log) {
+          const tail = res.log.split('\\n').slice(-40).join('\\n');
+          log('👁 Preview:\\n' + tail);
+        }
+        renderDiff(res?.diff || '');
+        // ok if diff exists and log has no ❌
+        const ok = !!(res?.diff && res.diff.trim()) && !(res?.log || '').includes('❌');
+        lastPreviewOK = ok;
+        setStatus(ok ? 'ready to apply' : 'check preview', ok ? 'ok' : 'warn');
+        applyBtn.style.display = ok ? 'inline-block' : 'none';
+      } catch (e) {
+        log('❌ Preview error: ' + e);
+        setStatus('error','err');
+        renderDiff('');
+        applyBtn.style.display = 'none';
+        lastPreviewOK = false;
+      } finally {
+        previewInFlight = false;
+      }
+    }
+
+    applyBtn.addEventListener('click', async () => {
+      if (!lastPreviewOK || !editorEl) return;
+      try {
+        setStatus('applying…','warn');
+        const out = await invoke('apply_patch', { target: selectedDir, patch: editorEl.value });
+        log('✅ Apply:\\n' + out);
+        setStatus('applied','ok');
+        // re-preview to reflect on-disk state
+        await doPreview('apply');
+      } catch (e) {
+        log('❌ Apply failed: ' + e);
+        setStatus('apply failed','err');
+      }
+    });
+
+    // ===== version tabs minimal behavior (optional) =====
+    document.querySelectorAll('.version-tab').forEach((tab, i) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.version-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        if (i === 0) doPreview('tab');
+      });
+    });
+
+    // initial
+    log('ready. select a directory to begin.');
+  </script>
 </body>
 </html>

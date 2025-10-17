@@ -16,6 +16,8 @@ pub fn build_ai_prompt() -> String {
         "- One block per file; multiple blocks allowed back-to-back.",
         "- If appending, leave 'from' empty and put content in 'to'.",
         "- Keep 'from' minimal & exact where possible; set fuzz 0.0..1.0 as needed.",
+        "- Prefer replacing whole functions/methods over tiny line-only edits when changing code.",
+        "- If a block fails to match, reply again with only corrected block(s).",
         "- No code fences, no commentary, no leading or trailing text.",
         "",
         "Example:",
@@ -25,11 +27,11 @@ pub fn build_ai_prompt() -> String {
         "--- to",
         "Hello brave new world",
         "<<<",
-    ].join("\n")
+    ]
+    .join("\n")
 }
 
-/// A tiny example block used by tests to ensure our parser handles the format.
-#[allow(dead_code)] // No longer used by the new test orchestrator
+#[allow(dead_code)]
 pub fn example_patch() -> String {
     [
         ">>> file: hello.txt | fuzz=1.0",
@@ -38,5 +40,6 @@ pub fn example_patch() -> String {
         "--- to",
         "Hello brave new world",
         "<<<",
-    ].join("\n")
+    ]
+    .join("\n")
 }

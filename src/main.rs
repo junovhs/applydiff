@@ -228,8 +228,8 @@ fn preview_patch(target: &str, patch: &str) -> PatchResult<PreviewOut> {
                 let file_path = target_path.join(&block.file);
                 if let Ok(content) = fs::read_to_string(&file_path) {
                     let start = result.matched_at as usize;
-                    let end = start.saturating_add(block.from.len());
-                    if start <= content.len() && end <= content.len() && start <= end {
+                    let end = result.matched_end.min(content.len());
+                    if start <= end {
                         let before = &content[start..end];
                         let matched_nl = if before.ends_with("\r\n") { "\r\n" }
                                          else if before.ends_with('\n') { "\n" }

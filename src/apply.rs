@@ -4,10 +4,12 @@ use crate::matcher::find_best_match;
 use crate::parser::PatchBlock;
 
 use std::fs;
-use std::path::PathBuf;
+use std::io::ErrorKind;
+use std::path::{PathBuf, Component};
 
 pub struct ApplyResult {
     pub matched_at: usize,
+    pub matched_end: usize,
     pub score: f32,
 }
 
@@ -24,12 +26,32 @@ impl<'a> Applier<'a> {
     }
 
     pub fn apply_block(&self, blk: &PatchBlock) -> Result<ApplyResult> {
+        // Guard against absolute paths and parent traversal
+        if blk.file.is_absolute() || blk.file.components().any(|c| matches!(c, Component::ParentDir)) {
+            return Err(PatchError::Validation {
+                code: ErrorCode::ValidationFailed,
+                message: "Patch path escapes target directory".to_string(),
+                context: blk.file.display().to_string(),
+            });
+        }
+
         let path = self.root.join(&blk.file);
-        let content = fs::read_to_string(&path).map_err(|e| PatchError::File {
-            code: ErrorCode::FileReadFailed,
-            message: format!("Failed to read {}: {}", blk.file.display(), e),
-            path: path.clone(),
-        })?;
+
+        // Read file; allow append-create when FROM is empty
+        let mut content = match fs::read_to_string(&path) {
+            Ok(s) => s,
+            Err(e) => {
+                if blk.from.trim().is_empty() && e.kind() == ErrorKind::NotFound {
+                    String::new()
+                } else {
+                    return Err(PatchError::File {
+                        code: ErrorCode::FileReadFailed,
+                        message: format!("Failed to read {}: {}", blk.file.display(), e),
+                        path: path.clone(),
+                    });
+                }
+            }
+        };
 
         // Append-only if "from" is empty
         if blk.from.trim().is_empty() {
@@ -39,13 +61,21 @@ impl<'a> Applier<'a> {
             }
             new_content.push_str(&blk.to);
             if !self.dry_run {
+                if let Some(parent) = path.parent() {
+                    fs::create_dir_all(parent).map_err(|e| PatchError::File {
+                        code: ErrorCode::FileWriteFailed,
+                        message: format!("Failed to create parent dir for {}: {}", blk.file.display(), e),
+                        path: parent.to_path_buf(),
+                    })?;
+                }
                 fs::write(&path, new_content).map_err(|e| PatchError::File {
                     code: ErrorCode::FileWriteFailed,
                     message: format!("Failed to write {}: {}", blk.file.display(), e),
                     path: path.clone(),
                 })?;
             }
-            return Ok(ApplyResult { matched_at: content.len(), score: 1.0 });
+            let at = content.len();
+            return Ok(ApplyResult { matched_at: at, matched_end: at, score: 1.0 });
         }
 
         // Find best match (exact or fuzzy)
@@ -82,6 +112,13 @@ impl<'a> Applier<'a> {
         new_content.push_str(&content[m.end..]);
 
         if !self.dry_run {
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent).map_err(|e| PatchError::File {
+                    code: ErrorCode::FileWriteFailed,
+                    message: format!("Failed to create parent dir for {}: {}", blk.file.display(), e),
+                    path: parent.to_path_buf(),
+                })?;
+            }
             fs::write(&path, new_content).map_err(|e| PatchError::File {
                 code: ErrorCode::FileWriteFailed,
                 message: format!("Failed to write {}: {}", blk.file.display(), e),
@@ -89,6 +126,6 @@ impl<'a> Applier<'a> {
             })?;
         }
 
-        Ok(ApplyResult { matched_at: m.start, score: m.score })
+        Ok(ApplyResult { matched_at: m.start, matched_end: m.end, score: m.score })
     }
 }

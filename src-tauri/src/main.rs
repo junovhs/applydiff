@@ -1,33 +1,29 @@
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![deny(warnings)]
 
 mod apply;
 mod backup;
 mod error;
-mod gauntlet;
 mod logger;
 mod matcher;
 mod parser;
 mod prompts;
+mod gauntlet;
 mod tauri_commands;
-
-use tauri_commands::*;
 
 fn main() {
     tauri::Builder::default()
+        // plugins
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_clipboard_manager::init())
+        // commands your UI can invoke
         .invoke_handler(tauri::generate_handler![
-            pick_folder,
-            preview_patch,
-            apply_patch,
-            get_ai_prompt,
-            run_self_test,
-            create_demo,
-            resize_window,  // Add this
+            tauri_commands::pick_folder,
+            tauri_commands::preview_patch,
+            tauri_commands::apply_patch,
+            tauri_commands::get_ai_prompt,
+            tauri_commands::run_self_test,
+            tauri_commands::create_demo,
+            tauri_commands::resize_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

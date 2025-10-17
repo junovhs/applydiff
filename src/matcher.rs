@@ -35,8 +35,9 @@ pub fn find_best_match(haystack: &str, needle: &str, min_score: f32, logger: &Lo
     // Determine "needle length" in lines for windowing.
     let n_lines = count_lines(&needle_norm).max(1);
 
-    // Track best match without moving an Option each loop.
+    // Track best & second-best to detect ambiguous matches.
     let mut best_score: f32 = -1.0;
+    let mut second_score: f32 = -1.0;
     let mut best_range: Option<(usize, usize)> = None;
 
     // Try windows of size n-1 ..= n+1 to tolerate +/- a line
@@ -55,14 +56,22 @@ pub fn find_best_match(haystack: &str, needle: &str, min_score: f32, logger: &Lo
             let score = normalized_damerau_levenshtein(&slice_norm, &needle_norm) as f32;
 
             if score > best_score {
+                second_score = best_score;
                 best_score = score;
                 best_range = Some((start, end));
+            } else if score > second_score {
+                second_score = score;
             }
         }
     }
 
     if let Some((start, end)) = best_range {
         if best_score >= min_score {
+            // Treat near-ties as ambiguous instead of guessing wrong.
+            if second_score >= 0.0 && (best_score - second_score) < 0.02 && second_score >= min_score {
+                logger.info("matcher", "ambiguous_match", &format!("best={:.3}, second={:.3}", best_score, second_score));
+                return None;
+            }
             return Some(MatchResult { start, end, score: best_score });
         }
     }
