@@ -18,6 +18,8 @@ use tauri_commands::*;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             pick_folder,
             preview_patch,
@@ -25,6 +27,7 @@ fn main() {
             get_ai_prompt,
             run_self_test,
             create_demo,
+            resize_window,  // Add this
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -4,6 +4,7 @@ use serde::Serialize;
 use similar::TextDiff;
 use std::fs;
 use std::path::PathBuf;
+use tauri_plugin_dialog::{DialogExt, FilePath};
 
 const MAX_INPUT_SIZE: usize = 100_000_000;
 
@@ -12,19 +13,34 @@ pub struct PreviewResult {
     pub log: String,
     pub diff: String,
 }
-
 #[tauri::command]
-pub async fn pick_folder(app_handle: tauri::AppHandle) -> Result<String, String> {
+pub fn resize_window(app: tauri::AppHandle, width: f64, height: f64) -> Result<(), String> {
     use tauri::Manager;
     
-    let result = app_handle
-        .dialog()
+    // In Tauri v2, the main window is typically the first window
+    let windows = app.webview_windows();
+    if let Some((_, window)) = windows.iter().next() {
+        let logical_size = tauri::LogicalSize::new(width, height);
+        window.set_size(logical_size)
+            .map_err(|e| e.to_string())?;
+    } else {
+        return Err("No window found".to_string());
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn pick_folder(app: tauri::AppHandle) -> Result<String, String> {
+    let folder = app.dialog()
         .file()
         .blocking_pick_folder();
     
-    result
-        .map(|path| path.to_string_lossy().to_string())
-        .ok_or_else(|| "No folder selected".to_string())
+    match folder {
+        Some(FilePath::Path(path)) => Ok(path.to_string_lossy().to_string()),
+        Some(FilePath::Url(url)) => Ok(url.to_string()),
+        None => Err("No folder selected".to_string()),
+    }
 }
 
 #[tauri::command]

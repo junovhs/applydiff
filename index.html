@@ -42,17 +42,12 @@
       padding: 0;
     }
 
-    /* CHANGED: Set initial "compact" window size and add a transition */
     html, body {
-      width: 855px;
-      height: 800px;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
-      transition: width 0.3s ease-in-out;
-    }
-
-    /* NEW: Define the "expanded" window size when console is open */
-    body.console-open {
-      width: 1276px;
+      margin: 0;
+      padding: 0;
     }
 
     body {
@@ -68,6 +63,7 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
+      width: 100vw;
     }
 
     .header {
@@ -107,9 +103,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      position: absolute;
-      /* This calculation correctly keeps the buttons from moving when the body resizes */
-      right: calc(100% - 760px);
+      position: relative;
     }
 
     .console-label {
@@ -174,9 +168,15 @@
       left: 0;
     }
 
+    .panel-label:nth-child(2) {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
     .console-label-item {
       display: none;
-      left: 800px;
+      right: 440px;
+      left: auto;
     }
 
     .console-label-item.visible {
@@ -186,7 +186,7 @@
     .self-test-btn {
       display: none;
       position: absolute;
-      left: 1070px;
+      right: 120px;
       background: none;
       border: none;
       padding: 0;
@@ -221,13 +221,16 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      flex-shrink: 0;
+      flex: 1;
+      min-width: 0;
       margin-top: 18px;
     }
 
     .panels-top {
       display: flex;
       gap: 20px;
+      flex: 1;
+      min-height: 0;
     }
 
     .panel {
@@ -235,7 +238,7 @@
       flex-direction: column;
       gap: 12px;
       min-height: 0;
-      flex: 1; 
+      flex: 1;
     }
 
     .panel-title {
@@ -246,12 +249,14 @@
     .patch-panel {
       display: flex;
       flex-direction: column;
-      width: 360px;
+      flex: 1;
+      min-width: 0;
     }
 
     .patch-area {
-      width: 100%; 
-      height: 409px;
+      width: 100%;
+      flex: 1;
+      min-height: 0;
       border: 2px dashed #454545;
       border-radius: 6px;
       display: flex;
@@ -260,6 +265,7 @@
       cursor: pointer;
       transition: border-color 0.2s;
       background: #1A1A1A;
+      overflow: auto;
     }
 
     .patch-area:hover {
@@ -285,6 +291,8 @@
       gap: 8px;
       flex-shrink: 0;
       flex: 1;
+      overflow-x: auto;
+      scrollbar-width: thin;
     }
 
     .version-tab {
@@ -358,12 +366,14 @@
     .diff-panel {
       display: flex;
       flex-direction: column;
-      width: 360px;
+      flex: 1;
+      min-width: 0;
     }
 
     .diff-area {
       width: 100%;
-      height: 409px;
+      flex: 1;
+      min-height: 0;
       border: 1px solid #2D2D2D;
       border-radius: 6px;
       display: flex;
@@ -371,25 +381,37 @@
       justify-content: center;
       position: relative;
       background: #1A1A1A;
-      min-height: 0;
+      overflow: auto;
     }
 
     /* Console Panel */
     .console-panel {
-      display: none; /* Initially hidden */
+      display: none;
       flex-direction: column;
-      width: 440px; /* Adjusted width for better fit */
+      width: 440px;
       flex-shrink: 0;
       margin-top: 18px;
+      animation: slideIn 0.3s ease-out;
     }
 
     .console-panel.visible {
-      display: flex; /* Made visible via JS */
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
 
     .console-area {
-      width: 100%; /* Take full width of its parent */
-      height: 558px;
+      width: 100%;
+      height: 100%;
       border: 1px solid #2D2D2D;
       border-radius: 6px;
       padding: 12px;
@@ -398,6 +420,7 @@
       font-size: 12px;
       line-height: 1.6;
       background: #1A1A1A;
+      flex: 1;
       min-height: 0;
     }
 
@@ -464,11 +487,11 @@
         <div class="version-tabs-wrapper">
           <button class="pagination-btn" id="prev-page">←</button>
           <div class="version-tabs" id="version-tabs">
-            <button class="version-tab">v1</button>
+            <button class="version-tab active">v1</button>
             <button class="version-tab">v2</button>
             <button class="version-tab">v3</button>
             <button class="version-tab">v4</button>
-            <button class="version-tab active">v5</button>
+            <button class="version-tab">v5</button>
             <button class="version-tab">v6</button>
             <button class="version-tab">v7</button>
             <button class="version-tab">v8</button>
@@ -487,141 +510,300 @@
     </main>
   </div>
 <script>
-  const { invoke } = window.__TAURI__.tauri;
-const { writeText } = window.__TAURI__.clipboard;
-
-const consoleToggle = document.getElementById('console-toggle');
-const consolePanel = document.getElementById('console-panel');
-const consoleLabel = document.getElementById('console-label');
-const selfTestBtn = document.getElementById('self-test-btn');
-const consoleArea = document.querySelector('.console-area');
-const patchArea = document.querySelector('.patch-area');
-const diffArea = document.querySelector('.diff-area');
-
-let selectedFolder = null;
-let currentPatch = '';
-
-// Helper: Append to console
-function appendConsole(text) {
-  consoleArea.textContent += text + '\n';
-  consoleArea.scrollTop = consoleArea.scrollHeight;
-}
-
-// Helper: Clear console
-function clearConsole() {
-  consoleArea.textContent = '';
-}
-
-// Select folder button
-document.querySelectorAll('.header-btn')[1]?.addEventListener('click', async () => {
-  try {
-    selectedFolder = await invoke('pick_folder');
-    appendConsole(`📁 Selected: ${selectedFolder}`);
-  } catch (e) {
-    appendConsole(`❌ Error: ${e}`);
-  }
-});
-
-// Copy Prompt button
-document.querySelectorAll('.header-btn')[0]?.addEventListener('click', async () => {
-  try {
-    const prompt = await invoke('get_ai_prompt');
-    await writeText(prompt);
-    appendConsole('📋 AI prompt copied to clipboard');
-  } catch (e) {
-    appendConsole(`❌ Error: ${e}`);
-  }
-});
-
-// Patch area - click to paste
-patchArea.addEventListener('click', async () => {
-  try {
-    const text = await navigator.clipboard.readText();
-    currentPatch = text;
-    patchArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;">${text}</pre>`;
-    appendConsole('✓ Patch loaded from clipboard');
-  } catch (e) {
-    appendConsole('❌ Failed to read clipboard');
-  }
-});
-
-// Preview (triggered by version tab clicks for now)
-async function previewPatch() {
-  if (!selectedFolder || !currentPatch) {
-    appendConsole('❌ Please select folder and paste patch first');
-    return;
-  }
-  
-  clearConsole();
-  appendConsole('👁 Previewing patch...\n');
-  
-  try {
-    const result = await invoke('preview_patch', {
-      target: selectedFolder,
-      patch: currentPatch
-    });
+  // Wait for Tauri API to be ready
+  window.addEventListener('DOMContentLoaded', async () => {
+    // Get Tauri APIs - with fallbacks
+    const invoke = window.__TAURI__?.tauri?.invoke;
+    const clipboardWrite = window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__?.writeText;
     
-    appendConsole(result.log);
-    diffArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;">${result.diff || '(no changes)'}</pre>`;
-  } catch (e) {
-    appendConsole(`❌ Error: ${e}`);
-  }
-}
-
-// Apply patch
-async function applyPatch() {
-  if (!selectedFolder || !currentPatch) {
-    appendConsole('❌ Please select folder and paste patch first');
-    return;
-  }
-  
-  clearConsole();
-  appendConsole('⚙️ Applying patch...\n');
-  
-  try {
-    const result = await invoke('apply_patch', {
-      target: selectedFolder,
-      patch: currentPatch
-    });
+    const consoleToggle = document.getElementById('console-toggle');
+    const consolePanel = document.getElementById('console-panel');
+    const consoleLabel = document.getElementById('console-label');
+    const selfTestBtn = document.getElementById('self-test-btn');
+    const consoleArea = document.querySelector('.console-area');
+    const patchArea = document.querySelector('.patch-area');
+    const diffArea = document.querySelector('.diff-area');
     
-    appendConsole(result);
-  } catch (e) {
-    appendConsole(`❌ Error: ${e}`);
-  }
-}
-
-// Console toggle
-consoleToggle?.addEventListener('click', () => {
-  const isVisible = consolePanel.classList.toggle('visible');
-  consoleLabel.classList.toggle('visible', isVisible);
-  selfTestBtn.classList.toggle('visible', isVisible);
-  document.body.classList.toggle('console-open', isVisible);
-});
-
-// Self-test
-selfTestBtn?.addEventListener('click', async () => {
-  clearConsole();
-  appendConsole('🧪 Running self-test gauntlet...\n');
-  
-  try {
-    const result = await invoke('run_self_test');
-    appendConsole(result);
-  } catch (e) {
-    appendConsole(`❌ Error: ${e}`);
-  }
-});
-
-// Wire up version tabs to trigger preview
-document.querySelectorAll('.version-tab').forEach((tab, idx) => {
-  tab.addEventListener('click', () => {
-    if (idx === 0) {
-      previewPatch();
-    } else if (idx === 1) {
-      applyPatch();
+    let selectedFolder = null;
+    let currentPatch = '';
+    
+    // Helper: Append to console
+    function appendConsole(text) {
+      if (consoleArea) {
+        consoleArea.textContent += text + '\n';
+        consoleArea.scrollTop = consoleArea.scrollHeight;
+      }
     }
-    // You can assign other tabs to different functions
+    
+    // Helper: Clear console
+    function clearConsole() {
+      if (consoleArea) {
+        consoleArea.textContent = '';
+      }
+    }
+    
+    // Console toggle with window resize
+    if (consoleToggle) {
+      consoleToggle.addEventListener('click', async () => {
+        console.log('Console toggle clicked!');
+        const isVisible = consolePanel.classList.contains('visible');
+        
+        if (!isVisible) {
+          console.log('Showing console');
+          consolePanel.classList.add('visible');
+          consoleLabel.classList.add('visible');
+          selfTestBtn.classList.add('visible');
+          
+          // Resize window to fit console
+          if (invoke) {
+            try {
+              const currentWidth = window.innerWidth;
+              const currentHeight = window.innerHeight;
+              const newWidth = currentWidth + 460;
+              console.log(`Resizing from ${currentWidth}x${currentHeight} to ${newWidth}x${currentHeight}`);
+              
+              await invoke('resize_window', { 
+                width: newWidth,
+                height: currentHeight 
+              });
+              
+              console.log('Resize successful!');
+            } catch (e) {
+              console.error('Failed to resize window:', e);
+              appendConsole(`❌ Resize failed: ${e}`);
+            }
+          } else {
+            console.error('invoke not available');
+          }
+          
+          appendConsole('✓ Console opened');
+        } else {
+          console.log('Hiding console');
+          
+          // Resize window back
+          if (invoke) {
+            try {
+              const currentWidth = window.innerWidth;
+              const currentHeight = window.innerHeight;
+              const newWidth = currentWidth - 460;
+              console.log(`Resizing from ${currentWidth}x${currentHeight} to ${newWidth}x${currentHeight}`);
+              
+              await invoke('resize_window', { 
+                width: newWidth,
+                height: currentHeight 
+              });
+              
+              console.log('Resize successful!');
+            } catch (e) {
+              console.error('Failed to resize window:', e);
+            }
+          }
+          
+          consolePanel.classList.remove('visible');
+          consoleLabel.classList.remove('visible');
+          selfTestBtn.classList.remove('visible');
+        }
+      });
+      console.log('Console toggle listener attached');
+    }
+    
+    // Copy Prompt button
+    const copyPromptBtn = document.querySelectorAll('.header-btn')[0];
+    if (copyPromptBtn) {
+      copyPromptBtn.addEventListener('click', async () => {
+        try {
+          if (!invoke) {
+            appendConsole('❌ Tauri API not available');
+            return;
+          }
+          const prompt = await invoke('get_ai_prompt');
+          
+          // Try clipboard plugin first, fallback to navigator
+          if (clipboardWrite) {
+            await clipboardWrite(prompt);
+          } else if (navigator.clipboard) {
+            await navigator.clipboard.writeText(prompt);
+          } else {
+            appendConsole('❌ Clipboard not available');
+            return;
+          }
+          
+          appendConsole('📋 AI prompt copied to clipboard');
+        } catch (e) {
+          appendConsole(`❌ Clipboard error: ${e}`);
+        }
+      });
+    }
+    
+    // Patch area - click to paste
+    if (patchArea) {
+      patchArea.addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          currentPatch = text;
+          patchArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;white-space:pre-wrap;word-wrap:break-word;">${text}</pre>`;
+          appendConsole('✓ Patch loaded from clipboard');
+        } catch (e) {
+          appendConsole('❌ Failed to read clipboard. Try pasting manually.');
+          console.error('Clipboard read error:', e);
+        }
+      });
+    }
+    
+    // Preview
+    async function previewPatch() {
+      if (!selectedFolder || !currentPatch) {
+        appendConsole('❌ Please select folder and paste patch first');
+        return;
+      }
+      
+      clearConsole();
+      appendConsole('👁 Previewing patch...\n');
+      
+      try {
+        if (!invoke) {
+          appendConsole('❌ Tauri API not available');
+          return;
+        }
+        
+        const result = await invoke('preview_patch', {
+          target: selectedFolder,
+          patch: currentPatch
+        });
+        
+        appendConsole(result.log);
+        diffArea.innerHTML = `<pre style="margin:0;padding:12px;text-align:left;font-size:11px;overflow:auto;width:100%;height:100%;white-space:pre-wrap;word-wrap:break-word;">${result.diff || '(no changes)'}</pre>`;
+      } catch (e) {
+        appendConsole(`❌ Error: ${e}`);
+      }
+    }
+    
+    // Apply patch
+    async function applyPatch() {
+      if (!selectedFolder || !currentPatch) {
+        appendConsole('❌ Please select folder and paste patch first');
+        return;
+      }
+      
+      clearConsole();
+      appendConsole('⚙️ Applying patch...\n');
+      
+      try {
+        if (!invoke) {
+          appendConsole('❌ Tauri API not available');
+          return;
+        }
+        
+        const result = await invoke('apply_patch', {
+          target: selectedFolder,
+          patch: currentPatch
+        });
+        
+        appendConsole(result);
+      } catch (e) {
+        appendConsole(`❌ Error: ${e}`);
+      }
+    }
+    
+    // Self-test
+    if (selfTestBtn) {
+      selfTestBtn.addEventListener('click', async () => {
+        clearConsole();
+        appendConsole('🧪 Running self-test gauntlet...\n');
+        
+        try {
+          if (!invoke) {
+            appendConsole('❌ Tauri API not available');
+            return;
+          }
+          
+          const result = await invoke('run_self_test');
+          appendConsole(result);
+        } catch (e) {
+          appendConsole(`❌ Error: ${e}`);
+        }
+      });
+    }
+    
+    // Wire up version tabs
+    document.querySelectorAll('.version-tab').forEach((tab, idx) => {
+      tab.addEventListener('click', () => {
+        // Remove active from all
+        document.querySelectorAll('.version-tab').forEach(t => t.classList.remove('active'));
+        // Add to clicked
+        tab.classList.add('active');
+        
+        // v1 = Preview, v2 = Apply
+        if (idx === 0) {
+          previewPatch();
+        } else if (idx === 1) {
+          applyPatch();
+        }
+      });
+    });
+    
+    // Pagination setup
+    const versionTabsContainer = document.getElementById('version-tabs');
+    const prevPageBtn = document.getElementById('prev-page');
+    const nextPageBtn = document.getElementById('next-page');
+    const pageInfo = document.getElementById('page-info');
+    
+    let currentPage = 1;
+    let totalVersions = 12;
+    let tabsPerPage = 12;
+    let allTabs = [];
+    
+    function initializePagination() {
+      allTabs = Array.from(versionTabsContainer.querySelectorAll('.version-tab'));
+      totalVersions = allTabs.length;
+      updatePaginationDisplay();
+    }
+    
+    function updatePaginationDisplay() {
+      const totalPages = Math.ceil(totalVersions / tabsPerPage);
+      pageInfo.textContent = `${currentPage} / ${totalPages}`;
+      prevPageBtn.disabled = currentPage === 1;
+      nextPageBtn.disabled = currentPage === totalPages;
+    }
+    
+    function showPage(pageNum) {
+      const startIdx = (pageNum - 1) * tabsPerPage;
+      const endIdx = startIdx + tabsPerPage;
+      allTabs.forEach((tab, idx) => {
+        tab.style.display = (idx >= startIdx && idx < endIdx) ? 'flex' : 'none';
+      });
+    }
+    
+    if (prevPageBtn) {
+      prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          showPage(currentPage);
+          updatePaginationDisplay();
+        }
+      });
+    }
+    
+    if (nextPageBtn) {
+      nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(totalVersions / tabsPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          showPage(currentPage);
+          updatePaginationDisplay();
+        }
+      });
+    }
+    
+    initializePagination();
+    
+    appendConsole('✓ ApplyDiff ready\n');
+    appendConsole('1. Click "Select Directory" to choose your project\n');
+    appendConsole('2. Click "Click To Paste" to paste your patch\n');
+    appendConsole('3. Click v1 to preview, v2 to apply\n');
+    
+    console.log('All event listeners attached!');
   });
-});
 </script>
 </body>
 </html>
