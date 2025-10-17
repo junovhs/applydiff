@@ -1,297 +1,154 @@
-# applydiff
+# ApplyDiff
 
-**Sleek desktop app for applying AI-generated patches with fuzzy matching and bulletproof git safety.**
+Reliable, token-efficient code patching you can trust with AI outputs.  
+Desktop app built with **Tauri v2** (Rust backend, vanilla HTML/CSS/JS frontend).
 
-Built for the modern workflow: AI writes code diffs, you paste them in, applydiff handles the rest. No more manual find-and-replace disasters.
+## Why this exists
 
-![Status: Working](https://img.shields.io/badge/status-working-brightgreen) ![Platform: Cross-platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
+LLMs are great at proposing changes, but not at the mechanical work of applying them. ApplyDiff takes AI-generated patches and applies them safely:
+- No line numbers. Content/context matching only.
+- Previews always before writes.
+- Backups taken automatically.
+- Safety rails for paths and endings.
+- Partial apply: good blocks land, bad ones are skipped.
 
----
+## Features (MVP)
 
-## The Vision
-
-**The Problem:** AI assistants like Claude generate code changes as text diffs. Manually applying them is error-prone and tedious. Most diff tools are clunky terminal apps or break on fuzzy matches.
-
-**The Solution:** A beautiful, floating desktop app where you:
-1. **Click** to select your project directory (must be a git repo)
-2. **Paste** the AI-generated patch
-3. **Preview** to see exactly what will change
-4. **Apply** with one click - complete with automatic git safety commit
-
-If anything goes wrong, undo is just `git reset --hard HEAD~1`. No corrupted files. No surprises.
-
----
-
-## Features
-
-### 🎨 **Sleek UI**
-- Dark, modern interface with rounded corners
-- Large text area for pasting patches
-- Real-time output log showing progress
-- Responsive buttons with gradient hover effects
-- Native folder picker
-
-### 🛡️ **Safety First**
-- **Mandatory git safety commit** before applying (instant undo)
-- **Rejects ambiguous matches** (multiple equally-good hits)
-- **Preview mode** - see what will change before committing
-- **Validates working tree** is clean before proceeding
-- **Bounded operations** - no runaway loops from bad AI patches
-
-### 🧠 **Smart Matching**
-- **Fuzzy string matching** with configurable thresholds
-- Handles slight variations in whitespace/formatting
-- Reports confidence scores for all matches
-- Fails fast on low-confidence matches
-- Works even when AI gets the context slightly wrong
-
-### 🔒 **Po10 Compliant**
-- Zero recursion
-- All loops bounded with runtime guards
-- ≥2 assertions per function
-- Structured JSONL error logging
-- Zero warnings with strict lints
-- Mission-critical code standards for patch application
-
----
-
-## Installation
-
-### Build from Source
-
-```bash
-# Clone the repo
-git clone https://github.com/yourusername/applydiff
-cd applydiff
-
-# Build release binary
-cargo build --release
-
-# Run it
-./target/release/applydiff
-```
-
-### Requirements
-- Rust 1.70+
-- Git installed and in PATH
-
----
-
-## How to Use
-
-### 1. **Launch the App**
-```bash
-./target/release/applydiff
-```
-
-A sleek dark window opens.
-
-### 2. **Select Your Project**
-Click **📁 Browse** and select your git repository directory.
-
-### 3. **Paste Your Patch**
-Copy an AI-generated patch and paste it into the large text area. Format:
+**Patch format (simple & LLM-friendly)**
 
 ```
->>> file: src/main.rs | fuzz=0.85
+>>> file: relative/path/to/file.ext | fuzz=0.85
 --- from
-old code here
-multiple lines ok
+[exact text in the file]
 --- to
-new code here
-also multiple lines
-<<<
-
->>> file: lib/utils.js | fuzz=0.9
---- from
-another old snippet
---- to
-replacement
+[replacement text]
 <<<
 ```
 
-**Options per block:**
-- `fuzz=0.85` - Match threshold (0.0-1.0, default 0.8)
+Notes:
+- `fuzz` ∈ [0.0, 1.0]; 1.0 = exact only.
+- Leave the `from` section empty to **create/append** a new file (append-create).
+- Multiple blocks allowed back-to-back.
 
-### 4. **Preview First**
-Click **👁 Preview** to see:
-- Which files will be patched
-- Where matches were found (byte offset)
-- Confidence scores for each match
-- Any errors or warnings
+**Other features:**
+- **Preview first**: unified diffs with green (+) and red (–).
+- **Auto-preview**: on paste and after 3s idle while typing.
+- **CRLF/LF preservation**: output endings harmonize to the matched region.
+- **Path safety**: attempts to write outside the selected root are rejected.
+- **Partial apply**: "Apply Valid Changes" when some blocks fail; backups before writes.
+- **Backups**: saved next to your files: `.applydiff_backup_YYYYMMDD_*`.
+- **Console**: structured log tail; **Clear Console** and **Run Self-Test**.
+- **No bundler required**: simple static frontend.
 
-### 5. **Apply the Patch**
-If preview looks good, click **✓ Apply Patch**.
+## Build & Run
 
-The app will:
-1. ✅ Verify working tree is clean
-2. ✅ Create automatic safety commit
-3. ✅ Apply all patches with fuzzy matching
-4. ✅ Show results in the output log
+Prereqs: Rust toolchain + Tauri v2 prerequisites.
 
-**Undo anytime:**
 ```bash
-cd your-project
-git reset --hard HEAD~1
+cargo tauri dev
 ```
 
----
+## Using the App
 
-## Safety Checks
+1. **Select Directory** (enables editing).
+2. **Click To Paste** (reads clipboard); if the clipboard is empty, a textarea opens for typing.
+3. Preview appears automatically. If everything is green, **Apply Patch** appears.
+   If some blocks are invalid (e.g., path escapes), you'll see **Apply Valid Changes** (orange).
+4. After apply, backups are created automatically; preview re-runs against on-disk state.
 
-applydiff will **refuse to run** if:
-- Target directory is not a git repository
-- Working tree has uncommitted changes
-- Match is ambiguous (multiple ~equal hits)
-- Match confidence is below threshold
-- File exceeds size limits (10MB default)
-- Input exceeds 100MB
+## Safety semantics
 
----
+**Matching**
 
-## Error Handling
+* Fast path: exact substring match (logged as `fast_path_match`).
+* Otherwise, layered search with a fuzzy threshold (`fuzz`).
+* If no match ≥ threshold, the block is rejected (no write).
 
-All errors include:
-- **Stable machine-parseable codes** (1000-5999)
-- **Structured JSON context**
-- **Clear next steps**
+**Endings**
 
-Example error log (JSONL format):
-```jsonl
-{"ts":"2025-10-13T12:34:56Z","level":"error","rid":12345,"subsystem":"apply","action":"write_file","code":3002,"msg":"Failed to write file","context":{"path":"src/main.rs","error":"Permission denied"}}
-```
+* The replacement's trailing newline is harmonized to the matched region (`\n` or `\r\n`).
+* Files without a trailing newline remain without one unless the replacement explicitly adds it.
 
-### Error Code Ranges
-```
-1000-1999: Parse errors (malformed patch)
-2000-2999: Match errors (not found, ambiguous, low score)
-3000-3999: File I/O errors (read/write failures)
-4000-4999: Git errors (not a repo, dirty state)
-5000-5999: Validation errors (bounds exceeded)
-```
+**Paths**
 
----
+* Relative to the selected root.
+* Any `..` traversal that would escape is rejected at preview/apply.
 
-## Configuration
+**Partial apply**
 
-### Safety Limits
-Hard-coded bounds (adjust in source if needed):
+* Apply proceeds for blocks that pass; failures are reported per block.
+* Backups are always taken first (timestamped folder next to the root).
 
-```rust
-MAX_BLOCKS: 1000              // Max patch blocks per file
-MAX_LINES_PER_BLOCK: 10000    // Max lines in from/to sections
-MAX_FILE_SIZE: 10MB           // Max file size to patch
-MAX_INPUT_SIZE: 100MB         // Max total input size
-```
+## Quick Lab (manual smoke tests)
 
-### Match Thresholds
-- Default: `0.8` (80% similarity required)
-- Per-block override: add `| fuzz=0.85` to the file header
-- Range: `0.0` (match anything) to `1.0` (exact match only)
+Create a local lab at `~/ApplyDiffLab`:
 
----
-
-## Design Philosophy
-
-### Why a Desktop GUI?
-**Paste and go.** No command-line arguments to remember. No file paths to type. Just click, paste, preview, apply.
-
-### Why Fuzzy Matching?
-AI-generated diffs often have slight context mismatches. Exact-match tools fail. applydiff uses similarity scoring to find the right spot even when whitespace or nearby code differs slightly.
-
-### Why Git-Only?
-Simple, universal undo. No custom backup schemes. Everyone understands `git reset --hard HEAD~1`. Plus, you get a full audit trail of what changed.
-
-### Why Bounded Operations?
-AI can generate pathological patches. Without bounds, you could get infinite loops, excessive memory use, or DoS attacks. applydiff enforces hard limits on everything.
-
-### Why Po10 Standards?
-Patch application is **mission-critical**. A buggy patcher can corrupt your entire codebase. We apply NASA/JPL Power of Ten principles: no recursion, bounded loops, extensive assertions, zero warnings.
-
----
-
-## Development
-
-### Build and Test
 ```bash
-# Format check
-cargo fmt --check
-
-# Lint (zero warnings enforced)
-cargo clippy -- -D warnings
-
-# Run tests
-cargo test
-
-# Build release
-cargo build --release
+# See TESTING.md for the full script and scenarios A–F
 ```
 
-### Project Structure
+Then use the patches in **TESTING.md**. Example mixed patch:
+
 ```
-applydiff/
-├── src/
-│   ├── main.rs        # GUI app + event handlers
-│   ├── parser.rs      # Patch format parser
-│   ├── matcher.rs     # Fuzzy string matching
-│   ├── apply.rs       # File patching logic
-│   ├── git.rs         # Git safety checks
-│   ├── logger.rs      # Structured JSONL logging
-│   └── error.rs       # Error types + codes
-├── ui/
-│   └── main.slint     # UI layout (Slint framework)
-├── build.rs           # Build script for Slint
-└── Cargo.toml         # Dependencies
+>>> file: readme.md | fuzz=1.0
+--- from
+Welcome to the lab.
+--- to
+Welcome to the patched lab.
+<<<
+
+>>> file: new/report.txt | fuzz=1.0
+--- from
+--- to
+Report v1
+<<<
 ```
 
----
+After apply, you'll have `new/report.txt` containing:
+
+```
+Report v1
+```
+
+## Architecture
+
+**Frontend:** `index.html` + inline JS. Talks to Tauri via `window.__TAURI__.core.invoke`.
+
+**Rust backend (src-tauri):**
+
+* `parser` → parses blocks.
+* `apply` → matching & application (exact substring fast path + layered search).
+* `backup` → timestamped backup folder.
+* `tauri_commands.rs` → `preview_patch`, `apply_patch`, `pick_folder`, etc.
+* Structured JSONL logs from subsystems (see console tail).
+
+## Acknowledgments & Prior Art
+
+ApplyDiff is an **independent, from-scratch implementation** in Rust. We were, however, informed and inspired by excellent public work in this space:
+
+* **Aider** (Brett Koonce & contributors): demonstrated that *textual patch formats with flexible matching* work well for LLM-assisted editing. We borrowed ideas at a conceptual level:
+
+  * Avoid line numbers; anchor by content and surrounding context.
+  * Support multiple edit styles; prefer formats that force specificity.
+  * Flexible matching/fallbacks (exact → normalization → fuzzy) improve reliability.
+
+* **Cursor Fast Apply & two-stage workflows**: the idea of separating **planning** from **mechanical application** informed our roadmap (longer-term). ApplyDiff currently focuses on a robust local applier with strong safety rails.
+
+* **Git unified diffs** and the broader ecosystem taught us the value of machine-consumable, deterministic formats and unified previews. Our preview uses unified diffs for readability.
+
+* **Rust ecosystem crates & patterns**: standard library string handling, diffing approaches, and structured logging patterns influenced design. 
+
+If we incorporate any external **code** (not just ideas) in the future, we will:
+
+1. include a clear entry in **`NOTICE`** with upstream license,
+2. keep original headers where required, and
+3. link to the source and commit.
+
+We're grateful to these projects for moving the field forward.
 
 ## Roadmap
 
-- [ ] **Syntax highlighting** in patch input area
-- [ ] **Diff view** showing before/after side-by-side
-- [ ] **Undo button** (calls `git reset` internally)
-- [ ] **Recent patches** dropdown
-- [ ] **Batch mode** - queue multiple patches
-- [ ] **macOS/Linux packaging** (currently manual build)
-- [ ] **Windows installer** (.msi)
-- [ ] **Config file** for default thresholds and limits
-
----
-
-## Contributing
-
-PRs welcome! Please maintain:
-- Po10 compliance (see `SAFETY.md`)
-- Zero warnings in CI
-- ≥2 assertions per function
-- Bounded loops with explicit guards
-
----
-
-## License
-
-MIT License - see LICENSE file
-
----
-
-## FAQ
-
-**Q: Why not just use `git apply` or `patch`?**  
-A: Those require exact matches. AI-generated diffs often have context mismatches. applydiff's fuzzy matching handles this gracefully.
-
-**Q: What if my repo has uncommitted changes?**  
-A: applydiff will refuse to run. Commit or stash first. This prevents accidentally mixing patch changes with your work.
-
-**Q: Can I use this without a GUI?**  
-A: Not currently. The CLI was removed in favor of the desktop app. If you need CLI, use an earlier version or build with the `cli` feature flag (disabled by default).
-
-**Q: What if fuzzy matching picks the wrong location?**  
-A: applydiff rejects ambiguous matches (multiple equally-good hits). If it's unsure, it fails rather than guessing. Adjust the `fuzz` threshold or make your patch more specific.
-
-**Q: Does it work on Windows?**  
-A: Yes! Tested on Windows 10/11 with Git Bash or native Git.
-
----
-
-**Made for developers who work with AI assistants and value their sanity.**
+* Flexible matching enhancements (whitespace & relative indentation normalization, hunk decomposition).
+* Unified diff input support (optional), keeping search/replace as the default.
+* Repo map context for prompt generation (token-efficient retrieval).
+* Deeper gauntlet coverage (`LF/MA/FS` series — see TESTING.md).

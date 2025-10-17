@@ -27,11 +27,11 @@ pub fn resize_window(app: tauri::AppHandle, width: f64, height: f64) -> Result<(
 
 #[tauri::command]
 pub async fn pick_folder(app: tauri::AppHandle) -> Result<String, String> {
-    // blocking_* APIs are recommended inside commands
-    match app.dialog().file().blocking_pick_folder() {
+    let folder = app.dialog().file().blocking_pick_folder();
+    match folder {
         Some(FilePath::Path(path)) => Ok(path.to_string_lossy().to_string()),
         Some(FilePath::Url(url)) => Ok(url.to_string()),
-        None => Err("No folder selected".into()),
+        None => Err("No folder selected".to_string()),
     }
 }
 
@@ -103,47 +103,49 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
                 ));
 
                 let file_path = target_path.join(&block.file);
-                if let Ok(content) = fs::read_to_string(&file_path) {
-                    let start = result.matched_at as usize;
-                    let end = result.matched_end.min(content.len());
-                    if start <= end {
-                        let before = &content[start..end];
 
-                        // harmonize EOLs for preview diff too
-                        let matched_nl = if before.ends_with("\r\n") {
-                            "\r\n"
-                        } else if before.ends_with('\n') {
-                            "\n"
-                        } else {
-                            ""
-                        };
-                        let mut to_text = block.to.clone();
-                        if !matched_nl.is_empty() {
-                            if to_text.ends_with("\r\n") && matched_nl == "\n" {
-                                let new_len = to_text.len().saturating_sub(2);
-                                to_text.truncate(new_len);
-                                to_text.push('\n');
-                            } else if to_text.ends_with('\n') && matched_nl == "\r\n" {
-                                to_text.pop();
-                                to_text.push_str("\r\n");
-                            } else if !to_text.ends_with('\n') && !to_text.ends_with("\r\n") {
-                                to_text.push_str(matched_nl);
-                            }
+                // Treat missing files as empty so append-create shows a proper preview.
+                let content = fs::read_to_string(&file_path).unwrap_or_default();
+
+                let start = result.matched_at as usize;
+                let end = result.matched_end.min(content.len());
+                if start <= end {
+                    let before = &content[start..end];
+
+                    // harmonize EOLs for preview as we do for apply
+                    let matched_nl = if before.ends_with("\r\n") {
+                        "\r\n"
+                    } else if before.ends_with('\n') {
+                        "\n"
+                    } else {
+                        ""
+                    };
+                    let mut to_text = block.to.clone();
+                    if !matched_nl.is_empty() {
+                        if to_text.ends_with("\r\n") && matched_nl == "\n" {
+                            let new_len = to_text.len().saturating_sub(2);
+                            to_text.truncate(new_len);
+                            to_text.push('\n');
+                        } else if to_text.ends_with('\n') && matched_nl == "\r\n" {
+                            to_text.pop();
+                            to_text.push_str("\r\n");
+                        } else if !to_text.ends_with('\n') && !to_text.ends_with("\r\n") {
+                            to_text.push_str(matched_nl);
                         }
+                    }
 
-                        let udiff = TextDiff::from_lines(before, &to_text)
-                            .unified_diff()
-                            .header(
-                                &format!("a/{}", block.file.display()),
-                                &format!("b/{}", block.file.display()),
-                            )
-                            .to_string();
+                    let udiff = TextDiff::from_lines(before, &to_text)
+                        .unified_diff()
+                        .header(
+                            &format!("a/{}", block.file.display()),
+                            &format!("b/{}", block.file.display()),
+                        )
+                        .to_string();
 
-                        if !udiff.trim().is_empty() {
-                            diffs.push_str(&udiff);
-                            if !diffs.ends_with('\n') {
-                                diffs.push('\n');
-                            }
+                    if !udiff.trim().is_empty() {
+                        diffs.push_str(&udiff);
+                        if !diffs.ends_with('\n') {
+                            diffs.push('\n');
                         }
                     }
                 }
@@ -192,7 +194,7 @@ fn apply_patch_impl(target: &str, patch: &str) -> PatchResult<String> {
     let backup_dir = backup::create_backup(&target_path, &files_to_backup)?;
     output.push_str(&format!("✓ Backup created at {}\n", backup_dir.display()));
 
-    // Apply
+    // Apply (partial success allowed)
     let applier = Applier::new(&logger, target_path.clone(), false);
     let mut success = 0usize;
     let mut failed = 0usize;
@@ -219,6 +221,8 @@ fn apply_patch_impl(target: &str, patch: &str) -> PatchResult<String> {
     Ok(output)
 }
 
+/* ========================== Demo ========================== */
+
 fn create_demo_impl() -> Result<(String, String), String> {
     let base = std::env::temp_dir().join(format!(
         "applydiff_demo_{}",
@@ -230,19 +234,11 @@ fn create_demo_impl() -> Result<(String, String), String> {
     let js = base.join("web/app.js");
     let md = base.join("docs/readme.md");
 
-    if let Some(p) = js.parent() {
-        fs::create_dir_all(p).map_err(|e| e.to_string())?;
-    }
-    if let Some(p) = md.parent() {
-        fs::create_dir_all(p).map_err(|e| e.to_string())?;
-    }
+    if let Some(p) = js.parent() { fs::create_dir_all(p).map_err(|e| e.to_string())?; }
+    if let Some(p) = md.parent() { fs::create_dir_all(p).map_err(|e| e.to_string())?; }
 
     fs::write(&hello, "Hello world\n").map_err(|e| e.to_string())?;
-    fs::write(
-        &js,
-        "function greet(){\r\n  console.log('Hello world');\r\n}\r\n",
-    )
-    .map_err(|e| e.to_string())?;
+    fs::write(&js, "function greet(){\r\n  console.log('Hello world');\r\n}\r\n").map_err(|e| e.to_string())?;
     fs::write(&md, "# Title\r\n\r\n- item A\r\n- item B\r\n").map_err(|e| e.to_string())?;
 
     let patch = [
@@ -267,11 +263,12 @@ fn create_demo_impl() -> Result<(String, String), String> {
         "## Changelog",
         "- Added greeting",
         "<<<",
-    ]
-    .join("\n");
+    ].join("\n");
 
     Ok((base.display().to_string(), patch))
 }
+
+/* ========================== Utils ========================== */
 
 fn generate_rid() -> u64 {
     (Local::now().timestamp_millis() as u64) ^ (std::process::id() as u64)

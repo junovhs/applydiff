@@ -1,68 +1,245 @@
-# Gauntlet Testing Strategy
+# ApplyDiff – Gauntlet & Lab Testing
 
-## Overview and Philosophy
+> Evidence-first confidence, not vibes. We verify both the **what** (output) and the **how** (internal path).
 
-This document outlines the testing strategy for the `applydiff` core patching engine. The strategy is built upon a philosophy of **evidence-based confidence**. A simple "pass" is insufficient for a mission-critical tool; we require verifiable proof of not only the correctness of the final output but also the efficiency and correctness of the internal process.
+## Philosophy
 
-Our testing framework, orchestrated by `gauntlet.rs`, has evolved from a simple black-box verifier to a sophisticated **white-box testing harness**. It achieves this through:
+The patcher is safety-critical. Tests must prove:
+- Correct final state (byte-for-byte where applicable)
+- Correct internal behavior (fast/slow path, thresholds, safety guards)
+- Clear, structured observability so failures teach us something
 
-1.  **Test Case Isolation:** Each test case is a self-contained directory (`tests/<CASE_ID>/`) with explicit `before` and `after` states.
-2.  **Sandbox Execution:** All tests run in a temporary, isolated sandbox environment, ensuring no side effects and a clean state for every run.
-3.  **Instrumentation & Log Capture:** The application's core components (e.g., `Logger`, `matcher`) are instrumented to emit detailed logs about their internal decision-making. The test harness captures this output for verification.
-4.  **Metadata-Driven Verification:** Each test is defined by a `meta.json` file that specifies not just the expected outcome, but also internal behavioral and performance criteria.
-
-This approach allows us to move from assumption to proof, providing a 10/10 confidence level in the components under test.
-
-## Completed Test Cases
-
-### LF01: Large File Patch at Start
-
-*   **Objective:** To verify the correct and **performant** application of an exact-match patch (`fuzz=1.0`) targeting the first line of a large (50,000-line, multi-megabyte) text file.
-
-*   **Methodology:**
-    1.  A 50,000-line `large_file.txt` was programmatically generated for the `before` state.
-    2.  A corresponding `after` state file was generated with the first line modified.
-    3.  A `patch.txt` file was created to transform the `before` state to the `after` state.
-    4.  The `meta.json` was configured to expect 1 successful block application and 0 failures. Critically, it was also configured to require proof of the internal execution path.
-
-*   **Verification Points:**
-    1.  **Output State Verification (Black-Box):** The orchestrator performed a byte-for-byte comparison between the file produced in the sandbox and the `tests/LF01-Replace-Start/after/large_file.txt`. The test passed this check, confirming the final output was bit-perfect.
-    2.  **Execution Outcome Verification (Black-Box):** The application's report of `ok=1, fail=0` was compared against the `meta.json` expectation. The test passed this check, confirming the application correctly reported its own success.
-    3.  **Internal Behavior Verification (White-Box):** This was the essential check for 10/10 confidence.
-        *   **Instrumentation:** The `matcher::find_best_match` function was instrumented to log which internal code path was executed: the `O(1)` exact-string search (`haystack.find()`) or the `O(n*m)` line-by-line fuzzy search.
-        *   **Proof:** The `meta.json` included the directive `"expected_log_contains": "\"action\":\"fast_path_match\""`.
-        *   **Result:** The test orchestrator captured the application's structured logs and verified the presence of this exact string.
-
-*   **Confidence Analysis (10/10):**
-    The confidence in this test result is absolute. We have not only proven that the application can produce the correct output for this scenario, but we have **irrefutable proof** that it did so using the most efficient and correct internal algorithm. By verifying the "fast_path_match" log, we eliminate the assumption that the tool might have wastefully performed a full fuzzy scan. We have validated the "what" (the output) and, crucially, the "how" (the process).
+We enforce this with:
+- **Isolation:** Every case runs in a temp sandbox.
+- **Determinism:** Fixtures live under `tests/<CASE_ID>/` or are generated programmatically.
+- **Instrumentation:** Structured logs (JSONL) from subsystems like `matcher`, `applier`.
+- **Metadata:** `meta.json` describes expected outputs *and* expected log breadcrumbs.
 
 ---
 
-## Test Development Roadmap
+## Current MVP Surface (what we verify right now)
 
-This roadmap outlines the future test cases required to achieve comprehensive coverage of the patching engine. Tests will be developed and validated one at a time.
+**Core invariants**
+- Search strategy prefers exact substring fast-path; otherwise layered search with fuzzy threshold.
+- No line numbers; matching is content/context based.
+- **Path safety:** Edits may not escape the selected directory.
+- **CRLF/LF preservation:** Replacement lines harmonize to the existing EOL where a match is found.
+- **Append-create:** Empty `--- from` on a non-existent file treats "before" as empty and previews a diff.
+- **Partial apply:** Valid blocks apply, invalid blocks are skipped; backups are always created first.
+- **Backups:** Timestamped sibling folder `.applydiff_backup_YYYYMMDD_*`.
 
-### Category 1: Large File & Performance (`LF` Series)
-*Goal: Ensure stability and performance with large file inputs.*
+**UI invariants**
+- Patch panel locked until directory is chosen.
+- Auto-preview on paste, and after 3s idle while typing.
+- "Apply Patch" appears for all-green; "Apply Valid Changes" appears for mixed results.
+- Console has **Clear**; floating buttons never overlap content.
 
-*   **`LF02-Replace-Middle`**: Verifies correct patch application in the middle of a large file, forcing the matcher to seek.
-*   **`LF03-Replace-End`**: Verifies correct patch application at the end of a large file.
-*   **`LF04-Multi-Line-Replace`**: Verifies matching and replacement of a large, multi-line chunk within a large file.
-*   **`LF05-Fuzzy-No-Match`**: Verifies that a fuzzy search across a large file terminates gracefully and within a performance budget when no suitable match is found.
+---
 
-### Category 2: Matcher & Applier Robustness (`MA` Series)
-*Goal: Stress the fuzzy matching algorithm and newline handling logic.*
+## Manual Lab (quick smoke tests)
 
-*   **`MA01-True-Ambiguity`**: Verifies that the patcher fails when a fuzzy search finds multiple equally-scored best matches.
-*   **`MA02-Sequential-Dependency`**: Verifies that for a multi-block patch on a single file, a later block correctly fails if its context was removed by an earlier block.
-*   **`MA03-CRLF-to-LF-Harmonization`**: Verifies that a patch with LF line endings correctly harmonizes its output to match a file with CRLF line endings.
-*   **`MA04-Delete-No-EOL`**: Verifies correct deletion of the final line of a file that lacks a trailing newline.
-*   **`MA05-Append-No-EOL`**: Verifies correct appending of content to a file that lacks a trailing newline.
+Create the lab in `~/ApplyDiffLab` (Windows MINGW64 Bash):
 
-### Category 3: Filesystem & Edge Cases (`FS` Series)
-*Goal: Ensure resilience against filesystem errors and unusual file states.*
+```bash
+TEST_DIR="$HOME/ApplyDiffLab"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR/src" "$TEST_DIR/docs" "$TEST_DIR/notes" "$TEST_DIR/new/nested" "$TEST_DIR/deep/dir"
 
-*   **`FS01-Create-Subdirectory`**: Verifies that the applier correctly creates parent directories for a patch targeting a file path that does not yet exist.
-*   **`FS02-Empty-File-Patch`**: Verifies the correct application of a patch to a zero-byte file.
-*   **`FS03-Binary-File`**: Verifies that attempting to patch a non-UTF8 binary file results in a graceful read failure, leaving the original file untouched.
-*   **`FS04-Read-Only-File`**: Verifies that attempting to apply a patch to a read-only file results in a graceful write failure.
+# LF
+cat > "$TEST_DIR/readme.md" <<'EOF'
+# ApplyDiff Lab
+Welcome to the lab.
+EOF
+
+# CRLF
+printf 'function greet(){\r\n  console.log("Hello world");\r\n}\r\n' > "$TEST_DIR/src/app.js"
+
+# More LF
+cat > "$TEST_DIR/src/math.js" <<'EOF'
+export function add(a, b) {
+  return a + b;
+}
+EOF
+
+cat > "$TEST_DIR/docs/guide.md" <<'EOF'
+## Guide
+Steps go here.
+EOF
+
+# Two nearly identical blocks to create ambiguity potential
+cat > "$TEST_DIR/notes/duplicate.txt" <<'EOF'
+id: A
+start
+  marker: section
+  value: target
+end
+
+id: B
+start
+  marker: section
+  value: target
+end
+EOF
+
+echo "Lab created at $TEST_DIR"
+```
+
+Open ApplyDiff → **Select Directory** → choose `~/ApplyDiffLab`.
+Click **Patch** and paste the blocks below.
+
+### A) Exact match (sanity)
+
+```
+>>> file: readme.md | fuzz=1.0
+--- from
+# ApplyDiff Lab
+--- to
+# ApplyDiff Lab (patched)
+<<<
+```
+
+**Expect:** Green diff; apply succeeds.
+**Verify:** `readme.md` now starts with `# ApplyDiff Lab (patched)`.
+
+### B) CRLF harmonization
+
+```
+>>> file: src/app.js | fuzz=0.85
+--- from
+  console.log("Hello world");
+--- to
+  console.log("Hello brave new world");
+<<<
+```
+
+**Expect:** Diff shows one changed line; **file keeps CRLF** (`0d 0a`).
+**Optional check:** `xxd -g 1 -c 1 ~/ApplyDiffLab/src/app.js | head` shows `0d` `0a` line endings.
+
+### C) Append-create (new file) — **verified**
+
+```
+>>> file: new/nested/log.txt | fuzz=1.0
+--- from
+--- to
+Log started
+Entry: 1
+<<<
+```
+
+**Expect:** Diff preview shows an added file; apply creates `new/nested/log.txt` with two lines.
+
+### D) Path traversal guard
+
+```
+>>> file: ../escape.txt | fuzz=1.0
+--- from
+--- to
+You should never see this.
+<<<
+```
+
+**Expect:** Preview log contains ❌ "Patch path escapes target directory".
+**Apply** button remains **orange** ("Apply Valid Changes") only if other blocks in the same submission are valid; otherwise hidden.
+
+### E) Ambiguity trap (fuzzy)
+
+Tabs vs spaces make the context fuzzy; there are two similar windows.
+
+```
+>>> file: notes/duplicate.txt | fuzz=0.90
+--- from
+start
+    marker: section
+    value: target
+end
+--- to
+start
+    marker: section
+    value: PATCHED
+end
+<<<
+```
+
+**Expect:** No match ≥ 0.90; preview shows ❌.
+**Fix:** Disambiguate by including `id: A` lines in `from`.
+
+### F) Mixed patch (partial apply) — **verified**
+
+```
+>>> file: readme.md | fuzz=1.0
+--- from
+Welcome to the lab.
+--- to
+Welcome to the patched lab.
+<<<
+
+>>> file: new/report.txt | fuzz=1.0
+--- from
+--- to
+Report v1
+<<<
+
+>>> file: ../should-not-write.txt | fuzz=1.0
+--- from
+--- to
+nope
+<<<
+```
+
+**Expect:** Diff shows the first two hunks; third is rejected in preview.
+Button reads **Apply Valid Changes** (orange).
+**After apply:** console reports `2 applied, 1 failed`, `new/report.txt` contains `Report v1`.
+
+---
+
+## Completed Gauntlet Case
+
+### LF01 – Large File Patch at Start
+
+**Objective:** Verify exact-match edit at start of a 50k-line file and that the engine uses the fast path.
+**Verification:**
+
+* Byte-for-byte equality with expected `after/large_file.txt`.
+* Reported `ok=1, fail=0`.
+* Log contains `"action":"fast_path_match"` from the matcher.
+  **Confidence:** 10/10 — both output and internal path are proven.
+
+---
+
+## White-Box Expectations (log probes)
+
+We assert these log breadcrumbs during tests:
+
+| Subsystem | Action                  | Meaning                               |
+| --------- | ----------------------- | ------------------------------------- |
+| matcher   | `fast_path_match`       | Exact substring path used             |
+| matcher   | `search_start`          | Enter layered search (no exact match) |
+| matcher   | `no_match_threshold`    | Best score `< fuzz` threshold         |
+| applier   | `path_escape` (message) | Attempted path leaves root (rejected) |
+
+Tests check for these strings verbatim in captured logs.
+
+---
+
+## Roadmap (next test authoring)
+
+**Large File (`LF`)**
+
+* `LF02-Replace-Middle`, `LF03-Replace-End`, `LF04-Multi-Line-Replace`, `LF05-Fuzzy-No-Match (bounded)`
+
+**Matcher & Applier (`MA`)**
+
+* `MA01-True-Ambiguity` (tie detection)
+* `MA02-Sequential-Dependency`
+* `MA03-CRLF-to-LF-Harmonization` (already observed manually; add formal gauntlet)
+* `MA04-Delete-No-EOL`
+* `MA05-Append-No-EOL`
+
+**Filesystem (`FS`)**
+
+* `FS01-Create-Subdirectory` (covered by Lab C; formalize)
+* `FS02-Empty-File-Patch`
+* `FS03-Binary-File` (non-UTF8 read error, no write)
+* `FS04-Read-Only-File`
+
+> As we expand flexible matching (whitespace/indent normalization, hunk decomposition), add mirrored tests that prove failure modes are **safe first** (no writes) and successes are **traceable** via logs.

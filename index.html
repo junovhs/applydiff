@@ -10,7 +10,7 @@
     @font-face { font-family: "JetBrains Mono"; src: url("/JetBrainsMono-Thin.ttf") format("truetype"); font-weight: 200; font-style: normal; }
     @font-face { font-family: "JetBrains Mono"; src: url("/JetBrainsMono-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; }
 
-    /* Base */
+    /* Theme */
     :root {
       --bg:#0a0a0a; --panel-bg:#141414; --border:#333; --border-dashed:#2a2a2a;
       --text:#e0e0e0; --text-muted:#6b6b6b; --accent:#f59e0b;
@@ -24,14 +24,14 @@
     .app{ display:flex; flex-direction:column; height:100vh; width:100vw; }
     .header{ display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg); flex-shrink:0; }
     .header-left{ display:flex; align-items:center; gap:10px; }
-    .logo{ height:38px; width:auto; display:block; filter: brightness(0) saturate(100%) invert(78%) sepia(34%) saturate(624%) hue-rotate(349deg) brightness(93%) contrast(91%); }
+    .logo{ height:38px; width:auto; display:block; filter:brightness(0) saturate(100%) invert(78%) sepia(34%) saturate(624%) hue-rotate(349deg) brightness(93%) contrast(91%); }
     .header-right{ display:flex; align-items:center; gap:10px; position:relative; }
     .header-btn{ display:flex; align-items:center; gap:8px; padding:6px 12px; background:#1A1A1A; border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:12px; cursor:pointer; transition:.2s; white-space:nowrap; }
     .header-btn:hover{ background:rgba(255,255,255,.05); }
     .header-btn.icon-only{ padding:6px 10px; }
     .btn-icon{ width:14px; height:14px; opacity:.9; }
 
-    /* Labels Row */
+    /* Labels row */
     .labels-row{ display:flex; align-items:center; padding:22px 20px 0 20px; }
     .labels-container{ display:flex; position:relative; width:100%; align-items:center; margin-bottom:10px; }
     .panel-label{ font-size:9pt; letter-spacing:.5px; color:#E7B56F; position:absolute; }
@@ -39,39 +39,43 @@
     .panel-label:nth-child(2){ left:calc(50% + 10px); }
     .console-label-item{ display:none; position:fixed; left:40px; bottom:265px; z-index:10; }
     .console-label-item.visible{ display:block; }
-    .self-test-btn{ display:none; position:fixed; right:40px; bottom:265px; background:none; border:none; padding:0; color:#fff; font-size:9pt; letter-spacing:.5px; cursor:pointer; z-index:10; }
-    .self-test-btn.visible{ display:block; }
 
-    /* Main Content */
+    /* Floating console buttons (never overlap content) */
+    .float-btn{ display:none; position:fixed; bottom:265px; background:none; border:none; padding:0; color:#fff; font-size:9pt; letter-spacing:.5px; cursor:pointer; z-index:10; }
+    .float-btn.visible{ display:block; }
+    #self-test-btn{ right:40px; }
+    #clear-console-btn{ right:170px; } /* sits left of self-test */
+
+    /* Main */
     .main-content{ display:flex; flex-direction:column; gap:12px; padding:0 20px 20px; flex:1; min-height:0; overflow:hidden; }
     .panels-container{ display:flex; flex-direction:column; gap:12px; flex:1; min-width:0; min-height:0; }
     .panels-top{ display:flex; gap:20px; flex:1; min-height:0; }
     .panel{ display:flex; flex-direction:column; gap:12px; min-height:0; flex:1; }
 
-    /* Patch Panel */
-    .patch-panel{ display:flex; flex-direction:column; flex:1; min-width:0; position:relative; }
+    /* Patch panel */
+    .patch-panel{ position:relative; }
     .patch-area{ width:100%; flex:1; min-height:0; border:2px dashed #454545; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .2s; background:#1A1A1A; overflow:auto; position:relative; }
     .patch-area:hover{ border-color:#E7B56F; }
     .patch-area.disabled{ opacity:.5; cursor:not-allowed; }
     .patch-placeholder{ font-size:12pt; font-weight:700; color:rgba(255,255,255,.15); user-select:none; }
     .patch-editor{ position:absolute; inset:0; width:100%; height:100%; padding:12px; border:0; outline:0; background:transparent; color:var(--text); font:13px/1.5 "JetBrains Mono", ui-monospace, monospace; resize:none; }
-    .status-chip{ position:absolute; top:8px; left:8px; background:#0f0f0f; border:1px solid var(--border); border-radius:9999px; padding:2px 8px; font-size:11px; color:var(--text-muted); }
+    .status-chip{ position:absolute; top:8px; left:8px; background:#0f0f0f; border:1px solid var(--border); border-radius:9999px; padding:2px 8px; font-size:11px; color:var(--text-muted); pointer-events:none; } /* never blocks clicks */
 
-    /* Diff Panel */
-    .diff-panel{ display:flex; flex-direction:column; flex:1; min-width:0; position:relative; }
-    .diff-area{ width:100%; flex:1; min-height:0; border:1px solid #2D2D2D; border-radius:6px; background:#1A1A1A; overflow:auto; position:relative; }
-    .diff-pre{ margin:0; padding:12px; font:12px/1.5 "JetBrains Mono", ui-monospace, monospace; white-space:pre; }
+    /* Diff panel */
+    .diff-panel{ position:relative; }
+    .diff-area{ width:100%; flex:1; min-height:0; border:1px solid #2D2D2D; border-radius:6px; background:#1A1A1A; overflow:auto; position:relative; scrollbar-gutter:stable both-edges; } /* reserve gutter so Apply never overlaps scrollbar */
+    .diff-pre{ margin:0; padding:12px 12px 56px 12px; font:12px/1.5 "JetBrains Mono", ui-monospace, monospace; white-space:pre; } /* bottom padding reserves space for Apply button */
     .d-hdr{ color:#9aa4b2; } .d-add{ color:#22c55e; } .d-del{ color:#ef4444; } .d-ctx{ color:#8892a0; }
 
-    .apply-btn{ position:absolute; right:12px; bottom:12px; background:var(--ok); color:#111; font-weight:700; border:0; border-radius:6px; padding:8px 12px; cursor:pointer; display:none; }
-    .apply-btn[disabled]{ opacity:.5; cursor:not-allowed; }
+    .apply-btn{ position:absolute; right:12px; bottom:12px; background:var(--ok); color:#111; font-weight:700; border:0; border-radius:6px; padding:8px 12px; cursor:pointer; display:none; z-index:2; }
+    .apply-btn.warn{ background:var(--warn); color:#111; }
 
-    /* Console Panel */
+    /* Console */
     .console-panel{ display:none; flex-direction:column; height:200px; flex-shrink:0; margin-top:40px; }
     .console-panel.visible{ display:flex; }
     .console-area{ width:100%; height:100%; border:1px solid #2D2D2D; border-radius:6px; padding:12px; overflow:auto; font:12px/1.6 "JetBrains Mono", ui-monospace, monospace; background:#1A1A1A; }
 
-    /* Version tabs (kept for now) */
+    /* Version tabs (placeholder) */
     .version-tabs-wrapper{ display:flex; align-items:center; gap:8px; }
     .version-tabs{ display:flex; gap:8px; flex:1; overflow-x:auto; scrollbar-width:thin; }
     .version-tab{ padding:6px 14px; background:transparent; border:1px solid var(--border); border-radius:4px; color:#aaa; font-size:12px; cursor:pointer; transition:.2s; }
@@ -107,7 +111,8 @@
         <span class="panel-label">PATCH</span>
         <span class="panel-label" id="diff-label">DIFF PREVIEW</span>
         <span class="panel-label console-label-item" id="console-label">CONSOLE</span>
-        <button class="self-test-btn" id="self-test-btn">Run Self-Test</button>
+        <button class="float-btn" id="clear-console-btn">Clear Console</button>
+        <button class="float-btn" id="self-test-btn">Run Self-Test</button>
       </div>
     </div>
 
@@ -119,7 +124,6 @@
             <div class="patch-area disabled" id="patch-area">
               <span class="status-chip" id="status">idle</span>
               <span class="patch-placeholder" id="patch-placeholder">Click To Paste</span>
-              <!-- <textarea id="patch-editor" class="patch-editor" style="display:none;"></textarea> -->
             </div>
           </section>
 
@@ -137,7 +141,7 @@
           <div class="console-area" id="console-area">ready.</div>
         </section>
 
-        <!-- Version tabs (placeholder; not required for MVP) -->
+        <!-- Version tabs (placeholder) -->
         <div class="version-tabs-wrapper">
           <button class="pagination-btn" id="prev-page">←</button>
           <div class="version-tabs" id="version-tabs">
@@ -160,6 +164,7 @@
       logEl().textContent += `\\n[${now}] ${m}`;
       logEl().scrollTop = logEl().scrollHeight;
     };
+    const clearLog = () => { logEl().textContent = 'cleared.'; };
     const setStatus = (text, tone='') => {
       const el = document.getElementById('status');
       el.textContent = text;
@@ -173,7 +178,6 @@
     let editorEl = null;
     let typingTimer = null;
     let previewInFlight = false;
-    let lastPreviewOK = false;
 
     // ===== tauri v2 invoke =====
     const invoke = (...args) => {
@@ -185,34 +189,27 @@
     document.getElementById('console-toggle').addEventListener('click', () => {
       const panel = document.getElementById('console-panel');
       const label = document.getElementById('console-label');
-      const btn = document.getElementById('self-test-btn');
+      const selfBtn = document.getElementById('self-test-btn');
+      const clearBtn = document.getElementById('clear-console-btn');
       const on = !panel.classList.contains('visible');
       panel.classList.toggle('visible', on);
       label.classList.toggle('visible', on);
-      btn.classList.toggle('visible', on);
-      if (on) log('✓ Console opened'); 
+      selfBtn.classList.toggle('visible', on);
+      clearBtn.classList.toggle('visible', on);
+      if (on) log('✓ Console opened');
     });
 
-    // ===== self-test =====
+    // ===== self-test & clear =====
     document.getElementById('self-test-btn').addEventListener('click', async () => {
-      try {
-        log('🧪 Running tests…');
-        const out = await invoke('run_self_test');
-        log(out);
-      } catch (e) {
-        log('❌ ' + e);
-      }
+      try { log('🧪 Running tests…'); const out = await invoke('run_self_test'); log(out); }
+      catch (e) { log('❌ ' + e); }
     });
+    document.getElementById('clear-console-btn').addEventListener('click', clearLog);
 
     // ===== copy prompt =====
     document.getElementById('btn-copy-prompt').addEventListener('click', async () => {
-      try {
-        const prompt = await invoke('get_ai_prompt');
-        await navigator.clipboard.writeText(String(prompt || ''));
-        log('📋 AI prompt copied.');
-      } catch (e) {
-        log('❌ Copy AI prompt failed: ' + e);
-      }
+      try { const prompt = await invoke('get_ai_prompt'); await navigator.clipboard.writeText(String(prompt||'')); log('📋 AI prompt copied.'); }
+      catch (e) { log('❌ Copy AI prompt failed: ' + e); }
     });
 
     // ===== select directory =====
@@ -227,18 +224,13 @@
           log('📁 Selected: ' + dir);
           setStatus('ready');
         }
-      } catch (e) {
-        log('❌ Select directory failed: ' + e);
-      }
+      } catch (e) { log('❌ Select directory failed: ' + e); }
     });
 
     // ===== patch paste / typing =====
     patchArea.addEventListener('click', async () => {
-      if (!selectedDir) {
-        log('ℹ Select a directory first.'); 
-        return;
-      }
-      // try clipboard
+      if (!selectedDir) { log('ℹ Select a directory first.'); return; }
+      // try clipboard first
       try {
         const text = await navigator.clipboard.readText();
         if (text && text.trim()) {
@@ -252,7 +244,6 @@
           return;
         }
       } catch (_) { /* fall through to typing mode */ }
-
       // typing mode
       ensureEditor();
       placeholder.style.display = 'none';
@@ -281,7 +272,7 @@
     function renderDiff(udiff) {
       if (!udiff || !udiff.trim()) {
         diffPre.style.color = '#777';
-        diffPre.innerHTML = 'No differences.';
+        diffPre.innerHTML = 'No preview yet.';
         return;
       }
       diffPre.style.color = '';
@@ -302,7 +293,6 @@
         renderDiff('');
         applyBtn.style.display = 'none';
         setStatus('idle');
-        lastPreviewOK = false;
         return;
       }
       if (previewInFlight) return;
@@ -311,37 +301,38 @@
 
       try {
         const res = await invoke('preview_patch', { target: selectedDir, patch });
-        // show tail of log in console
         if (res && res.log) {
           const tail = res.log.split('\\n').slice(-40).join('\\n');
           log('👁 Preview:\\n' + tail);
         }
         renderDiff(res?.diff || '');
-        // ok if diff exists and log has no ❌
-        const ok = !!(res?.diff && res.diff.trim()) && !(res?.log || '').includes('❌');
-        lastPreviewOK = ok;
-        setStatus(ok ? 'ready to apply' : 'check preview', ok ? 'ok' : 'warn');
-        applyBtn.style.display = ok ? 'inline-block' : 'none';
+        const hasDiff = !!(res?.diff && res.diff.trim());
+        const hasError = /❌/.test(res?.log || '');
+        // Show Apply for any diff. If some blocks failed, call it “Apply Valid Changes”.
+        applyBtn.style.display = hasDiff ? 'inline-block' : 'none';
+        applyBtn.classList.toggle('warn', hasDiff && hasError);
+        applyBtn.textContent = (hasDiff && hasError) ? 'Apply Valid Changes' : 'Apply Patch';
+        if (!hasDiff) setStatus('idle');
+        else if (hasError) setStatus('partial: some blocks failed','warn');
+        else setStatus('ready to apply','ok');
       } catch (e) {
         log('❌ Preview error: ' + e);
         setStatus('error','err');
         renderDiff('');
         applyBtn.style.display = 'none';
-        lastPreviewOK = false;
       } finally {
         previewInFlight = false;
       }
     }
 
     applyBtn.addEventListener('click', async () => {
-      if (!lastPreviewOK || !editorEl) return;
+      if (!editorEl) return;
       try {
         setStatus('applying…','warn');
         const out = await invoke('apply_patch', { target: selectedDir, patch: editorEl.value });
         log('✅ Apply:\\n' + out);
         setStatus('applied','ok');
-        // re-preview to reflect on-disk state
-        await doPreview('apply');
+        await doPreview('apply'); // reflect on-disk state
       } catch (e) {
         log('❌ Apply failed: ' + e);
         setStatus('apply failed','err');
