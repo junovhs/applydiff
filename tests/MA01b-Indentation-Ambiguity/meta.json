@@ -1,0 +1,6 @@
+{
+  "description": "Verifies ambiguity rejection for two blocks that are equally 'distant' from the patch.",
+  "expect_ok": 0,
+  "expect_fail": 1,
+  "expected_log_contains": "ambiguous_match"
+}

@@ -1,0 +1,9 @@
+- service: api-alpha
+  port: 8080
+  retries: 3
+  timeout: 500ms
+
+- service: api-beta
+  port: 8080
+  retries: 3
+  timeout: 500ms

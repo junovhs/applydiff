@@ -36,7 +36,19 @@
       "assetProtocol": {
         "enable": true,
         "scope": ["**"]
-      }
+      },
+      "capabilities": [
+        {
+          "identifier": "main-capability",
+          "windows": ["main"],
+          "permissions": [
+            "core:default",
+            "dialog:default",
+            "clipboard-manager:allow-read-text",
+            "clipboard-manager:allow-write-text"
+          ]
+        }
+      ]
     }
   }
 }

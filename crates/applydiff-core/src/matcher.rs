@@ -1,3 +1,4 @@
+// ===== PASTE THIS INTO matcher.rs - FINAL COMPILABLE VERSION =====
 use crate::logger::Logger;
 use strsim::normalized_damerau_levenshtein;
 
@@ -5,7 +6,7 @@ use strsim::normalized_damerau_levenshtein;
 pub struct MatchResult {
     pub start: usize,
     pub end: usize,
-    pub score: f32, // 0..1
+    pub score: f64, // 0..1
 }
 
 /// Top-level matching strategy (layered):
@@ -20,18 +21,22 @@ pub struct MatchResult {
 pub fn find_best_match(
     haystack: &str,
     needle: &str,
-    min_score: f32,
+    min_score: f64,
     logger: &Logger,
 ) -> Option<MatchResult> {
     if needle.is_empty() {
         return Some(MatchResult { start: haystack.len(), end: haystack.len(), score: 1.0 });
     }
 
-    // 0) Fast path: exact substring (works for same EOLs)
-    if let Some(idx) = haystack.find(needle) {
-        logger.info("matcher", "fast_path_match", &format!("exact substring (len={})", needle.len()));
+    // 0) Fast path: check for a UNIQUE exact substring
+    let exact_matches: Vec<_> = haystack.match_indices(needle).collect();
+    if exact_matches.len() == 1 {
+        let (idx, _) = exact_matches[0];
+        logger.info("matcher", "fast_path_match", &format!("unique exact substring (len={})", needle.len()));
         return Some(MatchResult { start: idx, end: idx + needle.len(), score: 1.0 });
     }
+    // If 0 or >1 exact matches, we fall through to the layered search.
+    // The layered search will correctly handle no-match or ambiguity.
 
     logger.info("matcher", "search_start", &format!("no exact match; layered search (needle_len={})", needle.len()));
 
@@ -51,9 +56,11 @@ pub fn find_best_match(
     // 1) Whitespace-normalized equality (tabs/spaces/extra spaces differences)
     {
         let needle_ws = normalize_ws_preserve_newlines(needle);
-        if let Some((start, end)) = scan_windows_equal(&ranges, haystack, &needle_ws, win_min, win_max, |s| {
+        let matches = scan_windows_equal(&ranges, haystack, &needle_ws, win_min, win_max, |s| {
             normalize_ws_preserve_newlines(s)
-        }) {
+        });
+        if matches.len() == 1 {
+            let (start, end) = matches[0];
             logger.info("matcher", "normalized_ws_match", &format!("start={}, end={}", start, end));
             return Some(MatchResult { start, end, score: 1.0 });
         }
@@ -62,9 +69,11 @@ pub fn find_best_match(
     // 2) Relative-indentation-normalized equality (uniform outdent/indent)
     {
         let needle_rel = normalize_relative_indent(&normalize_ws_preserve_newlines(needle));
-        if let Some((start, end)) = scan_windows_equal(&ranges, haystack, &needle_rel, win_min, win_max, |s| {
+        let matches = scan_windows_equal(&ranges, haystack, &needle_rel, win_min, win_max, |s| {
             normalize_relative_indent(&normalize_ws_preserve_newlines(s))
-        }) {
+        });
+        if matches.len() == 1 {
+            let (start, end) = matches[0];
             logger.info("matcher", "relative_indent_match", &format!("start={}, end={}", start, end));
             return Some(MatchResult { start, end, score: 1.0 });
         }
@@ -73,8 +82,8 @@ pub fn find_best_match(
     // 3) Fuzzy match (Damerau–Levenshtein) on windows with CRLF/LF insensitive scoring
     {
         let needle_norm = normalize_newlines(needle);
-        let mut best_score: f32 = -1.0;
-        let mut second_score: f32 = -1.0;
+        let mut best_score: f64 = -1.0;
+        let mut second_score: f64 = -1.0;
         let mut best_range: Option<(usize, usize)> = None;
 
         for win in win_min..=win_max {
@@ -84,11 +93,20 @@ pub fn find_best_match(
             for i in 0..=ranges.len() - win {
                 let start = ranges[i].0;
                 let end = ranges[i + win - 1].1;
-                let slice = &haystack[start..end];
+                let slice_with_nl = &haystack[start..end];
 
-                // CRLF-insensitive scoring
+                // Trim trailing newline from slice to match how the parser prepares the needle.
+                let mut slice = slice_with_nl;
+                if slice.ends_with('\n') {
+                    slice = &slice[..slice.len() - 1];
+                    if slice.ends_with('\r') {
+                        slice = &slice[..slice.len() - 1];
+                    }
+                }
+
+                // CRLF-insensitive scoring (now on a correctly trimmed slice)
                 let slice_norm = normalize_newlines(slice);
-                let score = normalized_damerau_levenshtein(&slice_norm, &needle_norm) as f32;
+                let score = normalized_damerau_levenshtein(&slice_norm, &needle_norm);
 
                 if score > best_score {
                     second_score = best_score;
@@ -124,7 +142,7 @@ pub fn find_best_match(
 /* ============================== helpers ============================== */
 
 /// Scan windows defined by `ranges`, transforming each slice with `xfm`,
-/// and return the first window whose transformed text equals `needle_xfm`.
+/// and return ALL windows whose transformed text equals `needle_xfm`.
 fn scan_windows_equal(
     ranges: &[(usize, usize)],
     haystack: &str,
@@ -132,9 +150,10 @@ fn scan_windows_equal(
     win_min: usize,
     win_max: usize,
     mut xfm: impl FnMut(&str) -> String,
-) -> Option<(usize, usize)> {
+) -> Vec<(usize, usize)> {
+    let mut hits = Vec::new();
     if ranges.is_empty() {
-        return None;
+        return hits;
     }
     for win in win_min..=win_max {
         if win == 0 || ranges.len() < win {
@@ -145,12 +164,13 @@ fn scan_windows_equal(
             let end = ranges[i + win - 1].1;
             let slice = &haystack[start..end];
             if xfm(slice) == needle_xfm {
-                return Some((start, end));
+                hits.push((start, end));
             }
         }
     }
-    None
+    hits
 }
+
 
 /// Return a vector of (start_byte, end_byte) for each logical line,
 /// where end includes the newline if present. Handles both LF and CRLF inputs

@@ -1,3 +1,4 @@
+// ===== PASTE THIS INTO parser.rs =====
 use crate::error::{ErrorCode, PatchError, Result};
 use regex::Regex;
 use std::path::PathBuf;
@@ -7,7 +8,7 @@ pub struct PatchBlock {
     pub file: PathBuf,
     pub from: String,
     pub to: String,
-    pub fuzz: f32, // 0.0..=1.0
+    pub fuzz: f64, // 0.0..=1.0
 }
 
 #[derive(Default)]
@@ -42,7 +43,7 @@ impl Parser {
                 context: line.to_string(),
             })?;
             let file = caps["file"].trim().to_string();
-            let fuzz = caps.name("fuzz").map(|m| m.as_str().parse::<f32>().unwrap_or(0.85)).unwrap_or(0.85);
+            let fuzz = caps.name("fuzz").map(|m| m.as_str().parse::<f64>().unwrap_or(0.85)).unwrap_or(0.85);
             lines.next(); // consume header
 
             // expect --- from

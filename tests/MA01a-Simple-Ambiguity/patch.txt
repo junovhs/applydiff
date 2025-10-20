@@ -1,0 +1,10 @@
+>>> file: config.yml | fuzz=0.90
+--- from
+  port: 8080
+  retries: 3
+  timeout: 500ms
+--- to
+  port: 9090
+  retries: 5
+  timeout: 1000ms
+<<<

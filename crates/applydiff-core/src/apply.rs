@@ -1,3 +1,4 @@
+// ===== PASTE THIS INTO apply.rs =====
 use crate::error::{ErrorCode, PatchError, Result};
 use crate::logger::Logger;
 use crate::matcher::find_best_match;
@@ -10,7 +11,7 @@ use std::path::{Component, PathBuf};
 pub struct ApplyResult {
     pub matched_at: usize,
     pub matched_end: usize,
-    pub score: f32,
+    pub score: f64,
 }
 
 pub struct Applier<'a> {
@@ -84,7 +85,7 @@ impl<'a> Applier<'a> {
         let Some(m) = find_best_match(&content, &blk.from, blk.fuzz, self.logger) else {
             return Err(PatchError::Apply {
                 code: ErrorCode::NoMatch,
-                message: format!("No match >= {:.2} for block", blk.fuzz),
+                message: "Could not match block: either no suitable match found, or multiple ambiguous matches detected. Check logs for details.".to_string(),
                 file: blk.file.clone(),
             });
         };

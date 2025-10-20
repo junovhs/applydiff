@@ -58,7 +58,7 @@
     .patch-area:hover{ border-color:#E7B56F; }
     .patch-area.disabled{ opacity:.5; cursor:not-allowed; }
     .patch-placeholder{ font-size:12pt; font-weight:700; color:rgba(255,255,255,.15); user-select:none; }
-    .patch-editor{ position:absolute; inset:0; width:100%; height:100%; padding:12px; border:0; outline:0; background:transparent; color:var(--text); font:13px/1.5 "JetBrains Mono", ui-monospace, monospace; resize:none; }
+    .patch-editor{ position:absolute; inset:0; width:100%; height:100%; padding:36px 12px 12px 12px; border:0; outline:0; background:transparent; color:var(--text); font:13px/1.5 "JetBrains Mono", ui-monospace, monospace; resize:none; }
     .status-chip{ position:absolute; top:8px; left:8px; background:#0f0f0f; border:1px solid var(--border); border-radius:9999px; padding:2px 8px; font-size:11px; color:var(--text-muted); pointer-events:none; } /* never blocks clicks */
 
     /* Diff panel */
@@ -230,40 +230,72 @@
     // ===== patch paste / typing =====
     patchArea.addEventListener('click', async () => {
       if (!selectedDir) { log('ℹ Select a directory first.'); return; }
-      // try clipboard first
+      
+      // Try multiple clipboard methods
+      let text = null;
+      
+      // Method 1: Tauri clipboard
       try {
-        const text = await navigator.clipboard.readText();
-        if (text && text.trim()) {
-          ensureEditor();
-          editorEl.value = text;
-          placeholder.style.display = 'none';
-          log('📥 Pasted from clipboard.');
-          setStatus('previewing…','warn');
-          await doPreview('paste');
-          editorEl.focus();
-          return;
+        if (window.__TAURI__?.clipboardManager?.readText) {
+          text = await window.__TAURI__.clipboardManager.readText();
+          if (text && text.trim()) {
+            log('📋 Read from Tauri clipboard');
+          }
         }
-      } catch (_) { /* fall through to typing mode */ }
-      // typing mode
+      } catch (e) {
+        log('⚠ Tauri clipboard failed: ' + e);
+      }
+      
+      // Method 2: Browser clipboard
+      if (!text || !text.trim()) {
+        try {
+          text = await navigator.clipboard.readText();
+          if (text && text.trim()) {
+            log('📋 Read from browser clipboard');
+          }
+        } catch (e) {
+          log('⚠ Browser clipboard failed: ' + e);
+        }
+      }
+      
+// If we got text, paste it
+  if (text && text.trim()) {
+    log('📋 Clipboard has ' + text.length + ' chars');
+    try {
+      if (!editorEl) {
+        editorEl = document.createElement('textarea');
+        editorEl.id = 'patch-editor';
+        editorEl.className = 'patch-editor';
+        patchArea.appendChild(editorEl);
+        editorEl.addEventListener('input', () => {
+          if (!selectedDir) return;
+          setStatus('typing…','warn');
+          if (typingTimer) clearTimeout(typingTimer);
+          typingTimer = setTimeout(() => doPreview('type'), 3000);
+        });
+      }
+      log('📋 Editor ready');
+      editorEl.value = text;
+      log('📋 Text set to editor');
+      placeholder.style.display = 'none';
+      setStatus('previewing…','warn');
+      log('📋 Calling preview...');
+      await doPreview('paste');
+      log('📋 Preview complete');
+      editorEl.focus();
+    } catch (e) {
+      log('❌ Paste error: ' + e);
+    }
+    return;
+  }
+  
+  log('⚠ No text in clipboard or text is empty');
+      // Fall back to typing mode
       ensureEditor();
       placeholder.style.display = 'none';
       editorEl.focus();
-      log('⌨️  Typing mode. Auto-preview after 3s idle.');
+      log('⌨️ Typing mode. Auto-preview after 3s idle.');
     });
-
-    function ensureEditor() {
-      if (editorEl) return;
-      editorEl = document.createElement('textarea');
-      editorEl.id = 'patch-editor';
-      editorEl.className = 'patch-editor';
-      patchArea.appendChild(editorEl);
-      editorEl.addEventListener('input', () => {
-        if (!selectedDir) return;
-        setStatus('typing…','warn');
-        if (typingTimer) clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => doPreview('type'), 3000);
-      });
-    }
 
     // ===== preview / apply =====
     const diffPre = document.getElementById('diff-pre');
