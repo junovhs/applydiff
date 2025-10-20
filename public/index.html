@@ -4,94 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ApplyDiff</title>
-  <style>
-    /* Fonts */
-    @font-face { font-family: "JetBrains Mono"; src: url("/JetBrainsMono-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
-    @font-face { font-family: "JetBrains Mono"; src: url("/JetBrainsMono-Thin.ttf") format("truetype"); font-weight: 200; font-style: normal; }
-    @font-face { font-family: "JetBrains Mono"; src: url("/JetBrainsMono-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; }
-
-    /* Theme */
-    :root {
-      --bg:#0a0a0a; --panel-bg:#141414; --border:#333; --border-dashed:#2a2a2a;
-      --text:#e0e0e0; --text-muted:#6b6b6b; --accent:#f59e0b;
-      --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
-    }
-    *{ box-sizing:border-box; margin:0; padding:0; }
-    html,body{ width:100%; height:100%; overflow:hidden; }
-    body{ background:var(--bg); color:var(--text); font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:13px; line-height:1.6; }
-
-    /* Layout */
-    .app{ display:flex; flex-direction:column; height:100vh; width:100vw; }
-    .header{ display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg); flex-shrink:0; }
-    .header-left{ display:flex; align-items:center; gap:10px; }
-    .logo{ height:38px; width:auto; display:block; filter:brightness(0) saturate(100%) invert(78%) sepia(34%) saturate(624%) hue-rotate(349deg) brightness(93%) contrast(91%); }
-    .header-right{ display:flex; align-items:center; gap:10px; position:relative; }
-    .header-btn{ display:flex; align-items:center; gap:8px; padding:6px 12px; background:#1A1A1A; border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:12px; cursor:pointer; transition:.2s; white-space:nowrap; }
-    .header-btn:hover{ background:rgba(255,255,255,.05); }
-    .header-btn.icon-only{ padding:6px 10px; }
-    .btn-icon{ width:14px; height:14px; opacity:.9; }
-
-    /* Labels row */
-    .labels-row{ display:flex; align-items:center; padding:22px 20px 0 20px; }
-    .labels-container{ display:flex; position:relative; width:100%; align-items:center; margin-bottom:10px; }
-    .panel-label{ font-size:9pt; letter-spacing:.5px; color:#E7B56F; position:absolute; }
-    .panel-label:nth-child(1){ left:0; }
-    .panel-label:nth-child(2){ left:calc(50% + 10px); }
-    .console-label-item{ display:none; position:fixed; left:40px; bottom:265px; z-index:10; }
-    .console-label-item.visible{ display:block; }
-
-    /* Floating console buttons (never overlap content) */
-    .float-btn{ display:none; position:fixed; bottom:265px; background:none; border:none; padding:0; color:#fff; font-size:9pt; letter-spacing:.5px; cursor:pointer; z-index:10; }
-    .float-btn.visible{ display:block; }
-    #self-test-btn{ right:40px; }
-    #clear-console-btn{ right:170px; } /* sits left of self-test */
-
-    /* Main */
-    .main-content{ display:flex; flex-direction:column; gap:12px; padding:0 20px 20px; flex:1; min-height:0; overflow:hidden; }
-    .panels-container{ display:flex; flex-direction:column; gap:12px; flex:1; min-width:0; min-height:0; }
-    .panels-top{ display:flex; gap:20px; flex:1; min-height:0; }
-    .panel{ display:flex; flex-direction:column; gap:12px; min-height:0; flex:1; }
-
-    /* Patch panel */
-    .patch-panel{ position:relative; }
-    .patch-area{ width:100%; flex:1; min-height:0; border:2px dashed #454545; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .2s; background:#1A1A1A; overflow:auto; position:relative; }
-    .patch-area:hover{ border-color:#E7B56F; }
-    .patch-area.disabled{ opacity:.5; cursor:not-allowed; }
-    .patch-placeholder{ font-size:12pt; font-weight:700; color:rgba(255,255,255,.15); user-select:none; }
-    .patch-editor{ position:absolute; inset:0; width:100%; height:100%; padding:36px 12px 12px 12px; border:0; outline:0; background:transparent; color:#8892a0; font:13px/1.5 "JetBrains Mono", ui-monospace, monospace; resize:none; }
-    .patch-editor::selection{ background:rgba(245,158,11,0.3); }
-    .patch-line-file{ color:#f59e0b; font-weight:700; }
-    .patch-line-from{ color:#6b7280; }
-    .patch-line-to{ color:#10b981; }
-    .patch-line-marker{ color:#8b5cf6; }
-    .status-chip{ position:absolute; top:8px; left:8px; background:#0f0f0f; border:1px solid var(--border); border-radius:9999px; padding:2px 8px; font-size:11px; color:var(--text-muted); pointer-events:none; } /* never blocks clicks */
-
-    /* Diff panel */
-    .diff-panel{ position:relative; }
-    .diff-area{ width:100%; flex:1; min-height:0; border:1px solid #2D2D2D; border-radius:6px; background:#1A1A1A; overflow:auto; position:relative; scrollbar-gutter:stable both-edges; } /* reserve gutter so Apply never overlaps scrollbar */
-    .diff-pre{ margin:0; padding:12px 12px 56px 12px; font:12px/1.5 "JetBrains Mono", ui-monospace, monospace; white-space:pre; } /* bottom padding reserves space for Apply button */
-    .d-hdr{ color:#9aa4b2; } .d-add{ color:#22c55e; } .d-del{ color:#ef4444; } .d-ctx{ color:#8892a0; }
-
-    .apply-btn{ position:absolute; right:12px; bottom:12px; background:var(--ok); color:#111; font-weight:700; border:0; border-radius:6px; padding:8px 12px; cursor:pointer; display:none; z-index:2; }
-    .apply-btn.warn{ background:var(--warn); color:#111; }
-
-    /* Console */
-    .console-panel{ display:none; flex-direction:column; height:200px; flex-shrink:0; margin-top:40px; }
-    .console-panel.visible{ display:flex; }
-    .console-area{ width:100%; height:100%; border:1px solid #2D2D2D; border-radius:6px; padding:12px; overflow:auto; font:12px/1.6 "JetBrains Mono", ui-monospace, monospace; background:#1A1A1A; }
-
-    /* Version tabs (placeholder) */
-    .version-tabs-wrapper{ display:flex; align-items:center; gap:8px; }
-    .version-tabs{ display:flex; gap:8px; flex:1; overflow-x:auto; scrollbar-width:thin; }
-    .version-tab{ padding:6px 14px; background:transparent; border:1px solid var(--border); border-radius:4px; color:#aaa; font-size:12px; cursor:pointer; transition:.2s; }
-    .version-tab.active{ background:rgba(245,158,11,.15); color:var(--accent); border-color:var(--accent); }
-    .version-tab:hover{ background:rgba(255,255,255,.05); }
-    .pagination-btn{ padding:6px 10px; background:transparent; border:1px solid var(--border); border-radius:4px; color:#aaa; font-size:12px; cursor:pointer; }
-    .pagination-info{ font-size:12px; color:#777; padding:0 8px; white-space:nowrap; }
-  </style>
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <div class="app">
+    <!-- Header -->
     <header class="header">
       <div class="header-left">
         <img src="/applydiff_logo.svg" alt="ApplyDiff" class="logo" />
@@ -111,20 +28,22 @@
       </div>
     </header>
 
+    <!-- Panel Labels -->
     <div class="labels-row">
       <div class="labels-container">
         <span class="panel-label">PATCH</span>
-        <span class="panel-label" id="diff-label">DIFF PREVIEW</span>
+        <span class="panel-label">DIFF PREVIEW</span>
         <span class="panel-label console-label-item" id="console-label">CONSOLE</span>
         <button class="float-btn" id="clear-console-btn">Clear Console</button>
         <button class="float-btn" id="self-test-btn">Run Self-Test</button>
       </div>
     </div>
 
+    <!-- Main Content -->
     <main class="main-content">
       <div class="panels-container">
         <div class="panels-top">
-          <!-- PATCH -->
+          <!-- Patch Panel -->
           <section class="panel patch-panel">
             <div class="patch-area disabled" id="patch-area">
               <span class="status-chip" id="status">idle</span>
@@ -132,7 +51,7 @@
             </div>
           </section>
 
-          <!-- DIFF -->
+          <!-- Diff Panel -->
           <section class="panel diff-panel">
             <div class="diff-area" id="diff-area">
               <pre class="diff-pre" id="diff-pre" style="color:#777;">No preview yet.</pre>
@@ -141,358 +60,29 @@
           </section>
         </div>
 
-        <!-- CONSOLE -->
+        <!-- Console Panel -->
         <section class="console-panel" id="console-panel">
           <div class="console-area" id="console-area">ready.</div>
         </section>
 
-        <!-- Version tabs (placeholder) -->
+        <!-- Version Tabs -->
         <div class="version-tabs-wrapper">
           <button class="pagination-btn" id="prev-page">←</button>
           <div class="version-tabs" id="version-tabs"></div>
-          <span class="pagination-info" id="page-info">1 / 1</span>
+          <span class="pagination-info" id="page-info">0 / 0</span>
           <button class="pagination-btn" id="next-page">→</button>
         </div>
       </div>
     </main>
   </div>
 
-  <script>
-    // ===== helpers =====
-    const logEl = () => document.getElementById('console-area');
-    const log = (m) => {
-      const now = new Date().toLocaleTimeString();
-      const line = document.createElement('div');
-      line.style.marginBottom = '4px';
-      line.style.fontFamily = 'inherit';
-      
-      // Parse log level from emoji/prefix
-      if (m.startsWith('✅') || m.startsWith('✓')) {
-        line.style.color = '#22c55e';
-      } else if (m.startsWith('❌')) {
-        line.style.color = '#ef4444';
-      } else if (m.startsWith('⚠')) {
-        line.style.color = '#f59e0b';
-      } else if (m.startsWith('👁') || m.startsWith('📋')) {
-        line.style.color = '#9aa4b2';
-      } else {
-        line.style.color = '#6b6b6b';
-      }
-      
-      line.textContent = `[${now}] ${m}`;
-      logEl().appendChild(line);
-      logEl().scrollTop = logEl().scrollHeight;
-    };
-    const clearLog = () => { logEl().textContent = 'cleared.'; };
-    const setStatus = (text, tone='') => {
-      const el = document.getElementById('status');
-      el.textContent = text;
-      el.style.borderColor = tone==='err' ? 'var(--err)' : tone==='ok' ? 'var(--ok)' : tone==='warn' ? 'var(--warn)' : 'var(--border)';
-      el.style.color = tone==='err' ? 'var(--err)' : tone==='ok' ? 'var(--ok)' : tone==='warn' ? 'var(--warn)' : 'var(--text-muted)';
-    };
-    const escapeHtml = s => s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-
-    // ===== state =====
-    let selectedDir = '';
-    let editorEl = null;
-    let typingTimer = null;
-    let previewInFlight = false;
-
-    // Version history
-    let versions = []; // [{id, timestamp, patch, diff, note, files}]
-    let currentVersion = 0;
-
-    // ===== tauri v2 invoke =====
-    const invoke = (...args) => {
-      if (!window.__TAURI__ || !window.__TAURI__.core) throw new Error('Tauri v2 core not available');
-      return window.__TAURI__.core.invoke(...args);
-    };
-
-    // ===== console toggle =====
-    document.getElementById('console-toggle').addEventListener('click', () => {
-      const panel = document.getElementById('console-panel');
-      const label = document.getElementById('console-label');
-      const selfBtn = document.getElementById('self-test-btn');
-      const clearBtn = document.getElementById('clear-console-btn');
-      const on = !panel.classList.contains('visible');
-      panel.classList.toggle('visible', on);
-      label.classList.toggle('visible', on);
-      selfBtn.classList.toggle('visible', on);
-      clearBtn.classList.toggle('visible', on);
-      if (on) log('✓ Console opened');
-    });
-
-    // ===== self-test & clear =====
-    document.getElementById('self-test-btn').addEventListener('click', async () => {
-      try { log('🧪 Running tests…'); const out = await invoke('run_self_test'); log(out); }
-      catch (e) { log('❌ ' + e); }
-    });
-    document.getElementById('clear-console-btn').addEventListener('click', clearLog);
-
-    // ===== copy prompt =====
-    document.getElementById('btn-copy-prompt').addEventListener('click', async () => {
-      try { const prompt = await invoke('get_ai_prompt'); await navigator.clipboard.writeText(String(prompt||'')); log('📋 AI prompt copied.'); }
-      catch (e) { log('❌ Copy AI prompt failed: ' + e); }
-    });
-
-    // ===== select directory =====
-    const patchArea = document.getElementById('patch-area');
-    const placeholder = document.getElementById('patch-placeholder');
-    document.getElementById('btn-select-dir').addEventListener('click', async () => {
-      try {
-        const dir = await invoke('pick_folder');
-        if (typeof dir === 'string' && dir.length) {
-          selectedDir = dir;
-          patchArea.classList.remove('disabled');
-          log('📁 Selected: ' + dir);
-          setStatus('ready');
-        }
-      } catch (e) { log('❌ Select directory failed: ' + e); }
-    });
-
-    // ===== patch paste / typing =====
-    patchArea.addEventListener('click', async () => {
-      if (!selectedDir) { log('ℹ Select a directory first.'); return; }
-      
-      // Try multiple clipboard methods
-      let text = null;
-      
-      // Method 1: Tauri clipboard
-      try {
-        if (window.__TAURI__?.clipboardManager?.readText) {
-          text = await window.__TAURI__.clipboardManager.readText();
-          if (text && text.trim()) {
-            log('📋 Read from Tauri clipboard');
-          }
-        }
-      } catch (e) {
-        log('⚠ Tauri clipboard failed: ' + e);
-      }
-      
-      // Method 2: Browser clipboard
-      if (!text || !text.trim()) {
-        try {
-          text = await navigator.clipboard.readText();
-          if (text && text.trim()) {
-            log('📋 Read from browser clipboard');
-          }
-        } catch (e) {
-          log('⚠ Browser clipboard failed: ' + e);
-        }
-      }
-      
-      // If we got text, paste it
-      if (text && text.trim()) {
-    log('📋 Clipboard has ' + text.length + ' chars');
-    try {
-      if (!editorEl) {
-        editorEl = document.createElement('textarea');
-        editorEl.id = 'patch-editor';
-        editorEl.className = 'patch-editor';
-        patchArea.appendChild(editorEl);
-        editorEl.addEventListener('input', () => {
-          if (!selectedDir) return;
-          setStatus('typing…','warn');
-          if (typingTimer) clearTimeout(typingTimer);
-          typingTimer = setTimeout(() => doPreview('type'), 3000);
-        });
-      }
-      log('📋 Editor ready');
-      editorEl.value = text;
-      log('📋 Text set to editor');
-      placeholder.style.display = 'none';
-      setStatus('previewing…','warn');
-      log('📋 Calling preview...');
-      await doPreview('paste');
-      log('📋 Preview complete');
-      editorEl.focus();
-    } catch (e) {
-      log('❌ Paste error: ' + e);
-    }
-    return;
-  }
-  
-  log('⚠ No text in clipboard or text is empty');
-      // Fall back to typing mode
-      ensureEditor();
-      placeholder.style.display = 'none';
-      editorEl.focus();
-      log('⌨️ Typing mode. Auto-preview after 3s idle.');
-    });
-
-    // ===== preview / apply =====
-    const diffPre = document.getElementById('diff-pre');
-    const applyBtn = document.getElementById('btn-apply');
-
-    function renderDiff(udiff) {
-      if (!udiff || !udiff.trim()) {
-        diffPre.style.color = '#777';
-        diffPre.innerHTML = 'No preview yet.';
-        return;
-      }
-      diffPre.style.color = '';
-      const lines = udiff.replace(/\\r\\n/g,'\\n').split('\\n');
-      diffPre.innerHTML = lines.map(l => {
-        const cls = l.startsWith('+++') || l.startsWith('---') || l.startsWith('@@') ? 'd-hdr'
-                  : l.startsWith('+') ? 'd-add'
-                  : l.startsWith('-') ? 'd-del'
-                  : 'd-ctx';
-        return `<span class="${cls}">${escapeHtml(l)}</span>`;
-      }).join('\\n');
-    }
-
-    async function doPreview(trigger) {
-      if (!selectedDir || !editorEl) return;
-      const patch = editorEl.value;
-      if (!patch.trim()) {
-        renderDiff('');
-        applyBtn.style.display = 'none';
-        setStatus('idle');
-        return;
-      }
-      if (previewInFlight) return;
-      previewInFlight = true;
-      setStatus(trigger==='type' ? 'typing…' : 'processing…','warn');
-
-      try {
-        const res = await invoke('preview_patch', { target: selectedDir, patch });
-        if (res && res.log) {
-          const tail = res.log.split('\\n').slice(-40).join('\\n');
-          log('👁 Preview:\\n' + tail);
-        }
-        renderDiff(res?.diff || '');
-        const hasDiff = !!(res?.diff && res.diff.trim());
-        const hasError = /❌/.test(res?.log || '');
-        // Show Apply for any diff. If some blocks failed, call it “Apply Valid Changes”.
-        applyBtn.style.display = hasDiff ? 'inline-block' : 'none';
-        applyBtn.classList.toggle('warn', hasDiff && hasError);
-        applyBtn.textContent = (hasDiff && hasError) ? 'Apply Valid Changes' : 'Apply Patch';
-        if (!hasDiff) setStatus('idle');
-        else if (hasError) setStatus('partial: some blocks failed','warn');
-        else setStatus('ready to apply','ok');
-      } catch (e) {
-        log('❌ Preview error: ' + e);
-        setStatus('error','err');
-        renderDiff('');
-        applyBtn.style.display = 'none';
-      } finally {
-        previewInFlight = false;
-      }
-    }
-
-    applyBtn.addEventListener('click', async () => {
-      log('🔧 Apply button clicked');
-      if (!editorEl) {
-        log('⚠ No editor element');
-        return;
-      }
-      try {
-        setStatus('applying…','warn');
-        const patch = editorEl.value;
-        const diff = diffPre.innerHTML;
-        
-        log('🔧 Invoking apply_patch...');
-        const out = await invoke('apply_patch', { target: selectedDir, patch });
-        log('✅ Apply:\\n' + out);
-        setStatus('applied','ok');
-        
-        // Save to history
-        log('🔧 Saving to version history...');
-        versions.push({
-          id: versions.length + 1,
-          timestamp: new Date().toLocaleString(),
-          patch,
-          diff,
-          note: '',
-          files: extractFilesFromPatch(patch)
-        });
-        currentVersion = versions.length - 1;
-        log(`🔧 Version history now has ${versions.length} versions`);
-        renderVersionTabs();
-        
-        await doPreview('apply');
-      } catch (e) {
-        log('❌ Apply failed: ' + e);
-        setStatus('apply failed','err');
-      }
-    });
-
-    // ===== version tabs minimal behavior (optional) =====
-    document.querySelectorAll('.version-tab').forEach((tab, i) => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.version-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        if (i === 0) doPreview('tab');
-      });
-    });
-
-    // initial
-    log('ready. select a directory to begin.');
-
-    function extractFilesFromPatch(patch) {
-  const files = [];
-  const matches = patch.matchAll(/^>>> file: (.+?) \|/gm);
-  for (const m of matches) files.push(m[1].trim());
-  return files;
-}
-
-function renderVersionTabs() {
-  const container = document.getElementById('version-tabs');
-  container.innerHTML = '';
-  
-  versions.forEach((v, i) => {
-    const tab = document.createElement('button');
-    tab.className = 'version-tab' + (i === currentVersion ? ' active' : '');
-    
-    // Show note icon if note exists
-    const displayText = v.note ? `v${v.id} 📝` : `v${v.id}`;
-    tab.textContent = displayText;
-    
-    // Tooltip shows timestamp, files, and note
-    const tooltip = `${v.timestamp}\nFiles: ${v.files.join(', ')}${v.note ? '\nNote: ' + v.note : '\n(Right-click to add note)'}`;
-    tab.title = tooltip;
-    
-    tab.onclick = () => viewVersion(i);
-    
-    // Right-click to add/edit note
-    tab.oncontextmenu = (e) => {
-      e.preventDefault();
-      const newNote = prompt(`Note for v${v.id}:`, v.note || '');
-      if (newNote !== null) {
-        versions[i].note = newNote.trim();
-        renderVersionTabs();
-        log(`📝 Updated note for v${v.id}`);
-      }
-    };
-    
-    container.appendChild(tab);
-  });
-  
-  document.getElementById('page-info').textContent = versions.length ? `${currentVersion + 1} / ${versions.length}` : '0 / 0';
-}
-
-function viewVersion(index) {
-  if (index < 0 || index >= versions.length) return;
-  currentVersion = index;
-  const v = versions[index];
-  
-  // Show that version's patch and diff
-  if (editorEl) editorEl.value = v.patch;
-  diffPre.innerHTML = v.diff;
-  applyBtn.style.display = 'none'; // Can't re-apply old versions
-  
-  renderVersionTabs();
-  log(`📋 Viewing v${v.id} - ${v.timestamp}`);
-}
-
-// Wire up pagination buttons
-document.getElementById('prev-page').addEventListener('click', () => {
-  if (currentVersion > 0) viewVersion(currentVersion - 1);
-});
-
-document.getElementById('next-page').addEventListener('click', () => {
-  if (currentVersion < versions.length - 1) viewVersion(currentVersion + 1);
-});
-  </script>
+  <!-- Module Loading Order Matters -->
+  <script src="js/app-state.js"></script>
+  <script src="js/ui-helpers.js"></script>
+  <script src="js/tauri-bridge.js"></script>
+  <script src="js/patch-panel.js"></script>
+  <script src="js/diff-panel.js"></script>
+  <script src="js/version-tabs.js"></script>
+  <script src="js/console-panel.js"></script>
 </body>
 </html>

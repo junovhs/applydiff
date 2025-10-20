@@ -1,4 +1,10 @@
-use applydiff_core::{apply::Applier, backup, error::Result as PatchResult, logger::Logger, parser::Parser};
+use applydiff_core::{
+    apply::Applier,
+    backup,
+    error::Result as PatchResult,
+    logger::Logger,
+    parser::Parser,
+};
 use chrono::Local;
 use serde::Serialize;
 use similar::TextDiff;
@@ -14,16 +20,7 @@ pub struct PreviewResult {
     pub diff: String,
 }
 
-#[tauri::command]
-pub fn resize_window(app: tauri::AppHandle, width: f64, height: f64) -> Result<(), String> {
-    use tauri::Manager;
-    if let Some((_, window)) = app.webview_windows().iter().next() {
-        let size = tauri::LogicalSize::new(width, height);
-        window.set_size(size).map_err(|e| e.to_string())
-    } else {
-        Err("No window found".into())
-    }
-}
+/* ========================== Commands ========================== */
 
 #[tauri::command]
 pub async fn pick_folder(app: tauri::AppHandle) -> Result<String, String> {
@@ -43,11 +40,6 @@ pub fn get_ai_prompt() -> String {
 #[tauri::command]
 pub fn run_self_test() -> String {
     applydiff_core::gauntlet::run()
-}
-
-#[tauri::command]
-pub fn create_demo() -> Result<(String, String), String> {
-    create_demo_impl()
 }
 
 #[tauri::command]
@@ -90,7 +82,7 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
 
     let parser = Parser::new();
     let blocks = parser.parse(patch)?;
-    log.push_str(&format!("✓ Parsed {} patch block(s)\n\n", blocks.len()));
+    log.push_str(&format!("✔ Parsed {} patch block(s)\n\n", blocks.len()));
 
     let applier = Applier::new(&logger, target_path.clone(), true);
     for (idx, block) in blocks.iter().enumerate() {
@@ -98,13 +90,11 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
         match applier.apply_block(block) {
             Ok(result) => {
                 log.push_str(&format!(
-                    "  ✓ Preview match at offset {} (score: {:.2})\n",
+                    "  ✔ Preview match at offset {} (score: {:.2})\n",
                     result.matched_at, result.score
                 ));
 
                 let file_path = target_path.join(&block.file);
-
-                // Treat missing files as empty so append-create shows a proper preview.
                 let content = fs::read_to_string(&file_path).unwrap_or_default();
 
                 let start = result.matched_at as usize;
@@ -113,7 +103,7 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
                 if start <= end {
                     let before = &content[start..end];
 
-                    // harmonize EOLs to match apply semantics
+                    // Harmonize EOLs
                     let matched_nl = if before.ends_with("\r\n") {
                         "\r\n"
                     } else if before.ends_with('\n') {
@@ -121,6 +111,7 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
                     } else {
                         ""
                     };
+                    
                     let mut to_text = block.to.clone();
                     if !matched_nl.is_empty() {
                         if to_text.ends_with("\r\n") && matched_nl == "\n" {
@@ -135,7 +126,7 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
                         }
                     }
 
-                    // NEW: mirror append separator newline (only when appending to a non-empty file lacking one)
+                    // Mirror append separator newline from apply logic
                     if start == content.len() && !content.is_empty() && !content.ends_with('\n') && !to_text.is_empty() {
                         to_text.insert(0, '\n');
                     }
@@ -193,12 +184,12 @@ fn apply_patch_impl(target: &str, patch: &str) -> PatchResult<String> {
 
     let parser = Parser::new();
     let blocks = parser.parse(patch)?;
-    output.push_str(&format!("✓ Parsed {} patch block(s)\n", blocks.len()));
+    output.push_str(&format!("✔ Parsed {} patch block(s)\n", blocks.len()));
 
     // Backup before applying
     let files_to_backup: Vec<PathBuf> = blocks.iter().map(|b| b.file.clone()).collect();
     let backup_dir = backup::create_backup(&target_path, &files_to_backup)?;
-    output.push_str(&format!("✓ Backup created at {}\n", backup_dir.display()));
+    output.push_str(&format!("✔ Backup created at {}\n", backup_dir.display()));
 
     // Apply (partial success allowed)
     let applier = Applier::new(&logger, target_path.clone(), false);
@@ -211,7 +202,7 @@ fn apply_patch_impl(target: &str, patch: &str) -> PatchResult<String> {
             Ok(result) => {
                 success += 1;
                 output.push_str(&format!(
-                    "  ✓ Applied at offset {} (score: {:.2})\n",
+                    "  ✔ Applied at offset {} (score: {:.2})\n",
                     result.matched_at, result.score
                 ));
             }
@@ -226,55 +217,6 @@ fn apply_patch_impl(target: &str, patch: &str) -> PatchResult<String> {
     output.push_str("↩ Backups live next to your files in a timestamped .applydiff_backup_* folder.\n");
     Ok(output)
 }
-
-/* ========================== Demo ========================== */
-
-fn create_demo_impl() -> Result<(String, String), String> {
-    let base = std::env::temp_dir().join(format!(
-        "applydiff_demo_{}",
-        Local::now().format("%Y%m%d_%H%M%S")
-    ));
-    fs::create_dir_all(&base).map_err(|e| e.to_string())?;
-
-    let hello = base.join("hello.txt");
-    let js = base.join("web/app.js");
-    let md = base.join("docs/readme.md");
-
-    if let Some(p) = js.parent() { fs::create_dir_all(p).map_err(|e| e.to_string())?; }
-    if let Some(p) = md.parent() { fs::create_dir_all(p).map_err(|e| e.to_string())?; }
-
-    fs::write(&hello, "Hello world\n").map_err(|e| e.to_string())?;
-    fs::write(&js, "function greet(){\r\n  console.log('Hello world');\r\n}\r\n").map_err(|e| e.to_string())?;
-    fs::write(&md, "# Title\r\n\r\n- item A\r\n- item B\r\n").map_err(|e| e.to_string())?;
-
-    let patch = [
-        ">>> file: hello.txt | fuzz=1.0",
-        "--- from",
-        "Hello world",
-        "--- to",
-        "Hello brave new world",
-        "<<<",
-        "",
-        ">>> file: web/app.js | fuzz=0.85",
-        "--- from",
-        "  console.log('Hello world');",
-        "--- to",
-        "  console.log('Hello brave new world');",
-        "<<<",
-        "",
-        ">>> file: docs/readme.md | fuzz=1.0",
-        "--- from",
-        "",
-        "--- to",
-        "## Changelog",
-        "- Added greeting",
-        "<<<",
-    ].join("\n");
-
-    Ok((base.display().to_string(), patch))
-}
-
-/* ========================== Utils ========================== */
 
 fn generate_rid() -> u64 {
     (Local::now().timestamp_millis() as u64) ^ (std::process::id() as u64)
