@@ -1,0 +1,5 @@
+>>> file: ../escape.txt | fuzz=1.0
+--- from
+--- to
+this should be rejected
+<<<

@@ -5,3 +5,9 @@ members = [
     "src-tauri",
     "crates/applydiff-core",
 ]
+
+[profile.release]
+panic = "abort"
+
+[profile.dev]
+panic = "abort"

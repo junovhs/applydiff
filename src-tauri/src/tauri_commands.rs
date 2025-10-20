@@ -109,10 +109,11 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
 
                 let start = result.matched_at as usize;
                 let end = result.matched_end.min(content.len());
+
                 if start <= end {
                     let before = &content[start..end];
 
-                    // harmonize EOLs for preview as we do for apply
+                    // harmonize EOLs to match apply semantics
                     let matched_nl = if before.ends_with("\r\n") {
                         "\r\n"
                     } else if before.ends_with('\n') {
@@ -132,6 +133,11 @@ fn preview_patch_impl(target: &str, patch: &str) -> PatchResult<PreviewResult> {
                         } else if !to_text.ends_with('\n') && !to_text.ends_with("\r\n") {
                             to_text.push_str(matched_nl);
                         }
+                    }
+
+                    // NEW: mirror append separator newline (only when appending to a non-empty file lacking one)
+                    if start == content.len() && !content.is_empty() && !content.ends_with('\n') && !to_text.is_empty() {
+                        to_text.insert(0, '\n');
                     }
 
                     let udiff = TextDiff::from_lines(before, &to_text)

@@ -1,4 +1,3 @@
-// ===== PASTE THIS INTO apply.rs =====
 use crate::error::{ErrorCode, PatchError, Result};
 use crate::logger::Logger;
 use crate::matcher::find_best_match;
@@ -54,10 +53,12 @@ impl<'a> Applier<'a> {
             }
         };
 
-        // append-only if FROM is empty
+        // append/create when FROM is empty
         if blk.from.trim().is_empty() {
             let mut new_content = content.clone();
-            if !new_content.ends_with('\n') && !blk.to.is_empty() {
+
+            // FIX: only insert a separator newline when appending to a NON-empty file that lacks one.
+            if !new_content.is_empty() && !new_content.ends_with('\n') && !blk.to.is_empty() {
                 new_content.push('\n');
             }
             new_content.push_str(&blk.to);

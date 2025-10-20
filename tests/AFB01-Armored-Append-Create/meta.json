@@ -1,0 +1,5 @@
+{
+  "description": "AFB01: Armored append-create (base64) creates file and parents",
+  "expect_ok": 1,
+  "expect_fail": 0
+}

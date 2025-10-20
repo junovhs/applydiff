@@ -1,0 +1,5 @@
+{
+  "description": "FS02: Append-create creates file and parent dirs when FROM is empty.",
+  "expect_ok": 1,
+  "expect_fail": 0
+}

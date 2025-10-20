@@ -1,0 +1,5 @@
+>>> file: new/deep/file.txt | fuzz=1.0
+--- from
+--- to
+Created via append-create
+<<<

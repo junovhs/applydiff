@@ -1,3 +1,5 @@
+#![deny(warnings)]
+
 pub mod apply;
 pub mod backup;
 pub mod error;

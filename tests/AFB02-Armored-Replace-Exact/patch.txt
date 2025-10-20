@@ -1,0 +1,9 @@
+-----BEGIN APPLYDIFF AFB-1-----
+Path: hello.txt
+Fuzz: 1.0
+Encoding: base64
+From:
+YmV0YQo=
+To:
+QkVUQSEK
+-----END APPLYDIFF AFB-1-----

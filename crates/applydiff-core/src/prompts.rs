@@ -1,45 +1,25 @@
-/// Returns a compact, token-efficient system prompt that tells an AI how to
-/// emit blocks this app can apply. Includes a minimal example.
 pub fn build_ai_prompt() -> String {
-    [
-        "You are a code editor. Output ONLY patch blocks in this exact format:",
-        "",
-        ">>> file: RELATIVE/PATH | fuzz=0.85",
-        "--- from",
-        "<exact old text (may be empty to append)>",
-        "--- to",
-        "<new text>",
-        "<<<",
-        "",
-        "Rules:",
-        "- Paths are relative to the selected folder.",
-        "- One block per file; multiple blocks allowed back-to-back.",
-        "- If appending, leave 'from' empty and put content in 'to'.",
-        "- Keep 'from' minimal & exact where possible; set fuzz 0.0..1.0 as needed.",
-        "- Prefer replacing whole functions/methods over tiny line-only edits when changing code.",
-        "- If a block fails to match, reply again with only corrected block(s).",
-        "- No code fences, no commentary, no leading or trailing text.",
-        "",
-        "Example:",
-        ">>> file: hello.txt | fuzz=1.0",
-        "--- from",
-        "Hello world",
-        "--- to",
-        "Hello brave new world",
-        "<<<",
-    ]
-    .join("\n")
-}
+    // Short, explicit instructions for LLMs to emit AFB-1 armored blocks.
+    // We keep this as a single string to avoid formatting surprises.
+    let prompt = r#"You are producing APPLYDIFF patches for a human user. Output ONLY the armored format below.
+Do NOT include explanations, markdown code fences, or extra commentary.
 
-#[allow(dead_code)]
-pub fn example_patch() -> String {
-    [
-        ">>> file: hello.txt | fuzz=1.0",
-        "--- from",
-        "Hello world",
-        "--- to",
-        "Hello brave new world",
-        "<<<",
-    ]
-    .join("\n")
+Format (repeat per changed file):
+
+-----BEGIN APPLYDIFF AFB-1-----
+Path: <relative/path/from/project/root>
+Fuzz: 0.85
+Encoding: base64
+From:
+<base64 of EXACT old text; may be empty to create/append>
+To:
+<base64 of new text>
+-----END APPLYDIFF AFB-1-----
+
+Rules:
+- Base64 may be wrapped arbitrarily; whitespace will be ignored.
+- If you cannot find the exact old text, lower Fuzz (e.g., 0.80) but keep intent.
+- Emit multiple blocks back-to-back for multiple files.
+"#;
+    prompt.to_string()
 }

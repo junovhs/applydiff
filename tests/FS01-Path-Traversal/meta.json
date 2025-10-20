@@ -1,0 +1,5 @@
+{
+  "description": "FS01: Reject path traversal outside sandbox.",
+  "expect_ok": 0,
+  "expect_fail": 1
+}

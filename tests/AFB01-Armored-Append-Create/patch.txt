@@ -1,0 +1,9 @@
+-----BEGIN APPLYDIFF AFB-1-----
+Path: new/deep/hello.txt
+Fuzz: 1.0
+Encoding: base64
+From:
+
+To:
+aGkgZnJvbSBhcm1vcmVkCg==
+-----END APPLYDIFF AFB-1-----
