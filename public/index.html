@@ -149,11 +149,7 @@
         <!-- Version tabs (placeholder) -->
         <div class="version-tabs-wrapper">
           <button class="pagination-btn" id="prev-page">←</button>
-          <div class="version-tabs" id="version-tabs">
-            <button class="version-tab active">v1</button>
-            <button class="version-tab">v2</button>
-            <button class="version-tab">v3</button>
-          </div>
+          <div class="version-tabs" id="version-tabs"></div>
           <span class="pagination-info" id="page-info">1 / 1</span>
           <button class="pagination-btn" id="next-page">→</button>
         </div>
@@ -201,6 +197,10 @@
     let editorEl = null;
     let typingTimer = null;
     let previewInFlight = false;
+
+    // Version history
+    let versions = []; // [{id, timestamp, patch, diff, note, files}]
+    let currentVersion = 0;
 
     // ===== tauri v2 invoke =====
     const invoke = (...args) => {
@@ -281,8 +281,8 @@
         }
       }
       
-// If we got text, paste it
-  if (text && text.trim()) {
+      // If we got text, paste it
+      if (text && text.trim()) {
     log('📋 Clipboard has ' + text.length + ' chars');
     try {
       if (!editorEl) {
@@ -381,13 +381,36 @@
     }
 
     applyBtn.addEventListener('click', async () => {
-      if (!editorEl) return;
+      log('🔧 Apply button clicked');
+      if (!editorEl) {
+        log('⚠ No editor element');
+        return;
+      }
       try {
         setStatus('applying…','warn');
-        const out = await invoke('apply_patch', { target: selectedDir, patch: editorEl.value });
+        const patch = editorEl.value;
+        const diff = diffPre.innerHTML;
+        
+        log('🔧 Invoking apply_patch...');
+        const out = await invoke('apply_patch', { target: selectedDir, patch });
         log('✅ Apply:\\n' + out);
         setStatus('applied','ok');
-        await doPreview('apply'); // reflect on-disk state
+        
+        // Save to history
+        log('🔧 Saving to version history...');
+        versions.push({
+          id: versions.length + 1,
+          timestamp: new Date().toLocaleString(),
+          patch,
+          diff,
+          note: '',
+          files: extractFilesFromPatch(patch)
+        });
+        currentVersion = versions.length - 1;
+        log(`🔧 Version history now has ${versions.length} versions`);
+        renderVersionTabs();
+        
+        await doPreview('apply');
       } catch (e) {
         log('❌ Apply failed: ' + e);
         setStatus('apply failed','err');
@@ -405,6 +428,53 @@
 
     // initial
     log('ready. select a directory to begin.');
+
+    function extractFilesFromPatch(patch) {
+  const files = [];
+  const matches = patch.matchAll(/^>>> file: (.+?) \|/gm);
+  for (const m of matches) files.push(m[1].trim());
+  return files;
+}
+
+function renderVersionTabs() {
+  const container = document.getElementById('version-tabs');
+  container.innerHTML = '';
+  
+  versions.forEach((v, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'version-tab' + (i === currentVersion ? ' active' : '');
+    tab.textContent = `v${v.id}`;
+    tab.title = `${v.timestamp}\\n${v.files.join(', ')}${v.note ? '\\n' + v.note : ''}`;
+    tab.onclick = () => viewVersion(i);
+    container.appendChild(tab);
+  });
+  
+  const info = document.getElementById('page-info');
+  info.textContent = versions.length ? `${currentVersion + 1} / ${versions.length}` : '0 / 0';
+}
+
+function viewVersion(index) {
+  if (index < 0 || index >= versions.length) return;
+  currentVersion = index;
+  const v = versions[index];
+  
+  // Show that version's patch and diff
+  if (editorEl) editorEl.value = v.patch;
+  diffPre.innerHTML = v.diff;
+  applyBtn.style.display = 'none'; // Can't re-apply old versions
+  
+  renderVersionTabs();
+  log(`📋 Viewing v${v.id} - ${v.timestamp}`);
+}
+
+// Wire up pagination buttons
+document.getElementById('prev-page').addEventListener('click', () => {
+  if (currentVersion > 0) viewVersion(currentVersion - 1);
+});
+
+document.getElementById('next-page').addEventListener('click', () => {
+  if (currentVersion < versions.length - 1) viewVersion(currentVersion + 1);
+});
   </script>
 </body>
 </html>
