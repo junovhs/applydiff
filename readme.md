@@ -122,7 +122,7 @@ See **TESTING.md** for manual lab scenarios and test expansion roadmap.
 
 ## Known Issues
 
-1. **Chat UI patch display**: Some chat interfaces mangle patch syntax when rendering. Always copy patches from plain text or the app itself.
+1. **Chat UI patch display**: Some chat interfaces mangle patch syntax when rendering. We need to figure out an AI-bulletproof syntax for our patches that does not interfere.
 2. **Version history persistence**: Versions reset on app restart (in-memory only).
 3. **Multi-block preview**: Preview shows combined diff for all blocks.
 
@@ -140,8 +140,10 @@ We're grateful to these projects for advancing LLM-assisted editing.
 ## Roadmap
 
 **Near-term:**
-- [ ] Persist version history to disk
 - [ ] Show current directory path in header
+- [ ] Syntax highlighting in patch editor
+- [ ] Improved multi-block preview
+- [ ] Persist version history to disk
 - [ ] Export version history to files
 - [ ] Improved multi-block preview
 
@@ -155,4 +157,3 @@ We're grateful to these projects for advancing LLM-assisted editing.
 - [ ] Repo map generation for AI context
 - [ ] Token-efficient context retrieval
 - [ ] Integration with external diff tools
-- [ ] Syntax highlighting in patch editor
