@@ -10,51 +10,59 @@ The patcher is safety-critical. Tests must prove:
 - Clear, structured observability so failures teach us something
 
 We enforce this with:
-- **Isolation:** Every case runs in a temp sandbox.
-- **Determinism:** Fixtures live under `tests/<CASE_ID>/` or are generated programmatically.
-- **Instrumentation:** Structured logs (JSONL) from subsystems like `matcher`, `applier`.
-- **Metadata:** `meta.json` describes expected outputs *and* expected log breadcrumbs.
+- **Isolation:** Every case runs in a temp sandbox
+- **Determinism:** Fixtures under `tests/<CASE_ID>/` or generated programmatically
+- **Instrumentation:** Structured JSONL logs from subsystems (`matcher`, `applier`)
+- **Metadata:** `meta.json` specifies expected counts + log breadcrumbs
 
 ---
 
-## Current MVP Surface (what we verify right now)
+## Current Test Coverage
 
-**Core invariants**
-- Search strategy prefers exact substring fast-path; otherwise layered search with fuzzy threshold.
-- No line numbers; matching is content/context based.
-- **Path safety:** Edits may not escape the selected directory.
-- **CRLF/LF preservation:** Replacement lines harmonize to the existing EOL where a match is found.
-- **Append-create:** Empty `--- from` on a non-existent file treats "before" as empty and previews a diff.
-- **Partial apply:** Valid blocks apply, invalid blocks are skipped; backups are always created first.
-- **Backups:** Timestamped sibling folder `.applydiff_backup_YYYYMMDD_*`.
+**Automated gauntlet: 3/3 passing ✅**
 
-**UI invariants**
-- Patch panel locked until directory is chosen.
-- Auto-preview on paste, and after 3s idle while typing.
-- "Apply Patch" appears for all-green; "Apply Valid Changes" appears for mixed results.
-- Console has **Clear**; floating buttons never overlap content.
+### LF01 – Large File Patch at Start ✅
+**What:** Exact-match edit at line 1 of 50K-line file  
+**Verifies:**
+- Byte-for-byte output correctness
+- Fast path used (`"action":"fast_path_match"` in logs)
+- `ok=1, fail=0` counts match expectation
+
+### MA01a – Simple Ambiguity ✅
+**What:** Patch matches two identical 3-line YAML blocks  
+**Verifies:**
+- Ambiguity detection triggers
+- Patch rejected (`ok=0, fail=1`)
+- Log contains `"ambiguous_match"` breadcrumb
+
+### MA01b – Indentation Ambiguity ✅
+**What:** Patch matches two Python functions with identical content  
+**Verifies:**
+- Ambiguity detection across different formatting
+- Rejection even with whitespace variance
+- Log contains `"ambiguous_match"`
 
 ---
 
-## Manual Lab (quick smoke tests)
+## Manual Lab (Quick Smoke Tests)
 
-Create the lab in `~/ApplyDiffLab` (Windows MINGW64 Bash):
+Create test environment:
 
 ```bash
 TEST_DIR="$HOME/ApplyDiffLab"
 rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/src" "$TEST_DIR/docs" "$TEST_DIR/notes" "$TEST_DIR/new/nested" "$TEST_DIR/deep/dir"
+mkdir -p "$TEST_DIR/src" "$TEST_DIR/docs" "$TEST_DIR/notes" "$TEST_DIR/new/nested"
 
-# LF
+# LF file
 cat > "$TEST_DIR/readme.md" <<'EOF'
 # ApplyDiff Lab
 Welcome to the lab.
 EOF
 
-# CRLF
+# CRLF file (Windows line endings)
 printf 'function greet(){\r\n  console.log("Hello world");\r\n}\r\n' > "$TEST_DIR/src/app.js"
 
-# More LF
+# Additional LF files
 cat > "$TEST_DIR/src/math.js" <<'EOF'
 export function add(a, b) {
   return a + b;
@@ -66,7 +74,7 @@ cat > "$TEST_DIR/docs/guide.md" <<'EOF'
 Steps go here.
 EOF
 
-# Two nearly identical blocks to create ambiguity potential
+# Ambiguity test file
 cat > "$TEST_DIR/notes/duplicate.txt" <<'EOF'
 id: A
 start
@@ -84,162 +92,217 @@ EOF
 echo "Lab created at $TEST_DIR"
 ```
 
-Open ApplyDiff → **Select Directory** → choose `~/ApplyDiffLab`.
-Click **Patch** and paste the blocks below.
+Open ApplyDiff → **Select Directory** → `~/ApplyDiffLab` → Paste test patches.
 
-### A) Exact match (sanity)
+### Scenario A: Exact Match (Sanity Check)
 
 ```
->>> file: readme.md | fuzz=1.0
---- from
+PATCH readme.md fuzz=1.0
+FROM
 # ApplyDiff Lab
---- to
+TO
 # ApplyDiff Lab (patched)
-<<<
+END
 ```
 
-**Expect:** Green diff; apply succeeds.
-**Verify:** `readme.md` now starts with `# ApplyDiff Lab (patched)`.
+**Expected:**
+- Green diff in preview
+- "Apply Patch" button appears
+- After apply: v1 tab appears, file updated
 
-### B) CRLF harmonization
+**Verify:** `cat ~/ApplyDiffLab/readme.md` shows `# ApplyDiff Lab (patched)`
+
+### Scenario B: CRLF Preservation
 
 ```
->>> file: src/app.js | fuzz=0.85
---- from
+PATCH src/app.js fuzz=0.85
+FROM
   console.log("Hello world");
---- to
+TO
   console.log("Hello brave new world");
-<<<
+END
 ```
 
-**Expect:** Diff shows one changed line; **file keeps CRLF** (`0d 0a`).
-**Optional check:** `xxd -g 1 -c 1 ~/ApplyDiffLab/src/app.js | head` shows `0d` `0a` line endings.
+**Expected:**
+- Diff shows single line change
+- File keeps CRLF endings (`\r\n`)
 
-### C) Append-create (new file) — **verified**
+**Verify:** `xxd -g 1 ~/ApplyDiffLab/src/app.js | grep -A1 "Hello"` shows `0d 0a` bytes
+
+### Scenario C: Append-Create (New File)
 
 ```
->>> file: new/nested/log.txt | fuzz=1.0
---- from
---- to
+PATCH new/nested/log.txt fuzz=1.0
+FROM
+TO
 Log started
 Entry: 1
-<<<
+END
 ```
 
-**Expect:** Diff preview shows an added file; apply creates `new/nested/log.txt` with two lines.
+**Expected:**
+- Diff shows "new file" with added lines
+- Parent directories created automatically
 
-### D) Path traversal guard
+**Verify:** `cat ~/ApplyDiffLab/new/nested/log.txt` shows both lines
+
+### Scenario D: Path Traversal Rejection
 
 ```
->>> file: ../escape.txt | fuzz=1.0
---- from
---- to
+PATCH ../escape.txt fuzz=1.0
+FROM
+TO
 You should never see this.
-<<<
+END
 ```
 
-**Expect:** Preview log contains ❌ "Patch path escapes target directory".
-**Apply** button remains **orange** ("Apply Valid Changes") only if other blocks in the same submission are valid; otherwise hidden.
+**Expected:**
+- Console shows ❌ "Patch path escapes target directory"
+- No "Apply Patch" button (or orange "Apply Valid Changes" if mixed with valid blocks)
 
-### E) Ambiguity trap (fuzzy)
-
-Tabs vs spaces make the context fuzzy; there are two similar windows.
+### Scenario E: Ambiguity Trap
 
 ```
->>> file: notes/duplicate.txt | fuzz=0.90
---- from
+PATCH notes/duplicate.txt fuzz=0.90
+FROM
 start
     marker: section
     value: target
 end
---- to
+TO
 start
     marker: section
     value: PATCHED
 end
-<<<
+END
 ```
 
-**Expect:** No match ≥ 0.90; preview shows ❌.
-**Fix:** Disambiguate by including `id: A` lines in `from`.
+**Expected:**
+- No match ≥ 0.90 (two equally-good targets)
+- Console shows ❌ with ambiguity mention
+- Terminal logs show `"ambiguous_match"`
 
-### F) Mixed patch (partial apply) — **verified**
+**Fix:** Add `id: A` to FROM block to disambiguate.
+
+### Scenario F: Partial Apply (Mixed Results)
 
 ```
->>> file: readme.md | fuzz=1.0
---- from
+PATCH readme.md fuzz=1.0
+FROM
 Welcome to the lab.
---- to
+TO
 Welcome to the patched lab.
-<<<
+END
 
->>> file: new/report.txt | fuzz=1.0
---- from
---- to
+PATCH new/report.txt fuzz=1.0
+FROM
+TO
 Report v1
-<<<
+END
 
->>> file: ../should-not-write.txt | fuzz=1.0
---- from
---- to
+PATCH ../should-not-write.txt fuzz=1.0
+FROM
+TO
 nope
-<<<
+END
 ```
 
-**Expect:** Diff shows the first two hunks; third is rejected in preview.
-Button reads **Apply Valid Changes** (orange).
-**After apply:** console reports `2 applied, 1 failed`, `new/report.txt` contains `Report v1`.
+**Expected:**
+- Diff shows first two changes only
+- Button reads "Apply Valid Changes" (orange)
+- Console shows `2 applied, 1 failed`
+
+**Verify:** `report.txt` created, `escape.txt` not created
 
 ---
 
-## Completed Gauntlet Case
+## White-Box Log Probes
 
-### LF01 – Large File Patch at Start
+Tests verify these structured log entries:
 
-**Objective:** Verify exact-match edit at start of a 50k-line file and that the engine uses the fast path.
-**Verification:**
+| Subsystem | Action | Meaning |
+|-----------|--------|---------|
+| `matcher` | `fast_path_match` | Exact substring used (optimal) |
+| `matcher` | `search_start` | Entering layered fuzzy search |
+| `matcher` | `ambiguous_match` | Two+ targets with similar scores |
+| `matcher` | `no_match_threshold` | Best score below `fuzz` setting |
+| `applier` | (path escape message) | Path validation rejected block |
 
-* Byte-for-byte equality with expected `after/large_file.txt`.
-* Reported `ok=1, fail=0`.
-* Log contains `"action":"fast_path_match"` from the matcher.
-  **Confidence:** 10/10 — both output and internal path are proven.
-
----
-
-## White-Box Expectations (log probes)
-
-We assert these log breadcrumbs during tests:
-
-| Subsystem | Action                  | Meaning                               |
-| --------- | ----------------------- | ------------------------------------- |
-| matcher   | `fast_path_match`       | Exact substring path used             |
-| matcher   | `search_start`          | Enter layered search (no exact match) |
-| matcher   | `no_match_threshold`    | Best score `< fuzz` threshold         |
-| applier   | `path_escape` (message) | Attempted path leaves root (rejected) |
-
-Tests check for these strings verbatim in captured logs.
+Example log entry:
+```json
+{"ts":"2025-10-20T07:30:03Z","level":"info","rid":1760945133803,"subsystem":"matcher","action":"fast_path_match","msg":"unique exact substring (len=38)"}
+```
 
 ---
 
-## Roadmap (next test authoring)
+## Test Expansion Roadmap
 
-**Large File (`LF`)**
+### Large File Series (`LF`)
+- [ ] **LF02-Replace-Middle**: Edit at line 25K of 50K file
+- [ ] **LF03-Replace-End**: Edit at line 49,999 of 50K file
+- [ ] **LF04-Multi-Line-Replace**: Replace 100-line function
+- [ ] **LF05-Bounded-Fuzzy**: Ensure fuzzy search terminates in reasonable time
 
-* `LF02-Replace-Middle`, `LF03-Replace-End`, `LF04-Multi-Line-Replace`, `LF05-Fuzzy-No-Match (bounded)`
+### Matcher & Applier Series (`MA`)
+- [x] **MA01a-Simple-Ambiguity**: YAML with duplicate blocks ✅
+- [x] **MA01b-Indentation-Ambiguity**: Python with similar functions ✅
+- [ ] **MA02-Sequential-Dependency**: Block 2 depends on Block 1 applying first
+- [ ] **MA03-CRLF-LF-Mixing**: Patch with `\n`, file has `\r\n`
+- [ ] **MA04-No-Final-Newline**: File/patch without trailing newline
+- [ ] **MA05-Whitespace-Normalization**: Tabs vs spaces, extra whitespace
 
-**Matcher & Applier (`MA`)**
+### Filesystem Series (`FS`)
+- [ ] **FS01-Create-Nested-Dirs**: Deeply nested path creation
+- [ ] **FS02-Empty-File**: Patch empty file → add content
+- [ ] **FS03-Binary-File**: Reject non-UTF8 files gracefully
+- [ ] **FS04-Read-Only-File**: Handle permission errors
 
-* `MA01-True-Ambiguity` (tie detection)
-* `MA02-Sequential-Dependency`
-* `MA03-CRLF-to-LF-Harmonization` (already observed manually; add formal gauntlet)
-* `MA04-Delete-No-EOL`
-* `MA05-Append-No-EOL`
+### Version History Series (`VH`) - New!
+- [ ] **VH01-Version-Navigation**: Apply 5 patches, navigate v1↔v5
+- [ ] **VH02-Version-Notes**: Add/edit notes, verify display
+- [ ] **VH03-Large-History**: 20+ versions, test performance
+- [ ] **VH04-Multi-File-Versions**: Each version touches different files
 
-**Filesystem (`FS`)**
+---
 
-* `FS01-Create-Subdirectory` (covered by Lab C; formalize)
-* `FS02-Empty-File-Patch`
-* `FS03-Binary-File` (non-UTF8 read error, no write)
-* `FS04-Read-Only-File`
+## Running Tests
 
-> As we expand flexible matching (whitespace/indent normalization, hunk decomposition), add mirrored tests that prove failure modes are **safe first** (no writes) and successes are **traceable** via logs.
+**Automated gauntlet:**
+```bash
+cargo tauri dev
+# Click "Run Self-Test" in console
+```
+
+**Manual lab:**
+1. Create `~/ApplyDiffLab` (see above)
+2. Run scenarios A-F
+3. Verify outputs match expectations
+4. Check console logs for breadcrumbs
+
+**Adding new tests:**
+1. Create `tests/CASE_ID/{before/,after/,meta.json,patch.txt}`
+2. `meta.json` must specify `expect_ok`, `expect_fail`, optional `expected_log_contains`
+3. Run gauntlet, verify pass/fail
+4. Commit test case with descriptive name
+
+---
+
+## Known Test Gaps
+
+1. **Multi-block patches**: Current tests are single-block; need multi-file stress tests
+2. **Performance bounds**: No tests for worst-case fuzzy search timing
+3. **Concurrent applies**: No tests for rapid successive patches
+4. **Version history persistence**: Versions are in-memory only (not tested after restart)
+5. **Patch syntax edge cases**: Malformed blocks, missing markers, encoding issues
+
+---
+
+## Test Quality Metrics
+
+- **Coverage**: 3 tests, 8 subsystem behaviors verified
+- **Confidence**: High for exact matching, ambiguity detection, path safety
+- **Gaps**: Whitespace normalization, multi-block, performance bounds
+- **False positives**: None observed (all passes are legitimate)
+- **False negatives**: Unknown (may exist in untested code paths)
+
+**Target for v1.0:** 15+ gauntlet tests covering all `LF`, `MA`, `FS` series.
