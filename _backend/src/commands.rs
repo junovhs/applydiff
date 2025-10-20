@@ -3,7 +3,7 @@ use applydiff_core::{
     backup,
     error::Result as PatchResult,
     logger::Logger,
-    parser::Parser,
+    parse::Parser,
 };
 use chrono::Local;
 use serde::Serialize;
@@ -39,7 +39,7 @@ pub fn get_ai_prompt() -> String {
 
 #[tauri::command]
 pub fn run_self_test() -> String {
-    applydiff_core::gauntlet::run()
+    applydiff_core::test_runner::run()
 }
 
 #[tauri::command]

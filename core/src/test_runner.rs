@@ -1,8 +1,7 @@
 use crate::apply::Applier;
-use crate::error::{ErrorCode, PatchError, Result};
 use crate::logger::Logger;
-use crate::parser::Parser;
-
+use crate::parse::Parser;
+use crate::test_helpers::*;
 use chrono::Local;
 use serde::Deserialize;
 use std::cell::RefCell;
@@ -57,14 +56,13 @@ pub fn run() -> String {
     if cases_passed == test_cases && test_cases > 0 {
         logln(&mut log, "\n✅ **Self-Test PASSED**");
     } else {
-        logln(&mut log, "\n❌ **Self-Test FAILED** — see failed cases above");
+        logln(&mut log, "\n❌ **Self-Test FAILED** – see failed cases above");
     }
 
     log
 }
 
 fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
-    // 1. Setup Sandbox
     let sandbox = match make_sandbox() {
         Ok(p) => p,
         Err(e) => {
@@ -73,7 +71,6 @@ fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
         }
     };
     
-    // 2. Load Metadata
     let meta_path = case_path.join("meta.json");
     let meta: TestMeta = match fs::read_to_string(&meta_path) {
         Ok(text) => match serde_json::from_str(&text) {
@@ -92,7 +89,6 @@ fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
     };
     logln(log, format!("  • {}", meta.description));
 
-    // 3. Prepare Sandbox State from `before`
     let before_dir = case_path.join("before");
     if let Err(e) = copy_dir_all(&before_dir, &sandbox) {
         logln(log, format!("  ❌ Failed to copy 'before' state: {}", e));
@@ -100,7 +96,6 @@ fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
         return false;
     }
 
-    // 4. Load Patch and Setup Test Logger
     let patch_path = case_path.join("patch.txt");
     let patch_content = match fs::read_to_string(&patch_path) {
         Ok(p) => p,
@@ -114,7 +109,6 @@ fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
     let log_buffer = Rc::new(RefCell::new(String::new()));
     let logger = Logger::new_for_test(rid, Some(log_buffer.clone()));
 
-    // 5. Parse and Apply Patch
     let parser = Parser::new();
     let blocks = match parser.parse(&patch_content) {
         Ok(b) => b,
@@ -135,10 +129,8 @@ fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
         }
     }
 
-    // 6. Verify Results
     let mut checks_passed = true;
 
-    // Check apply counts
     if ok_count != meta.expect_ok || fail_count != meta.expect_fail {
         logln(log, format!(
             "    ❌ Mismatch in apply counts. Expected ok={}, fail={}. Got ok={}, fail={}.",
@@ -146,12 +138,9 @@ fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
         ));
         checks_passed = false;
     } else {
-        logln(log, format!(
-            "    ✓ Apply counts match (ok={}, fail={})", ok_count, fail_count
-        ));
+        logln(log, format!("    ✓ Apply counts match (ok={}, fail={})", ok_count, fail_count));
     }
     
-    // Check for expected log content
     if let Some(expected_str) = meta.expected_log_contains {
         if !log_buffer.borrow().contains(&expected_str) {
             logln(log, format!("    ❌ Log verification failed. Did not find '{}'.", expected_str));
@@ -161,108 +150,34 @@ fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
         }
     }
 
-    // Check file contents against `after`
     let after_dir = case_path.join("after");
     if let Err(e) = verify_dirs_match(log, &sandbox, &after_dir) {
         logln(log, format!("    ❌ File verification failed: {}", e));
         checks_passed = false;
     }
 
-    // 7. Cleanup
     cleanup(&sandbox).ok();
-    
     checks_passed
 }
 
-// --- Test Framework Helpers ---
-
-fn make_sandbox() -> Result<PathBuf> {
-    let dir = std::env::temp_dir().join(format!(
-        "applydiff_gauntlet_{}",
-        Local::now().format("%Y%m%d_%H%M%S%f")
-    ));
-    fs::create_dir_all(&dir).map_err(|e| PatchError::File {
-        code: ErrorCode::FileWriteFailed,
-        message: format!("create sandbox failed: {e}"),
-        path: dir.clone(),
-    })?;
-    Ok(dir)
-}
-
-fn cleanup(dir: &Path) -> Result<()> {
-    fs::remove_dir_all(dir).map_err(|e| PatchError::File {
-        code: ErrorCode::FileWriteFailed,
-        message: format!("remove sandbox failed: {e}"),
-        path: dir.to_path_buf(),
-    })
-}
-
-fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<()> {
-    fs::create_dir_all(dst)?;
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
-            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
-        } else {
-            fs::copy(entry.path(), dst.join(entry.file_name()))?;
-        }
-    }
-    Ok(())
-}
-
-fn verify_dirs_match(log: &mut String, actual_dir: &Path, expected_dir: &Path) -> std::result::Result<(), String> {
-    let entries = match fs::read_dir(expected_dir) {
-        Ok(e) => e,
-        Err(_) => return Ok(()), // No 'after' dir means no verification needed
-    };
-
-    for entry in entries.flatten() {
-        let expected_path = entry.path();
-        if expected_path.is_file() {
-            let rel_path = expected_path.strip_prefix(expected_dir).unwrap();
-            let actual_path = actual_dir.join(rel_path);
-
-            if !actual_path.exists() {
-                return Err(format!("Expected file '{}' not found in sandbox.", rel_path.display()));
-            }
-
-            let expected_bytes = fs::read(&expected_path).unwrap();
-            let actual_bytes = fs::read(&actual_path).unwrap();
-
-            if expected_bytes != actual_bytes {
-                logln(log, format!("    ❌ File mismatch: {}", rel_path.display()));
-                // Optional: log diffs for small files
-                return Err(format!("Content of '{}' does not match expected.", rel_path.display()));
-            } else {
-                logln(log, format!("    ✓ File verified: {}", rel_path.display()));
-            }
-        }
-    }
-    Ok(())
-}
-
-
 fn find_tests_dir() -> Option<PathBuf> {
     let mut current = std::env::current_dir().ok()?;
+    
     loop {
         let tests_path = current.join("tests");
         if tests_path.is_dir() {
             return Some(tests_path);
         }
-        if !current.pop() {
-            return None;
-        }
+        if !current.pop() { break; }
     }
-}
-
-fn case_header(log: &mut String, name: &str) {
-    logln(log, format!("\n— Testing: {} —", name));
-}
-
-fn logln<S: Into<String>>(buf: &mut String, s: S) {
-    if !buf.is_empty() && !buf.ends_with('\n') {
-        buf.push('\n');
+    
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok()?;
+    let manifest_path = PathBuf::from(manifest_dir);
+    let parent = manifest_path.parent()?;
+    let tests = parent.join("tests");
+    if tests.is_dir() {
+        return Some(tests);
     }
-    buf.push_str(&s.into());
+    
+    None
 }

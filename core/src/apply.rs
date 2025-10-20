@@ -1,7 +1,7 @@
 use crate::error::{ErrorCode, PatchError, Result};
 use crate::logger::Logger;
-use crate::matcher::find_best_match;
-use crate::parser::PatchBlock;
+use crate::r#match::find_best_match;
+use crate::parse::PatchBlock;
 
 use std::fs;
 use std::io::ErrorKind;
