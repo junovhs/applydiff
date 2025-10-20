@@ -1,6 +1,6 @@
-/target
-src-tauri/target
-
-# Test artifacts
-tests/*.exe
-tests/*.pdb
+_build/
+_backend/target/
+core/target/
+target/
+*.exe
+*.pdb

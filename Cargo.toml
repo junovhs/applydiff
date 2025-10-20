@@ -2,8 +2,8 @@
 resolver = "2"
 
 members = [
-    "src-tauri",
-    "crates/applydiff-core",
+    "_backend",
+    "core",
 ]
 
 [profile.release]
