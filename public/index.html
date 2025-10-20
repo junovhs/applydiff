@@ -443,14 +443,32 @@ function renderVersionTabs() {
   versions.forEach((v, i) => {
     const tab = document.createElement('button');
     tab.className = 'version-tab' + (i === currentVersion ? ' active' : '');
-    tab.textContent = `v${v.id}`;
-    tab.title = `${v.timestamp}\\n${v.files.join(', ')}${v.note ? '\\n' + v.note : ''}`;
+    
+    // Show note icon if note exists
+    const displayText = v.note ? `v${v.id} 📝` : `v${v.id}`;
+    tab.textContent = displayText;
+    
+    // Tooltip shows timestamp, files, and note
+    const tooltip = `${v.timestamp}\nFiles: ${v.files.join(', ')}${v.note ? '\nNote: ' + v.note : '\n(Right-click to add note)'}`;
+    tab.title = tooltip;
+    
     tab.onclick = () => viewVersion(i);
+    
+    // Right-click to add/edit note
+    tab.oncontextmenu = (e) => {
+      e.preventDefault();
+      const newNote = prompt(`Note for v${v.id}:`, v.note || '');
+      if (newNote !== null) {
+        versions[i].note = newNote.trim();
+        renderVersionTabs();
+        log(`📝 Updated note for v${v.id}`);
+      }
+    };
+    
     container.appendChild(tab);
   });
   
-  const info = document.getElementById('page-info');
-  info.textContent = versions.length ? `${currentVersion + 1} / ${versions.length}` : '0 / 0';
+  document.getElementById('page-info').textContent = versions.length ? `${currentVersion + 1} / ${versions.length}` : '0 / 0';
 }
 
 function viewVersion(index) {
