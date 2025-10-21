@@ -1,0 +1,5 @@
+{
+  "description": "MA06: CRLF line endings preserved at byte level. Tests pure CRLF, pure LF, mixed files, and trailing newline harmonization.",
+  "expect_ok": 4,
+  "expect_fail": 0
+}

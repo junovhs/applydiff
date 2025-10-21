@@ -54,6 +54,7 @@
     const line = document.createElement('div');
     line.style.marginBottom = '4px';
     line.style.fontFamily = 'inherit';
+    line.style.whiteSpace = 'pre-wrap';
     
     // Color by level or emoji prefix
     if (level === 'error' || message.startsWith('❌')) {

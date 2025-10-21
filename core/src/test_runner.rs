@@ -156,8 +156,118 @@ fn run_test_case(rid: u64, log: &mut String, case_path: &Path) -> bool {
         checks_passed = false;
     }
 
+    // Binary CRLF verification for crlf-related tests
+    let case_name = case_path.file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+    
+    if case_name.to_lowercase().contains("crlf") {
+        if let Err(e) = verify_crlf_preservation(log, &sandbox) {
+            logln(log, format!("    ❌ Binary CRLF verification failed: {}", e));
+            checks_passed = false;
+        }
+    }
+
     cleanup(&sandbox).ok();
     checks_passed
+}
+
+/// Binary verification of line endings at byte level
+fn verify_line_endings_binary(
+    log: &mut String,
+    actual_path: &Path,
+    expected_crlf_count: usize,
+    expected_solo_lf_count: usize,
+    file_name: &str,
+) -> std::result::Result<(), String> {
+    let bytes = fs::read(actual_path).map_err(|e| {
+        format!("Failed to read {} for binary verification: {}", file_name, e)
+    })?;
+    
+    // Count CRLF sequences (0x0D 0x0A)
+    let mut crlf_count = 0usize;
+    let mut i = 0usize;
+    while i < bytes.len().saturating_sub(1) {
+        if bytes[i] == 0x0D && bytes[i + 1] == 0x0A {
+            crlf_count += 1;
+            i += 2;
+        } else {
+            i += 1;
+        }
+    }
+    
+    // Count total LF (0x0A) including those in CRLF
+    let total_lf_count = bytes.iter().filter(|&&b| b == 0x0A).count();
+    
+    // Solo LF = total LF minus those that are part of CRLF
+    let solo_lf_count = total_lf_count.saturating_sub(crlf_count);
+    
+    logln(log, format!(
+        "      Binary: {} CRLF, {} solo LF, {} total LF",
+        crlf_count, solo_lf_count, total_lf_count
+    ));
+    
+    // Verify expectations
+    if crlf_count != expected_crlf_count {
+        return Err(format!(
+            "{}: Expected {} CRLF sequences, found {}",
+            file_name, expected_crlf_count, crlf_count
+        ));
+    }
+    
+    if solo_lf_count != expected_solo_lf_count {
+        return Err(format!(
+            "{}: Expected {} solo LF, found {}",
+            file_name, expected_solo_lf_count, solo_lf_count
+        ));
+    }
+    
+    logln(log, format!("      ✓ {} byte-level verification passed", file_name));
+    
+    Ok(())
+}
+
+/// Enhanced verification for CRLF test case
+fn verify_crlf_preservation(
+    log: &mut String,
+    sandbox: &Path,
+) -> std::result::Result<(), String> {
+    logln(log, "    === Binary CRLF Verification ===");
+    
+    // Test 1: windows.txt - all CRLF (3 lines = 3 CRLF, 0 solo LF)
+    let windows_path = sandbox.join("windows.txt");
+    if windows_path.exists() {
+        verify_line_endings_binary(log, &windows_path, 3, 0, "windows.txt")?;
+    } else {
+        return Err("windows.txt not found in sandbox".to_string());
+    }
+    
+    // Test 2: unix.txt - all LF (3 lines = 0 CRLF, 3 solo LF)
+    let unix_path = sandbox.join("unix.txt");
+    if unix_path.exists() {
+        verify_line_endings_binary(log, &unix_path, 0, 3, "unix.txt")?;
+    } else {
+        return Err("unix.txt not found in sandbox".to_string());
+    }
+    
+    // Test 3: mixed.txt - 2 CRLF + 1 solo LF (3 total LF)
+    let mixed_path = sandbox.join("mixed.txt");
+    if mixed_path.exists() {
+        verify_line_endings_binary(log, &mixed_path, 2, 1, "mixed.txt")?;
+    } else {
+        return Err("mixed.txt not found in sandbox".to_string());
+    }
+    
+    // Test 4: harmonize.txt - harmonization adopted CRLF from matched slice
+    let harmonize_path = sandbox.join("harmonize.txt");
+    if harmonize_path.exists() {
+        verify_line_endings_binary(log, &harmonize_path, 3, 0, "harmonize.txt")?;
+    } else {
+        return Err("harmonize.txt not found in sandbox".to_string());
+    }
+    
+    logln(log, "    ✓✓✓ All binary CRLF checks passed");
+    Ok(())
 }
 
 fn find_tests_dir() -> Option<PathBuf> {

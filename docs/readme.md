@@ -6,7 +6,7 @@ Reliable, token‑efficient code patching you can trust with AI outputs.
 ## Two patch formats (use the armored one in chat)
 
 **1) Armored Framed Blocks v1 (AFB‑1)** — resilient to chat apps that mangle whitespace and markup.
-Use this whenever you’re pasting patches in Slack/Discord/ChatGPT/etc.
+Use this whenever you're pasting patches in Slack/Discord/ChatGPT/etc.
 
 -----BEGIN APPLYDIFF AFB-1-----
 Path: RELATIVE/PATH/TO/FILE
@@ -21,7 +21,7 @@ To:
 Notes:
 - Multiple blocks can be placed back‑to‑back.
 - Base64 can be wrapped; whitespace is ignored.
-- Leave “From:” empty (i.e., encode the empty string) to create/append.
+- Leave "From:" empty (i.e., encode the empty string) to create/append.
 
 **2) Classic sentinel format** — still supported for local usage and when you can trust the transport.
 
@@ -35,7 +35,7 @@ Notes:
 ## Behavior highlights
 
 - Path safety: absolute/`..` paths are rejected.
-- Line endings preserved: replacement adopts the matched region’s `\n` or `\r\n`.
+- Line endings preserved: replacement adopts the matched region's `\n` or `\r\n`.
 - Append/create: adds a separator newline **only** when appending to a non‑empty file that lacks one.
 - Partial apply: good blocks land, bad ones are skipped; backups are created first.
 
@@ -54,6 +54,6 @@ After building, run the self‑test from the app console. Expected cases:
 ## Quick usage
 
 1. Select your project directory in the app.
-2. Paste one or more AFB‑1 blocks.
+2. Paste one or more AFB‑1 blocks or classic format blocks.
 3. Review the preview diff.
 4. Apply. Backups will be created automatically.
