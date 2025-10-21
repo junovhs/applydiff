@@ -6,3 +6,10 @@
 *.toml text eol=lf
 *.slint text eol=lf
 *.md   text eol=lf
+# Preserve exact line endings in CRLF test fixtures
+tests/08-crlf-preserve/before/windows.txt binary
+tests/08-crlf-preserve/after/windows.txt binary
+tests/08-crlf-preserve/before/mixed.txt binary
+tests/08-crlf-preserve/after/mixed.txt binary
+tests/08-crlf-preserve/before/harmonize.txt binary
+tests/08-crlf-preserve/after/harmonize.txt binary
