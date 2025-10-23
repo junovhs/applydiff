@@ -1,5 +1,6 @@
 use crate::error::{ErrorCode, PatchError, Result};
-use crate::parse::{PatchBlock, decode_base64_lossy};
+use crate::parse::{PatchBlock, decode_base64_checked};
+use crate::parse::parse_base64::MAX_BASE64_DECODED_DEFAULT;
 use std::path::PathBuf;
 
 pub fn parse_armored_block(
@@ -54,7 +55,7 @@ pub fn parse_armored_block(
         }),
     }
 
-    // Collect base64 until 'To:'
+    // Collect until 'To:'
     let mut from_buf = String::new();
     while let Some((_, l)) = lines.peek().cloned() {
         if l.trim() == "To:" { lines.next(); break; }
@@ -70,7 +71,7 @@ pub fn parse_armored_block(
         lines.next();
     }
 
-    // Collect base64 until END
+    // Collect until END
     let mut to_buf = String::new();
     let mut found_end = false;
     while let Some((_, l)) = lines.peek().cloned() {
@@ -79,7 +80,7 @@ pub fn parse_armored_block(
         to_buf.push('\n');
         lines.next();
     }
-    
+
     if !found_end {
         return Err(PatchError::Parse {
             code: ErrorCode::ParseFailed,
@@ -96,13 +97,17 @@ pub fn parse_armored_block(
         });
     }
 
-    let from = String::from_utf8(decode_base64_lossy(&from_buf)).map_err(|_| PatchError::Parse {
+    // Strict, bounded decode (propagates precise errors: invalid char, bad padding, too large)
+    let from_bytes = decode_base64_checked(&from_buf, MAX_BASE64_DECODED_DEFAULT)?;
+    let to_bytes   = decode_base64_checked(&to_buf,   MAX_BASE64_DECODED_DEFAULT)?;
+
+    let from = String::from_utf8(from_bytes).map_err(|_| PatchError::Parse {
         code: ErrorCode::ParseFailed,
         message: "Armored 'From' is not valid UTF-8 after base64 decode".to_string(),
         context: file.clone(),
     })?;
 
-    let to = String::from_utf8(decode_base64_lossy(&to_buf)).map_err(|_| PatchError::Parse {
+    let to = String::from_utf8(to_bytes).map_err(|_| PatchError::Parse {
         code: ErrorCode::ParseFailed,
         message: "Armored 'To' is not valid UTF-8 after base64 decode".to_string(),
         context: file.clone(),
@@ -114,4 +119,52 @@ pub fn parse_armored_block(
         to,
         fuzz: fuzz.clamp(0.0, 1.0),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parse::Parser;
+
+    fn make_block(from_b64: &str, to_b64: &str) -> String {
+        format!(
+"-----BEGIN APPLYDIFF AFB-1-----
+Path: tmp.txt
+Encoding: base64
+From:
+{from}
+To:
+{to}
+-----END APPLYDIFF AFB-1-----
+", from = from_b64, to = to_b64)
+    }
+
+    #[test]
+    fn parses_valid_armored_block() {
+        // "Foo" -> Rm9v, "Bar" -> QmFy
+        let patch = make_block("Rm9v", "QmFy");
+        let out = Parser::new().parse(&patch).unwrap();
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].file, PathBuf::from("tmp.txt"));
+        assert_eq!(out[0].from, "Foo");
+        assert_eq!(out[0].to, "Bar");
+    }
+
+    #[test]
+    fn armored_rejects_invalid_character() {
+        // Inject a bad character into base64.
+        let patch = make_block("Rm9v#", "QmFy");
+        let err = Parser::new().parse(&patch);
+        assert!(err.is_err(), "should reject invalid base64 char");
+    }
+
+    #[test]
+    fn armored_rejects_too_large() {
+        // "AAAA" -> 3 zero bytes. Make From exceed the 1 MiB default cap.
+        let quartets = (crate::parse::parse_base64::MAX_BASE64_DECODED_DEFAULT / 3) + 1;
+        let huge = "AAAA".repeat(quartets);
+        let patch = make_block(&huge, "QmFy");
+        let err = Parser::new().parse(&patch);
+        assert!(err.is_err(), "should reject oversized base64 payload");
+    }
 }

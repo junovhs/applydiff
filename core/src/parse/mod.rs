@@ -3,11 +3,12 @@ use std::path::PathBuf;
 
 mod parse_classic;
 mod parse_armored;
-mod parse_base64;
+pub mod parse_base64; // expose constants for caps
 
 pub use parse_classic::parse_classic_block;
 pub use parse_armored::parse_armored_block;
-pub use parse_base64::decode_base64_lossy;
+// Export the strict decoder; do **not** re-export the lossy one anymore.
+pub use parse_base64::decode_base64_checked;
 
 const MAX_BLOCKS: usize = 1000;
 

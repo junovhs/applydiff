@@ -1,107 +1,51 @@
 # ApplyDiff – Gauntlet & Lab Testing
 
-> Evidence-first confidence, not vibes. We verify both the **what** (output) and the **how** (internal path).
+> Evidence-first confidence, not vibes. We verify the **what** (output), the **how** (internal path), and the **workflow** (safe handoffs).
 
 ## Philosophy
 
-The patcher is safety-critical. Tests must prove:
-- Correct final state (byte-for-byte where applicable)
-- Correct internal behavior (fast/slow path, thresholds, safety guards)
-- Clear, structured observability so failures teach us something
+The `ApplyDiff Suite` is a safety-critical component in an AI-assisted workflow. Tests must prove:
+- **Correct Final State:** Byte-for-byte correctness of the final file outputs.
+- **Correct Internal Behavior:** The right code paths are taken (fast vs. slow), thresholds are respected, and safety guards are triggered.
+- **Workflow Integrity:** The entire `git -> AI -> apply` loop is safe, enforcing best practices like clean working directories before starting.
+- **Clear Observability:** Structured logs ensure every failure is a lesson.
 
 We enforce this with:
-- **Isolation:** Every case runs in a temp sandbox
-- **Determinism:** Fixtures under `tests/<CASE_ID>/` or generated programmatically
-- **Instrumentation:** Structured JSONL logs from subsystems (`matcher`, `applier`)
-- **Metadata:** `meta.json` specifies expected counts + log breadcrumbs
-- **Multi-layer verification:** Hash comparison, byte-level analysis, metadata checks
+- **Isolation:** Every case runs in a temporary sandbox created from a clean Git state.
+- **Determinism:** Fixtures are defined in `tests/<CASE_ID>/` or generated programmatically.
+- **Instrumentation:** Structured JSONL logs from all subsystems (`matcher`, `applier`, `git`, `workflow`).
+- **Metadata:** `meta.json` specifies expected outcomes, including success/fail counts and log breadcrumbs.
+- **Multi-layer Verification:** Hash comparisons, byte-level analysis, and Git state checks.
 
 ---
 
 ## Current Test Coverage
 
-**Automated gauntlet: 8/8 passing ✅**
+**Automated gauntlet: 8/18 passing ✅**
 
-### 01-afb-append – AFB-1 Append/Create ✅
-**What:** Armored format creates new file with parent directories  
-**Verifies:**
-- Base64 decoding works correctly
-- Empty FROM triggers create/append logic
-- Parent directories auto-created
+### Core Engine (8/8 Passing)
+These tests validate the core patch-application logic.
 
-### 02-afb-replace – AFB-1 Exact Replace ✅
-**What:** Armored format replaces exact match  
-**Verifies:**
-- Base64 encoding/decoding round-trip
-- Exact match detection in armored format
-- Proper content replacement
+-   **01-afb-append:** AFB-1 Append/Create ✅
+-   **02-afb-replace:** AFB-1 Exact Replace ✅
+-   **03-path-traversal:** Path Escape Rejection ✅
+-   **04-append-create:** Empty FROM Creates File ✅
+-   **05-large-file:** 50K Line Fast Path ✅
+-   **06-ambiguity-simple:** Duplicate YAML Blocks ✅
+-   **07-ambiguity-indent:** Similar Python Functions ✅
+-   **08-crlf-preserve:** Byte-Level Line Ending Preservation (Undeniable Proof) ✅
 
-### 03-path-traversal – Path Escape Rejection ✅
-**What:** Patch attempts `../escape.txt`  
-**Verifies:**
-- Path validation rejects `..` components
-- No files written outside sandbox
-- `ok=0, fail=1` counts
-
-### 04-append-create – Empty FROM Creates File ✅
-**What:** Classic format with empty FROM creates deep nested file  
-**Verifies:**
-- Empty FROM triggers create logic
-- Parent directories auto-created
-- File created with correct content
-
-### 05-large-file – 50K Line Fast Path ✅
-**What:** Exact-match edit at line 1 of 50K-line file  
-**Verifies:**
-- Byte-for-byte output correctness
-- Fast path used (`"action":"fast_path_match"` in logs)
-- Performance: completes in <1 second
-
-### 06-ambiguity-simple – Duplicate YAML Blocks ✅
-**What:** Patch matches two identical 3-line YAML blocks  
-**Verifies:**
-- Ambiguity detection triggers
-- Patch rejected (`ok=0, fail=1`)
-- Log contains `"ambiguous_match"` breadcrumb
-
-### 07-ambiguity-indent – Similar Python Functions ✅
-**What:** Patch matches two functions with identical content  
-**Verifies:**
-- Ambiguity detection across different formatting
-- Rejection even with whitespace variance
-- Log contains `"ambiguous_match"`
-
-### 08-crlf-preserve – Byte-Level Line Ending Preservation ✅
-**What:** Four files test CRLF/LF preservation and harmonization  
-**Verifies (UNDENIABLE PROOF):**
-- **Binary verification:** Counts exact `0x0D 0x0A` (CRLF) vs `0x0A` (LF) sequences
-- **windows.txt:** 3 CRLF, 0 solo LF → pure Windows preservation
-- **unix.txt:** 0 CRLF, 3 solo LF → pure Unix preservation  
-- **mixed.txt:** 2 CRLF, 1 solo LF → per-line preservation
-- **harmonize.txt:** 3 CRLF → patch adopts file's line ending style
-- **4 proof layers:** Binary count + byte-for-byte comparison + hexdump + SHA256
-
-**Why this test is undeniable:**
-1. Reads raw bytes (`fs::read`), no text API normalization
-2. Counts exact byte sequences (0x0D 0x0A), mathematically verifiable
-3. Four independent verification methods must all pass
-4. If CRLF preservation were broken, at least one layer would fail
+*Details for these tests remain the same as the previous version.*
 
 ---
 
-## Test Roadmap (15 Total Tests)
+## Test Roadmap (18 Total Tests)
 
-### Completed: 8/15 ✅
-- ✅ 01-afb-append
-- ✅ 02-afb-replace  
-- ✅ 03-path-traversal
-- ✅ 04-append-create
-- ✅ 05-large-file
-- ✅ 06-ambiguity-simple
-- ✅ 07-ambiguity-indent
-- ✅ 08-crlf-preserve
+### Completed: 8/18 ✅
+- ✅ All Core Engine tests (1-8)
 
-### Planned: 7/15
+### Planned: 10/18
+#### Core Engine Tests (Planned)
 - ❌ 09-mixed-results – Partial apply (2 succeed, 1 fails)
 - ❌ 10-backup-restore – Backup exists, restore recovers exact state
 - ❌ 11-symlink-escape – Symlinks outside sandbox rejected
@@ -110,177 +54,59 @@ We enforce this with:
 - ❌ 14-multiline-replace – Replace 100 consecutive lines
 - ❌ 15-fuzzy-timeout – Worst-case fuzzy search bounded
 
+#### Workflow & Integration Tests (Planned)
+- ❌ **16-git-dirty-reject** – Rejects directory with uncommitted changes
+    - **Verifies:** `git status` check, UI flow blocked, warning displayed.
+- ❌ **17-git-clean-proceed** – Accepts clean directory and displays branch
+    - **Verifies:** `git status` check, UI proceeds, branch name correctly parsed.
+- ❌ **18-commit-assist-generation** – Generates conventional commit message
+    - **Verifies:** Correct type/scope/subject parsing from prompt and file paths.
+
 ---
 
 ## Manual Lab (Quick Smoke Tests)
 
-Create test environment:
+Create the test environment as described in the previous version. Start with a clean Git repository: `git init && git add . && git commit -m "Initial commit"`.
 
-```bash
-TEST_DIR="$HOME/ApplyDiffLab"
-rm -rf "$TEST_DIR"
-mkdir -p "$TEST_DIR/src" "$TEST_DIR/docs" "$TEST_DIR/notes" "$TEST_DIR/new/nested"
+Open ApplyDiff → **Select Directory** → `~/ApplyDiffLab`.
 
-# LF file
-cat > "$TEST_DIR/readme.md" <<'EOF'
-# ApplyDiff Lab
-Welcome to the lab.
-EOF
+### Scenarios A-F
+*(These remain the same: Exact Match, CRLF Preservation, Append-Create, Path Traversal, Ambiguity, Partial Apply)*
 
-# CRLF file (Windows line endings)
-printf 'function greet(){\r\n  console.log("Hello world");\r\n}\r\n' > "$TEST_DIR/src/app.js"
+### Scenario G: Git Handshake (Dirty State)
 
-# Additional LF files
-cat > "$TEST_DIR/src/math.js" <<'EOF'
-export function add(a, b) {
-  return a + b;
-}
-EOF
-
-cat > "$TEST_DIR/docs/guide.md" <<'EOF'
-## Guide
-Steps go here.
-EOF
-
-# Ambiguity test file
-cat > "$TEST_DIR/notes/duplicate.txt" <<'EOF'
-id: A
-start
-  marker: section
-  value: target
-end
-
-id: B
-start
-  marker: section
-  value: target
-end
-EOF
-
-echo "Lab created at $TEST_DIR"
-```
-
-Open ApplyDiff → **Select Directory** → `~/ApplyDiffLab` → Paste test patches.
-
-### Scenario A: Exact Match (Sanity Check)
-
-```
->>> file: readme.md | fuzz=1.0
---- from
-# ApplyDiff Lab
---- to
-# ApplyDiff Lab (patched)
-<<<
-```
+1.  Modify a file: `echo "dirty" >> ~/ApplyDiffLab/readme.md`
+2.  In ApplyDiff, select the `~/ApplyDiffLab` directory.
 
 **Expected:**
-- Green diff in preview
-- "Apply Patch" button appears
-- After apply: v1 tab appears, file updated
+- A warning bar appears: "⚠️ Uncommitted Changes Detected."
+- The "Smart Context Orb" for generating context **does not appear**.
+- The workflow is blocked.
+- After committing the change and re-selecting the directory, the warning disappears and the Orb appears.
 
-**Verify:** `cat ~/ApplyDiffLab/readme.md` shows `# ApplyDiff Lab (patched)`
+### Scenario H: Full Workflow (Happy Path)
 
-### Scenario B: CRLF Preservation
-
-```
->>> file: src/app.js | fuzz=0.85
---- from
-  console.log("Hello world");
---- to
-  console.log("Hello brave new world");
-<<<
-```
-
-**Expected:**
-- Diff shows single line change
-- File keeps CRLF endings (`\r\n`)
-
-**Verify:** `xxd -g 1 ~/ApplyDiffLab/src/app.js | grep -A1 "Hello"` shows `0d 0a` bytes
-
-### Scenario C: Append-Create (New File)
-
-```
->>> file: new/nested/log.txt | fuzz=1.0
---- from
---- to
-Log started
-Entry: 1
-<<<
-```
+1.  Start with a clean Git repo. Select the `~/ApplyDiffLab` directory.
+2.  In ApplyDiff's "My Prompt" box, paste: `Add a 'return a + b + c;' line to the add function in src/math.js`
+3.  Drag the **Smart Context Orb (Blueprint)** to trigger the copy action.
+4.  Paste the blueprint and the prompt into your Chat AI.
+5.  Copy the AI's patch response.
+6.  Paste the patch into ApplyDiff. A `✓ Armored Format` check appears.
+7.  The Diff Preview looks correct. Click "Apply Patch".
+8.  The Console confirms `1 applied, 0 failed`.
+9.  Click the **"Prepare Commit"** button that appears.
 
 **Expected:**
-- Diff shows "new file" with added lines
-- Parent directories created automatically
+- The Commit Assistant panel opens with a generated message:
+  ```
+  feat(core): add third parameter to add function
 
-**Verify:** `cat ~/ApplyDiffLab/new/nested/log.txt` shows both lines
+  Add a 'return a + b + c;' line to the add function in src/math.js
 
-### Scenario D: Path Traversal Rejection
-
-```
->>> file: ../escape.txt | fuzz=1.0
---- from
---- to
-You should never see this.
-<<<
-```
-
-**Expected:**
-- Console shows ❌ "Patch path escapes target directory"
-- No "Apply Patch" button (or orange "Apply Valid Changes" if mixed with valid blocks)
-
-### Scenario E: Ambiguity Trap
-
-```
->>> file: notes/duplicate.txt | fuzz=0.90
---- from
-start
-    marker: section
-    value: target
-end
---- to
-start
-    marker: section
-    value: PATCHED
-end
-<<<
-```
-
-**Expected:**
-- No match ≥ 0.90 (two equally-good targets)
-- Console shows ❌ with ambiguity mention
-- Terminal logs show `"ambiguous_match"`
-
-**Fix:** Add `id: A` to FROM block to disambiguate.
-
-### Scenario F: Partial Apply (Mixed Results)
-
-```
->>> file: readme.md | fuzz=1.0
---- from
-Welcome to the lab.
---- to
-Welcome to the patched lab.
-<<<
-
->>> file: new/report.txt | fuzz=1.0
---- from
---- to
-Report v1
-<<<
-
->>> file: ../should-not-write.txt | fuzz=1.0
---- from
---- to
-nope
-<<<
-```
-
-**Expected:**
-- Diff shows first two changes only
-- Button reads "Apply Valid Changes" (orange)
-- Console shows `2 applied, 1 failed`
-
-**Verify:** `report.txt` created, `escape.txt` not created
+  Files changed:
+  - src/math.js
+  ```
+- Clicking "Copy Message" works as expected.
 
 ---
 
@@ -290,81 +116,31 @@ Tests verify these structured log entries:
 
 | Subsystem | Action | Meaning |
 |-----------|--------|---------|
-| `matcher` | `fast_path_match` | Exact substring used (optimal) |
-| `matcher` | `search_start` | Entering layered fuzzy search |
-| `matcher` | `ambiguous_match` | Two+ targets with similar scores |
-| `matcher` | `no_match_threshold` | Best score below `fuzz` setting |
-| `applier` | (path escape message) | Path validation rejected block |
-
-Example log entry:
-```json
-{"ts":"2025-10-20T07:30:03Z","level":"info","rid":1760945133803,"subsystem":"matcher","action":"fast_path_match","msg":"unique exact substring (len=38)"}
-```
-
----
-
-## Test Design Principles (Lessons from CRLF Test)
-
-### Multi-Layer Verification
-Every test should verify correctness at multiple independent levels:
-1. **Expected output** (file contents match)
-2. **Binary/byte-level** (for format-sensitive tests)
-3. **Metadata** (filesystem state: mtime, size, permissions)
-4. **Cryptographic proof** (SHA256 hashes where applicable)
-
-### Making Tests Undeniable
-A test is "undeniable" when passing proves correctness **by virtue of mathematical impossibility of faking**:
-
-**Example: CRLF test**
-- Can't fake SHA256 collision (cryptographically impossible)
-- Can't fake byte sequence counts without actual preservation
-- Can't pass all 4 layers without correct behavior
-
-**Future tests should aim for this standard.**
-
----
-
-## Running Tests
-
-**Automated gauntlet:**
-```bash
-cargo tauri dev
-# Click "Run Self-Test" in console
-```
-
-**Manual lab:**
-1. Create `~/ApplyDiffLab` (see above)
-2. Run scenarios A-F
-3. Verify outputs match expectations
-4. Check console logs for breadcrumbs
-
-**Adding new tests:**
-1. Create `tests/<NN>-<name>/{before/,after/,meta.json,patch.txt}`
-2. `meta.json` must specify `expect_ok`, `expect_fail`
-3. For binary tests, add verification to `test_runner.rs`
-4. Run gauntlet, verify pass/fail
-5. Commit test case with descriptive name
+| `matcher` | `fast_path_match` | Exact substring used (optimal). |
+| `matcher` | `ambiguous_match` | Two+ targets with similar scores. |
+| `applier` | `path_escape_rejected`| Path validation rejected a block. |
+| `git`     | `state_check_dirty` | Blocked workflow due to uncommitted changes. |
+| `git`     | `state_check_clean` | Proceeded with workflow, branch detected. |
+| `workflow`| `commit_assist_generated`| Commit message was generated. |
 
 ---
 
 ## Known Test Gaps
 
-1. **Mixed success/fail**: Partial apply atomicity (Test #9 planned)
-2. **Backup/restore**: Round-trip verification (Test #10 planned)
-3. **Symlink escape**: Canonicalization checks (Test #11 planned)
-4. **Performance bounds**: Worst-case fuzzy timing (Test #15 planned)
-5. **Concurrent applies**: Rapid successive patches
-6. **Version history persistence**: Versions survive restart
+1.  **Atomicity & Backups**: Partial apply and restore round-trip (Tests #9, #10).
+2.  **Filesystem Edge Cases**: Symlinks, permissions, etc. (Test #11).
+3.  **Performance Bounds**: Worst-case fuzzy search and large file edits (Tests #12, #13, #15).
+4.  **UI Interaction**: The kinetic feel of the "Smart Context Orb" and the guided commit button flow are currently manual tests.
+5.  **Version History Persistence**: Ensuring version tabs survive an application restart.
 
 ---
 
 ## Test Quality Metrics
 
-- **Coverage**: 8/15 tests, 12 subsystem behaviors verified
-- **Confidence**: High for exact matching, ambiguity, CRLF, path safety
-- **Gaps**: Atomicity, backups, symlinks, performance bounds
-- **False positives**: None observed (all passes are legitimate)
-- **False negatives**: Low risk (multi-layer verification)
+- **Coverage**: 8/18 tests, ~15 subsystem behaviors verified
+- **Confidence**: **High** for core patch engine (matching, ambiguity, CRLF, path safety). **Planned** for Git integration and workflow handoffs.
+- **Gaps**: See "Known Test Gaps" above. The largest gap is the lack of automated UI interaction tests.
+- **False positives/negatives**: None observed; multi-layer verification minimizes risk.
 
-**Current status: 53% complete (8/15)**  
-**Target for v1.0:** 15/15 gauntlet tests passing
+**Current status: 44% complete (8/18)**  
+**Target for v1.0:** 18/18 gauntlet tests passing, all manual lab scenarios verified.

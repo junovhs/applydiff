@@ -1,0 +1,778 @@
+=======PROJECT=======
+========================================
+PROJECT OVERVIEW
+========================================
+
+Generated: 2025-10-23 13:16:35 -07:00
+Output dir: ai-pack
+
+STATS
+------
+- files.raw: 139
+- files.kept: 81
+- code_only: false
+- max_depth: 3
+
+TOOLS
+------
+- tools.git: true
+- git.commit: de9d49c
+
+WHAT'S IN THE PACK
+-------------------
+1. GUIDE.txt               - How to use the pack
+2. PROJECT.txt             - Overview, metadata
+3. STRUCTURE.txt           - Directory tree, file index, token heatmap
+4. APIS.txt                - API surfaces (Rust/TS/Python/Go)
+5. DEPS.txt (optional)     - Dependencies (from `cargo tree`)
+6. PACK_STAGE2_COMPRESSED.xml (optional) - Compressed skeleton if repomix present
+
+LANGUAGE STATISTICS
+========================================
+
+Language/Extension Snapshot
+
+| Extension | Files |
+|----------:|------:|
+| txt | 23 |
+| rs | 20 |
+| json | 14 |
+| js | 7 |
+| (noext) | 4 |
+| md | 3 |
+| toml | 3 |
+| css | 1 |
+| html | 1 |
+| lock | 1 |
+| pdb | 1 |
+| py | 1 |
+| sh | 1 |
+| yml | 1 |
+
+Total files: 81
+
+=======END-OF-PROJECT=======
+
+=======STRUCTURE=======
+========================================
+DIRECTORY TREE
+========================================
+
+Directories (depth <= 3):
+
+_backend
+_backend/gen
+_backend/src
+app
+core
+core/src
+docs
+tests
+tests/01-afb-append
+tests/02-afb-replace
+tests/03-path-traversal
+tests/04-append-create
+tests/05-large-file
+tests/06-ambiguity-simple
+tests/07-ambiguity-indent
+tests/08-crlf-preserve
+
+========================================
+FILE INDEX
+========================================
+
+All files (n = 81):
+
+.gitattributes
+.gitignore
+Cargo.lock
+Cargo.toml
+_backend/Cargo.toml
+_backend/build.rs
+_backend/gen/schemas/acl-manifests.json
+_backend/gen/schemas/capabilities.json
+_backend/gen/schemas/desktop-schema.json
+_backend/gen/schemas/linux-schema.json
+_backend/gen/schemas/windows-schema.json
+_backend/src/commands.rs
+_backend/src/main.rs
+_backend/tauri.conf.json
+app/app-state.js
+app/console-panel.js
+app/diff-panel.js
+app/index.html
+app/patch-panel.js
+app/styles.css
+app/tauri-bridge.js
+app/ui-helpers.js
+app/version-tabs.js
+core/Cargo.toml
+core/src/apply.rs
+core/src/backup.rs
+core/src/error.rs
+core/src/lib.rs
+core/src/logger.rs
+core/src/match/match_exact.rs
+core/src/match/match_fuzzy.rs
+core/src/match/match_normalize.rs
+core/src/match/mod.rs
+core/src/parse/mod.rs
+core/src/parse/parse_armored.rs
+core/src/parse/parse_base64.rs
+core/src/parse/parse_classic.rs
+core/src/prompts.rs
+core/src/test_helpers.rs
+core/src/test_runner.rs
+docs/readme.md
+docs/safety.md
+docs/testing.md
+tests/01-afb-append/after/new/deep/hello.txt
+tests/01-afb-append/before/.keep
+tests/01-afb-append/meta.json
+tests/01-afb-append/patch.txt
+tests/02-afb-replace/after/hello.txt
+tests/02-afb-replace/before/hello.txt
+tests/02-afb-replace/meta.json
+tests/02-afb-replace/patch.txt
+tests/03-path-traversal/before/placeholder.txt
+tests/03-path-traversal/meta.json
+tests/03-path-traversal/patch.txt
+tests/04-append-create/after/new/deep/file.txt
+tests/04-append-create/before/.keep
+tests/04-append-create/meta.json
+tests/04-append-create/patch.txt
+tests/05-large-file/after/large_file.txt
+tests/05-large-file/before/large_file.txt
+tests/05-large-file/meta.json
+tests/05-large-file/patch.txt
+tests/06-ambiguity-simple/before/config.yml
+tests/06-ambiguity-simple/meta.json
+tests/06-ambiguity-simple/patch.txt
+tests/07-ambiguity-indent/before/config.py
+tests/07-ambiguity-indent/meta.json
+tests/07-ambiguity-indent/patch.txt
+tests/08-crlf-preserve/after/harmonize.txt
+tests/08-crlf-preserve/after/mixed.txt
+tests/08-crlf-preserve/after/unix.txt
+tests/08-crlf-preserve/after/windows.txt
+tests/08-crlf-preserve/before/harmonize.txt
+tests/08-crlf-preserve/before/mixed.txt
+tests/08-crlf-preserve/before/unix.txt
+tests/08-crlf-preserve/before/windows.txt
+tests/08-crlf-preserve/meta.json
+tests/08-crlf-preserve/patch.txt
+tests/08-crlf-preserve/verify_bytes.sh
+tests/generate.pdb
+tests/generate_large_files.rs
+
+========================================
+TOKEN HEATMAP
+========================================
+
+Size estimates (bytes → ~tokens via /3.5). Top 50:
+
+     1323008 bytes  ~  378002 tokens  tests/generate.pdb
+      588913 bytes  ~  168260 tokens  tests/05-large-file/after/large_file.txt
+      588905 bytes  ~  168258 tokens  tests/05-large-file/before/large_file.txt
+      142839 bytes  ~   40811 tokens  Cargo.lock
+      121846 bytes  ~   34813 tokens  _backend/gen/schemas/linux-schema.json
+      119483 bytes  ~   34138 tokens  _backend/gen/schemas/desktop-schema.json
+      119483 bytes  ~   34138 tokens  _backend/gen/schemas/windows-schema.json
+       67672 bytes  ~   19334 tokens  _backend/gen/schemas/acl-manifests.json
+        9377 bytes  ~    2679 tokens  core/src/test_runner.rs
+        7777 bytes  ~    2222 tokens  _backend/src/commands.rs
+        6439 bytes  ~    1839 tokens  docs/testing.md
+        6372 bytes  ~    1820 tokens  app/styles.css
+        5770 bytes  ~    1648 tokens  docs/safety.md
+        5230 bytes  ~    1494 tokens  core/src/apply.rs
+        4374 bytes  ~    1249 tokens  core/src/match/match_fuzzy.rs
+        4153 bytes  ~    1186 tokens  app/version-tabs.js
+        4053 bytes  ~    1158 tokens  core/src/parse/parse_armored.rs
+        3931 bytes  ~    1123 tokens  app/patch-panel.js
+        3660 bytes  ~    1045 tokens  core/src/backup.rs
+        3576 bytes  ~    1021 tokens  app/tauri-bridge.js
+        3407 bytes  ~     973 tokens  core/src/match/match_normalize.rs
+        3108 bytes  ~     888 tokens  app/index.html
+        2739 bytes  ~     782 tokens  core/src/test_helpers.rs
+        2710 bytes  ~     774 tokens  app/console-panel.js
+        2680 bytes  ~     765 tokens  core/src/parse/parse_classic.rs
+        2612 bytes  ~     746 tokens  tests/08-crlf-preserve/verify_bytes.sh
+        2377 bytes  ~     679 tokens  core/src/parse/mod.rs
+        2128 bytes  ~     608 tokens  app/diff-panel.js
+        1994 bytes  ~     569 tokens  docs/readme.md
+        1913 bytes  ~     546 tokens  core/src/match/mod.rs
+        1612 bytes  ~     460 tokens  core/src/logger.rs
+        1469 bytes  ~     419 tokens  core/src/parse/parse_base64.rs
+        1266 bytes  ~     361 tokens  tests/generate_large_files.rs
+        1200 bytes  ~     342 tokens  _backend/tauri.conf.json
+        1076 bytes  ~     307 tokens  app/ui-helpers.js
+         861 bytes  ~     246 tokens  core/src/prompts.rs
+         826 bytes  ~     236 tokens  core/src/error.rs
+         716 bytes  ~     204 tokens  app/app-state.js
+         681 bytes  ~     194 tokens  core/src/match/match_exact.rs
+         587 bytes  ~     167 tokens  _backend/src/main.rs
+         581 bytes  ~     166 tokens  _backend/Cargo.toml
+         554 bytes  ~     158 tokens  .gitattributes
+         349 bytes  ~      99 tokens  tests/08-crlf-preserve/patch.txt
+         267 bytes  ~      76 tokens  core/Cargo.toml
+         259 bytes  ~      74 tokens  tests/07-ambiguity-indent/before/config.py
+         201 bytes  ~      57 tokens  tests/05-large-file/meta.json
+         200 bytes  ~      57 tokens  tests/07-ambiguity-indent/meta.json
+         190 bytes  ~      54 tokens  tests/08-crlf-preserve/meta.json
+         181 bytes  ~      51 tokens  tests/06-ambiguity-simple/meta.json
+         174 bytes  ~      49 tokens  core/src/lib.rs
+
+=======END-OF-STRUCTURE=======
+
+=======APIS=======
+========================================
+API SURFACE: RUST
+========================================
+
+core/src/apply.rs:10:pub struct ApplyResult {
+core/src/apply.rs:16:pub struct Applier<'a> {
+core/src/apply.rs:24:    pub fn new(logger: &'a Logger, root: PathBuf, dry_run: bool) -> Self {
+core/src/apply.rs:28:    pub fn apply_block(&self, blk: &PatchBlock) -> Result<ApplyResult> {
+core/src/backup.rs:6:pub fn create_backup(base: &Path, files: &[PathBuf]) -> Result<PathBuf> {
+core/src/backup.rs:39:pub fn latest_backup(base: &Path) -> Option<PathBuf> {
+core/src/backup.rs:63:pub fn restore_backup(base: &Path, backup_root: &Path) -> Result<()> {
+core/src/error.rs:4:pub type Result<T> = std::result::Result<T, PatchError>;
+core/src/error.rs:7:pub enum ErrorCode {
+core/src/error.rs:22:pub enum PatchError {
+core/src/lib.rs:3:pub mod apply;
+core/src/lib.rs:4:pub mod backup;
+core/src/lib.rs:5:pub mod error;
+core/src/lib.rs:6:pub mod test_runner;
+core/src/lib.rs:7:pub mod test_helpers;
+core/src/lib.rs:8:pub mod logger;
+core/src/lib.rs:9:pub mod r#match;
+core/src/lib.rs:10:pub mod parse;
+core/src/lib.rs:11:pub mod prompts;
+core/src/logger.rs:7:pub struct Logger {
+core/src/logger.rs:15:    pub fn new(rid: u64) -> Self {
+core/src/logger.rs:20:    pub fn new_for_test(rid: u64, buffer: Option<Rc<RefCell<String>>>) -> Self {
+core/src/logger.rs:25:    pub fn info(&self, subsystem: &str, action: &str, message: &str) {
+core/src/match/match_exact.rs:5:pub fn try_exact_match(haystack: &str, needle: &str, logger: &Logger) -> Option<MatchResult> {
+core/src/match/match_fuzzy.rs:5:pub fn find_fuzzy_match(
+core/src/match/match_normalize.rs:3:pub fn line_ranges(s: &str) -> Vec<(usize, usize)> {
+core/src/match/match_normalize.rs:28:pub fn normalize_newlines(s: &str) -> String {
+core/src/match/match_normalize.rs:38:pub fn normalize_ws_preserve_newlines(s: &str) -> String {
+core/src/match/match_normalize.rs:70:pub fn normalize_relative_indent(s: &str) -> String {
+core/src/match/mod.rs:7:pub use match_exact::try_exact_match;
+core/src/match/mod.rs:8:pub use match_fuzzy::find_fuzzy_match;
+core/src/match/mod.rs:9:pub use match_normalize::{normalize_newlines, normalize_ws_preserve_newlines, normalize_relative_indent};
+core/src/match/mod.rs:12:pub struct MatchResult {
+core/src/match/mod.rs:23:pub fn find_best_match(
+core/src/parse/mod.rs:8:pub use parse_classic::parse_classic_block;
+core/src/parse/mod.rs:9:pub use parse_armored::parse_armored_block;
+core/src/parse/mod.rs:10:pub use parse_base64::decode_base64_lossy;
+core/src/parse/mod.rs:15:pub struct PatchBlock {
+core/src/parse/mod.rs:23:pub struct Parser;
+core/src/parse/mod.rs:26:    pub fn new() -> Self { Self::default() }
+core/src/parse/mod.rs:28:    pub fn parse(&self, input: &str) -> Result<Vec<PatchBlock>> {
+core/src/parse/parse_armored.rs:5:pub fn parse_armored_block(
+core/src/parse/parse_base64.rs:3:pub fn decode_base64_lossy(s: &str) -> Vec<u8> {
+core/src/parse/parse_classic.rs:6:pub fn parse_classic_block(
+core/src/prompts.rs:1:pub fn build_ai_prompt() -> String {
+core/src/test_helpers.rs:6:pub fn make_sandbox() -> Result<PathBuf> {
+core/src/test_helpers.rs:19:pub fn cleanup(dir: &Path) -> Result<()> {
+core/src/test_helpers.rs:27:pub fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<()> {
+core/src/test_helpers.rs:41:pub fn verify_dirs_match(
+core/src/test_helpers.rs:75:pub fn case_header(log: &mut String, name: &str) {
+core/src/test_helpers.rs:79:pub fn logln<S: Into<String>>(buf: &mut String, s: S) {
+core/src/test_runner.rs:20:pub fn run() -> String {
+_backend/src/commands.rs:18:pub struct PreviewResult {
+_backend/src/commands.rs:36:pub fn get_ai_prompt() -> String {
+_backend/src/commands.rs:41:pub fn run_self_test() -> String {
+_backend/src/commands.rs:46:pub fn preview_patch(target: String, patch: String) -> Result<PreviewResult, String> {
+_backend/src/commands.rs:51:pub fn apply_patch(target: String, patch: String) -> Result<String, String> {
+
+========================================
+API SURFACE: TYPESCRIPT/JAVASCRIPT
+========================================
+
+(no TS/JS items found)
+
+========================================
+API SURFACE: PYTHON
+========================================
+
+tests/07-ambiguity-indent/before/config.py:1:def configure_alpha():
+tests/07-ambiguity-indent/before/config.py:6:def configure_beta():
+
+========================================
+API SURFACE: GO
+========================================
+
+(no Go items found)
+
+=======END-OF-APIS=======
+
+=======DEPS=======
+========================================
+DEPENDENCIES (multi-ecosystem, summarized)
+========================================
+
+RUST (cargo)
+Tools: cargo tree
+cargo tree -d (duplicates)
+bitflags v1.3.2
+├── png v0.17.16
+│   ├── ico v0.4.0
+│   │   └── tauri-codegen v2.4.0
+│   │       └── tauri-macros v2.4.0 (proc-macro)
+│   │           └── tauri v2.8.5
+│   │               ├── applydiff v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\_backend)
+│   │               ├── tauri-plugin-clipboard-manager v2.3.0
+│   │               │   └── applydiff v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\_backend)
+│   │               ├── tauri-plugin-dialog v2.4.0
+│   │               │   └── applydiff v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\_backend)
+│   │               └── tauri-plugin-fs v2.4.2
+│   │                   └── tauri-plugin-dialog v2.4.0 (*)
+│   └── tauri-codegen v2.4.0 (*)
+└── selectors v0.24.0
+    └── kuchikiki v0.8.8-speedreader
+        └── tauri-utils v2.7.0
+            ├── tauri-build v2.4.1
+            │   [build-dependencies]
+            │   ├── applydiff v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\_backend)
+            │   └── tauri v2.8.5 (*)
+            ├── tauri-codegen v2.4.0 (*)
+            ├── tauri-macros v2.4.0 (proc-macro) (*)
+            └── tauri-plugin v2.4.0
+                [build-dependencies]
+                ├── tauri-plugin-clipboard-manager v2.3.0 (*)
+                ├── tauri-plugin-dialog v2.4.0 (*)
+                └── tauri-plugin-fs v2.4.2 (*)
+            [build-dependencies]
+            ├── tauri v2.8.5 (*)
+            └── tauri-plugin-fs v2.4.2 (*)
+
+bitflags v2.9.4
+├── keyboard-types v0.7.0
+│   └── muda v0.17.1
+│       └── tauri v2.8.5 (*)
+├── png v0.18.0
+│   └── image v0.25.8
+│       └── arboard v3.6.1
+│           └── tauri-plugin-clipboard-manager v2.3.0 (*)
+└── tao v0.34.4
+    └── tauri-runtime-wry v2.8.1
+        └── tauri v2.8.5 (*)
+
+getrandom v0.1.16
+├── rand v0.7.3
+│   └── phf_generator v0.8.0
+│       └── phf_codegen v0.8.0
+│           [build-dependencies]
+│           └── selectors v0.24.0 (*)
+└── rand_core v0.5.1
+    ├── rand v0.7.3 (*)
+    ├── rand_chacha v0.2.2
+    │   └── rand v0.7.3 (*)
+    └── rand_pcg v0.2.1
+        └── rand v0.7.3 (*)
+
+getrandom v0.2.16
+└── rand_core v0.6.4
+    ├── rand v0.8.5
+    │   ├── phf_generator v0.10.0
+    │   │   └── phf_macros v0.10.0 (proc-macro)
+    │   │       └── phf v0.10.1
+    │   │           └── cssparser v0.29.6
+    │   │               ├── kuchikiki v0.8.8-speedreader (*)
+    │   │               └── selectors v0.24.0 (*)
+    │   └── phf_generator v0.11.3
+    │       ├── phf_codegen v0.11.3
+    │       │   [build-dependencies]
+    │       │   └── markup5ever v0.14.1
+    │       │       └── html5ever v0.29.1
+    │       │           ├── kuchikiki v0.8.8-speedreader (*)
+    │       │           └── tauri-utils v2.7.0 (*)
+    │       ├── phf_macros v0.11.3 (proc-macro)
+    │       │   └── phf v0.11.3
+    │       │       ├── markup5ever v0.14.1 (*)
+    │       │       ├── tauri-utils v2.7.0 (*)
+    │       │       └── tauri-utils v2.7.0
+    │       │           ├── tauri v2.8.5 (*)
+    │       │           ├── tauri-runtime v2.8.0
+    │       │           │   ├── tauri v2.8.5 (*)
+    │       │           │   └── tauri-runtime-wry v2.8.1 (*)
+    │       │           └── tauri-runtime-wry v2.8.1 (*)
+    │       └── string_cache_codegen v0.5.4
+    │           [build-dependencies]
+    │           └── markup5ever v0.14.1 (*)
+    └── rand_chacha v0.3.1
+        └── rand v0.8.5 (*)
+
+getrandom v0.3.4
+├── tauri v2.8.5 (*)
+└── uuid v1.18.1
+    ├── cfb v0.7.3
+    │   └── infer v0.19.0
+    │       ├── tauri-utils v2.7.0 (*)
+    │       └── tauri-utils v2.7.0 (*)
+    ├── schemars v0.8.22
+    │   ├── tauri-build v2.4.1 (*)
+    │   ├── tauri-plugin v2.4.0 (*)
+    │   └── tauri-utils v2.7.0 (*)
+    │   [build-dependencies]
+    │   └── tauri-plugin-fs v2.4.2 (*)
+    ├── tauri-codegen v2.4.0 (*)
+    └── tauri-utils v2.7.0 (*)
+
+hashbrown v0.12.3
+└── indexmap v1.9.3
+    └── schemars v0.8.22 (*)
+
+hashbrown v0.16.0
+└── indexmap v2.11.4
+    └── kuchikiki v0.8.8-speedreader (*)
+
+indexmap v1.9.3 (*)
+
+indexmap v2.11.4 (*)
+
+percent-encoding v2.3.2
+├── tauri v2.8.5 (*)
+└── tauri-plugin-fs v2.4.2 (*)
+
+percent-encoding v2.3.2
+├── form_urlencoded v1.2.2
+│   └── url v2.5.7
+│       ├── schemars v0.8.22 (*)
+│       ├── tao v0.34.4 (*)
+│       ├── tauri v2.8.5 (*)
+│       ├── tauri-codegen v2.4.0 (*)
+│       ├── tauri-plugin-dialog v2.4.0 (*)
+│       ├── tauri-plugin-fs v2.4.2 (*)
+│       ├── tauri-runtime v2.8.0 (*)
+│       ├── tauri-runtime-wry v2.8.1 (*)
+│       ├── tauri-utils v2.7.0 (*)
+│       ├── tauri-utils v2.7.0 (*)
+│       └── urlpattern v0.3.0
+│           ├── tauri v2.8.5 (*)
+│           ├── tauri-utils v2.7.0 (*)
+│           └── tauri-utils v2.7.0 (*)
+└── url v2.5.7 (*)
+
+phf v0.8.0
+└── selectors v0.24.0 (*)
+
+phf v0.10.1 (*)
+
+phf v0.11.3 (*)
+
+phf_codegen v0.8.0 (*)
+
+phf_codegen v0.11.3 (*)
+
+phf_generator v0.8.0 (*)
+
+phf_generator v0.10.0 (*)
+
+phf_generator v0.11.3 (*)
+
+phf_macros v0.10.0 (proc-macro) (*)
+
+phf_macros v0.11.3 (proc-macro) (*)
+
+phf_shared v0.8.0
+├── phf v0.8.0 (*)
+├── phf_codegen v0.8.0 (*)
+└── phf_generator v0.8.0 (*)
+
+phf_shared v0.10.0
+├── phf v0.10.1 (*)
+├── phf_generator v0.10.0 (*)
+└── phf_macros v0.10.0 (proc-macro) (*)
+
+phf_shared v0.11.3
+├── phf v0.11.3 (*)
+├── phf_codegen v0.11.3 (*)
+├── phf_generator v0.11.3 (*)
+├── phf_macros v0.11.3 (proc-macro) (*)
+├── string_cache v0.8.9
+│   └── markup5ever v0.14.1 (*)
+└── string_cache_codegen v0.5.4 (*)
+
+png v0.17.16 (*)
+
+png v0.18.0 (*)
+
+rand v0.7.3 (*)
+
+rand v0.8.5 (*)
+
+rand_chacha v0.2.2 (*)
+
+rand_chacha v0.3.1 (*)
+
+rand_core v0.5.1 (*)
+
+rand_core v0.6.4 (*)
+
+semver v1.0.27
+├── cargo_metadata v0.19.2
+│   └── tauri-utils v2.7.0 (*)
+├── rustc_version v0.4.1
+│   └── embed-resource v3.0.6
+│       └── tauri-winres v0.3.3
+│           └── tauri-build v2.4.1 (*)
+│   [build-dependencies]
+│   └── derive_more v0.99.20 (proc-macro)
+│       └── selectors v0.24.0 (*)
+├── tauri-build v2.4.1 (*)
+├── tauri-codegen v2.4.0 (*)
+└── tauri-utils v2.7.0 (*)
+
+semver v1.0.27
+└── tauri-utils v2.7.0 (*)
+
+serde v1.0.228
+├── applydiff v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\_backend)
+├── applydiff-core v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\core)
+│   └── applydiff v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\_backend)
+├── bitflags v2.9.4 (*)
+├── dpi v0.1.2
+│   ├── muda v0.17.1 (*)
+│   ├── tao v0.34.4 (*)
+│   ├── tauri-runtime v2.8.0 (*)
+│   └── wry v0.53.4
+│       └── tauri-runtime-wry v2.8.1 (*)
+├── keyboard-types v0.7.0 (*)
+├── muda v0.17.1 (*)
+├── serialize-to-javascript v0.1.2
+│   └── tauri v2.8.5 (*)
+├── tauri v2.8.5 (*)
+├── tauri-plugin-clipboard-manager v2.3.0 (*)
+├── tauri-plugin-dialog v2.4.0 (*)
+├── tauri-plugin-fs v2.4.2 (*)
+├── tauri-runtime v2.8.0 (*)
+├── tauri-utils v2.7.0 (*)
+└── uuid v1.18.1
+    └── tauri-utils v2.7.0 (*)
+
+serde v1.0.228
+├── cargo-platform v0.1.9
+│   └── cargo_metadata v0.19.2 (*)
+├── cargo_metadata v0.19.2 (*)
+├── cargo_toml v0.22.3
+│   └── tauri-build v2.4.1 (*)
+├── indexmap v1.9.3 (*)
+├── json-patch v3.0.1
+│   ├── tauri-build v2.4.1 (*)
+│   ├── tauri-codegen v2.4.0 (*)
+│   ├── tauri-utils v2.7.0 (*)
+│   └── tauri-utils v2.7.0 (*)
+├── jsonptr v0.6.3
+│   └── json-patch v3.0.1 (*)
+├── schemars v0.8.22 (*)
+├── string_cache v0.8.9 (*)
+├── tauri-build v2.4.1 (*)
+├── tauri-codegen v2.4.0 (*)
+├── tauri-plugin v2.4.0 (*)
+├── tauri-utils v2.7.0 (*)
+├── url v2.5.7 (*)
+├── urlpattern v0.3.0 (*)
+└── uuid v1.18.1 (*)
+[build-dependencies]
+└── tauri-plugin-fs v2.4.2 (*)
+
+serde_core v1.0.228
+├── camino v1.2.1
+│   └── cargo_metadata v0.19.2 (*)
+├── erased-serde v0.4.8
+│   └── serde-untagged v0.1.9
+│       ├── tauri-utils v2.7.0 (*)
+│       └── tauri-utils v2.7.0 (*)
+├── semver v1.0.27 (*)
+├── serde v1.0.228 (*)
+├── serde-untagged v0.1.9 (*)
+├── serde_json v1.0.145
+│   ├── cargo_metadata v0.19.2 (*)
+│   ├── json-patch v3.0.1 (*)
+│   ├── jsonptr v0.6.3 (*)
+│   ├── schemars v0.8.22 (*)
+│   ├── tauri-build v2.4.1 (*)
+│   ├── tauri-codegen v2.4.0 (*)
+│   ├── tauri-plugin v2.4.0 (*)
+│   └── tauri-utils v2.7.0 (*)
+├── serde_spanned v1.0.3
+│   └── toml v0.9.8
+│       ├── cargo_toml v0.22.3 (*)
+│       ├── embed-resource v3.0.6 (*)
+│       ├── tauri-build v2.4.1 (*)
+│       ├── tauri-plugin v2.4.0 (*)
+│       ├── tauri-utils v2.7.0 (*)
+│       ├── tauri-utils v2.7.0 (*)
+│       └── tauri-winres v0.3.3 (*)
+│       [build-dependencies]
+│       └── tauri-plugin-fs v2.4.2 (*)
+├── serde_with v3.15.0
+│   ├── tauri-utils v2.7.0 (*)
+│   └── tauri-utils v2.7.0 (*)
+├── toml v0.9.8 (*)
+└── toml_datetime v0.7.3
+    └── toml v0.9.8 (*)
+
+… [truncated to 300 lines for cargo tree -d]
+
+cargo tree -e normal,build --depth 2
+applydiff v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\_backend)
+├── applydiff-core v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\core)
+│   ├── chrono v0.4.42
+│   ├── regex v1.12.2
+│   ├── serde v1.0.228
+│   ├── serde_json v1.0.145
+│   ├── similar v2.7.0
+│   ├── strsim v0.10.0
+│   └── thiserror v1.0.69
+├── chrono v0.4.42 (*)
+├── regex v1.12.2 (*)
+├── serde v1.0.228 (*)
+├── serde_json v1.0.145 (*)
+├── similar v2.7.0
+├── strsim v0.10.0
+├── tauri v2.8.5
+│   ├── anyhow v1.0.100
+│   ├── cookie v0.18.1
+│   │   [build-dependencies]
+│   ├── dirs v6.0.0
+│   ├── dunce v1.0.5
+│   ├── getrandom v0.3.4
+│   ├── glob v0.3.3
+│   ├── heck v0.5.0
+│   ├── http v1.3.1
+│   ├── http-range v0.1.5
+│   ├── log v0.4.28
+│   ├── mime v0.3.17
+│   ├── muda v0.17.1
+│   ├── percent-encoding v2.3.2
+│   ├── raw-window-handle v0.6.2
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── serde_repr v0.1.20 (proc-macro)
+│   ├── serialize-to-javascript v0.1.2
+│   ├── tauri-macros v2.4.0 (proc-macro)
+│   ├── tauri-runtime v2.8.0
+│   ├── tauri-runtime-wry v2.8.1
+│   ├── tauri-utils v2.7.0
+│   ├── thiserror v2.0.17
+│   ├── tokio v1.48.0
+│   ├── url v2.5.7
+│   ├── urlpattern v0.3.0
+│   ├── webview2-com v0.38.0
+│   ├── window-vibrancy v0.6.0
+│   └── windows v0.61.3
+│   [build-dependencies]
+│   ├── glob v0.3.3
+│   ├── heck v0.5.0
+│   ├── tauri-build v2.4.1
+│   └── tauri-utils v2.7.0
+├── tauri-plugin-clipboard-manager v2.3.0
+│   ├── arboard v3.6.1
+│   ├── log v0.4.28
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── tauri v2.8.5 (*)
+│   └── thiserror v2.0.17 (*)
+│   [build-dependencies]
+│   └── tauri-plugin v2.4.0
+├── tauri-plugin-dialog v2.4.0
+│   ├── log v0.4.28
+│   ├── raw-window-handle v0.6.2
+│   ├── rfd v0.15.4
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── tauri v2.8.5 (*)
+│   ├── tauri-plugin-fs v2.4.2
+│   │   [build-dependencies]
+│   ├── thiserror v2.0.17 (*)
+│   └── url v2.5.7 (*)
+│   [build-dependencies]
+│   └── tauri-plugin v2.4.0 (*)
+└── thiserror v1.0.69 (*)
+[build-dependencies]
+└── tauri-build v2.4.1 (*)
+
+applydiff-core v0.1.0 (C:\Users\SpencerNunamakerTrav\applydiff\core) (*)
+
+
+
+=======END-OF-DEPS=======
+
+=======GUIDE=======
+========================================
+SACCADE PACK GUIDE (Single-File)
+========================================
+
+Saccade now generates ONE file: PACK.txt
+with clearly labeled sections so an LLM
+can parse deterministically.
+
+SECTION MARKERS (exact):
+
+=======PROJECT=======
+... metadata, stats, languages
+=======END-OF-PROJECT=======
+
+=======STRUCTURE=======
+... directory tree, file index, token heatmap
+=======END-OF-STRUCTURE=======
+
+=======APIS=======
+... API surface across Rust / TS-JS / Python / Go
+=======END-OF-APIS=======
+
+=======DEPS=======
+... multi-ecosystem dependency snapshot (if present)
+=======END-OF-DEPS=======
+
+=======GUIDE=======
+... this protocol & usage guide
+=======END-OF-GUIDE=======
+
+========================================
+REAL-WORLD USE (DO THIS)
+========================================
+
+Attach: PACK.txt  (and PACK_STAGE2_COMPRESSED.xml if asked)
+
+Paste a short brief (copy & edit):
+  Goal: <what you want changed/added/fixed>
+  Evidence: <errors/logs/stack traces; short and relevant>
+  Context: <entry points, recent changes, repro>
+  Constraints: <perf, API compatibility, deadlines>
+  Definition of Done: <tests green, clippy clean, no API break, etc.>
+
+If you provide nothing, the AI must still begin by triaging intent (bug/feature/refactor),
+proposing a minimal plan, and requesting code slices via REQUEST_FILE when needed.
+
+Escalation rule:
+  • After the first failed attempt OR when layout/contracts are unclear,
+    ask for PACK_STAGE2_COMPRESSED.xml (signatures-only skeleton).
+  • If still blocked, request the smallest useful code slice via REQUEST_FILE.
+
+========================================
+REQUEST_FILE — EXACT FORMAT
+========================================
+
+REQUEST_FILE:
+  path: relative/path/to/file.ext
+  reason: >
+    What you will inspect or implement.
+  range: lines 80-140        # or: symbol: FunctionName
+
+Guidelines:
+  - Minimize tokens: prefer line ranges over whole files.
+  - Use STRUCTURE and APIS sections to pick targets.
+  - Never hallucinate missing code—request it explicitly.
+
+========================================
+TIPS
+========================================
+  - Use --code-only, --include/--exclude, and --max-depth to reduce tokens.
+  - Re-run Saccade after changes; packs are quick to refresh.
+
+=======END-OF-GUIDE=======

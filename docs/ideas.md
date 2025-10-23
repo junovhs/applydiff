@@ -1,0 +1,1 @@
+* the request file format could actually be used to find the lines I think, maybe make our patch format also work for that if used that way 
