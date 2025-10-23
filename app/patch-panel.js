@@ -11,18 +11,18 @@
   function init() {
     patchArea = document.getElementById('patch-area');
     placeholder = document.getElementById('patch-placeholder');
-    
+
     // Enable patch area when directory selected
     window.onAppEvent('directory-selected', () => {
       patchArea.classList.remove('disabled');
       window.setStatus('ready');
     });
-    
+
     // Clear editor after apply
     window.onAppEvent('apply-complete', () => {
       clearEditor();
     });
-    
+
     // Repopulate editor when version selected
     window.onAppEvent('version-selected', (e) => {
       const { patch } = e.detail;
@@ -32,15 +32,15 @@
         placeholder.style.display = patch ? 'none' : 'block';
       }
     });
-    
+
     // Click to paste
     patchArea.addEventListener('click', handlePatchAreaClick);
-    
+
     // Header button handlers
     document.getElementById('btn-select-dir').addEventListener('click', () => {
       window.emitAppEvent('pick-folder-requested');
     });
-    
+
     document.getElementById('btn-copy-prompt').addEventListener('click', () => {
       window.emitAppEvent('copy-prompt-requested');
     });
@@ -51,21 +51,22 @@
       logToConsole('ℹ️ Select a directory first.');
       return;
     }
-    
+
     // Try to read clipboard
     let text = await tryReadClipboard();
-    
+
     if (text && text.trim()) {
       logToConsole('📋 Pasted ' + text.length + ' chars');
       ensureEditor();
       editorEl.value = text;
       placeholder.style.display = 'none';
       window.setStatus('previewing…', 'warn');
+      window.AppState.currentPatch = text; // <-- FIX 1: Set state on paste
       window.emitAppEvent('preview-requested', { patch: text });
       editorEl.focus();
       return;
     }
-    
+
     // Fallback: typing mode
     logToConsole('⌨️ Typing mode. Auto-preview after 3s idle.');
     ensureEditor();
@@ -83,7 +84,7 @@
     } catch (e) {
       // Silent fallback
     }
-    
+
     // Try browser clipboard
     try {
       const text = await navigator.clipboard.readText();
@@ -91,27 +92,28 @@
     } catch (e) {
       // Silent fallback
     }
-    
+
     return null;
   }
 
   function ensureEditor() {
     if (editorEl) return;
-    
+
     editorEl = document.createElement('textarea');
     editorEl.id = 'patch-editor';
     editorEl.className = 'patch-editor';
     patchArea.appendChild(editorEl);
-    
+
     editorEl.addEventListener('input', () => {
       if (!window.AppState.selectedDir) return;
-      
+
       window.setStatus('typing…', 'warn');
-      
+
       if (typingTimer) clearTimeout(typingTimer);
       typingTimer = setTimeout(() => {
         const patch = editorEl.value;
         if (patch.trim()) {
+          window.AppState.currentPatch = patch; // <-- FIX 2: Set state on type
           window.emitAppEvent('preview-requested', { patch });
         }
       }, 3000);
@@ -123,6 +125,7 @@
       editorEl.value = '';
       placeholder.style.display = 'block';
     }
+    window.AppState.currentPatch = ''; // <-- FIX 3: Clear state
     window.setStatus('idle');
   }
 

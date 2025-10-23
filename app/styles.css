@@ -188,6 +188,7 @@ body {
   border:1px solid #2D2D2D;
   border-radius:6px;
   background:#1A1A1A;
+
   overflow:auto;
   position:relative;
   scrollbar-gutter:stable both-edges;
