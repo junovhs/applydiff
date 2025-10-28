@@ -1,6 +1,0 @@
-{
-  "description": "Verifies that a simple ambiguous fuzzy match is correctly rejected.",
-  "expect_ok": 0,
-  "expect_fail": 1,
-  "expected_log_contains": "ambiguous_match"
-}

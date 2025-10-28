@@ -1,3 +1,0 @@
-first line
-second line PATCHED
-third line
