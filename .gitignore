@@ -1,0 +1,19 @@
+# Rust / Cargo
+target/
+Cargo.lock
+
+# Tauri
+src-tauri/target
+src-tauri/Cargo.lock
+
+# Frontend build artifacts
+dist/
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,20 @@
+[package]
+name = "applydiff-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# For robust text matching and diffing
+similar = "2.5.0"
+strsim = "0.11.0"
+regex = "1.10.4"
+
+# Error handling
+thiserror = "1.0.59"
+
+# Serialization for session state
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
+
+# Timestamps for logging and backups
+chrono = { version = "0.4.38", features = ["serde"] }
