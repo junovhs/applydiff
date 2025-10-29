@@ -3,18 +3,16 @@ use applydiff_core::{
     error::Result as CoreResult,
     logger::Logger,
     parse::Parser,
-    session::{Session, SessionState as CoreSessionState}, // Renamed to avoid conflict
+    session::{Session, SessionState as CoreSessionState},
 };
 use chrono::Local;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::State;
-use tauri_plugin_dialog::{DialogExt, FilePath}; // Import FilePath
+use tauri_plugin_dialog::{DialogExt, FilePath};
 
-// Using a Mutex to ensure thread-safe access to the session state.
-// Tauri commands can run on different threads.
 pub struct AppState(pub Mutex<Option<Session>>);
 
 #[derive(Serialize)]
@@ -23,12 +21,10 @@ pub struct PreviewResult {
     diff: String,
 }
 
-/// A wrapper to convert core's complex error type into a simple string for the frontend.
 fn to_string_error<T>(result: CoreResult<T>) -> Result<T, String> {
     result.map_err(|e| e.to_string())
 }
 
-/// Generates a unique ID for a request for logging purposes.
 fn generate_rid() -> u64 {
     (Local::now().timestamp_millis() as u64) ^ (std::process::id() as u64)
 }
@@ -46,7 +42,6 @@ pub async fn load_session(
         .blocking_pick_folder()
         .ok_or("No folder selected".to_string())?;
 
-    // CORRECTED: Handle the FilePath enum correctly for Tauri v2
     let path = match folder {
         FilePath::Path(p) => p,
         FilePath::Url(u) => PathBuf::from(u.path()),
@@ -78,7 +73,6 @@ pub fn get_session_state(state: State<'_, AppState>) -> Result<CoreSessionState,
     Ok(session.state.clone())
 }
 
-
 #[tauri::command]
 pub fn refresh_session(state: State<'_, AppState>) -> Result<(), String> {
     let mut guard = state.0.lock().unwrap();
@@ -89,14 +83,11 @@ pub fn refresh_session(state: State<'_, AppState>) -> Result<(), String> {
 
 /* ========================== Patching Commands ========================== */
 
-#[derive(Deserialize)]
-pub struct PatchArgs {
-    patch: String,
-}
+// The `PatchArgs` struct is no longer needed.
 
 #[tauri::command]
 pub fn preview_patch(
-    args: PatchArgs,
+    patch: String, // CORRECTED: Directly accept the 'patch' string.
     state: State<'_, AppState>,
 ) -> Result<PreviewResult, String> {
     let guard = state.0.lock().unwrap();
@@ -107,31 +98,62 @@ pub fn preview_patch(
     let logger = Logger::new(rid);
 
     let parser = Parser::new();
-    let blocks = to_string_error(parser.parse(&args.patch))?;
+    let blocks = to_string_error(parser.parse(&patch))?;
 
     let mut log_output = String::new();
-    // CORRECTED: Remove `mut` as it's not mutated.
-    let diff_output = String::new();
+    let mut diff_output = String::new();
 
-    // CORRECTED: Add underscore to unused variable.
-    let _applier = Applier::new(&logger, project_root.clone(), true);
+    let applier = Applier::new(&logger, project_root.clone(), true);
 
-    // CORRECTED: Add underscore to unused variable.
-    for _block in &blocks {
-        // Preview diff generation logic is complex and will be implemented later.
-        // This stubbed version now passes clippy.
+    for (idx, block) in blocks.iter().enumerate() {
+        log_output.push_str(&format!("Block {}: {}\n", idx + 1, block.file.display()));
+        let target_path = project_root.join(&block.file);
+        let original_content = fs::read_to_string(&target_path).unwrap_or_default();
+
+        match applier.apply_block(block) {
+            Ok(result) => {
+                log_output.push_str(&format!(
+                    "  ✔ Preview match at offset {} (score: {:.2})\n",
+                    result.matched_at, result.score
+                ));
+
+                // Generate a unified diff for the preview
+                let mut new_content = String::new();
+                new_content.push_str(&original_content[..result.matched_at]);
+                new_content.push_str(&block.to);
+                new_content.push_str(&original_content[result.matched_end..]);
+                
+                let udiff = similar::TextDiff::from_lines(&original_content, &new_content)
+                    .unified_diff()
+                    .header("before", "after")
+                    .to_string();
+
+                if !udiff.trim().is_empty() {
+                    diff_output.push_str(&format!("--- a/{}\n", block.file.display()));
+                    diff_output.push_str(&format!("+++ b/{}\n", block.file.display()));
+                    diff_output.push_str(&udiff);
+                    if !diff_output.ends_with('\n') {
+                        diff_output.push('\n');
+                    }
+                }
+            }
+            Err(e) => {
+                log_output.push_str(&format!("  ❌ {}\n", e));
+            }
+        }
     }
 
-    log_output.push_str("💡 Preview complete. Press 'Apply Patch' to make changes.");
+    log_output.push_str("\n💡 Preview complete. Press 'Apply Patch' to make changes.");
     Ok(PreviewResult {
         log: log_output,
         diff: diff_output,
     })
 }
 
+
 #[tauri::command]
 pub fn apply_patch(
-    args: PatchArgs,
+    patch: String, // CORRECTED: Directly accept the 'patch' string.
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let mut guard = state.0.lock().unwrap();
@@ -143,7 +165,7 @@ pub fn apply_patch(
     let mut output = String::new();
 
     let parser = Parser::new();
-    let blocks = match parser.parse(&args.patch) {
+    let blocks = match parser.parse(&patch) {
         Ok(b) => b,
         Err(e) => {
             session.record_error();

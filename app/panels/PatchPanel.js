@@ -5,85 +5,22 @@
 (function () {
   'use strict';
 
+  // Get DOM elements
   const patchArea = document.getElementById('patch-area');
   const placeholder = document.getElementById('patch-placeholder');
   const selectDirBtn = document.getElementById('btn-select-dir');
   const copyBriefingBtn = document.getElementById('btn-copy-briefing');
-  const refreshBtn = document.getElementById('btn-refresh-session'); // Assuming an ID for the refresh button
+  const refreshBtn = document.getElementById('btn-refresh-session');
 
-  function init() {
-    // Wire up header buttons
-    selectDirBtn.addEventListener('click', () => {
-      emitAppEvent('select-project-requested');
-    });
+  // Module-level state
+  let editorEl = null;
+  let typingTimer = null;
 
-    copyBriefingBtn.addEventListener('click', () => {
-      emitAppEvent('copy-briefing-requested');
-    });
-    
-    // Add event listener for the refresh button if it exists
-    if(refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-            emitAppEvent('refresh-session-requested');
-        });
-    }
-
-
-    // Handle clicks on the patch area (for pasting)
-    patchArea.addEventListener('click', onPatchAreaClick);
-
-    // Listen for session state changes
-    onAppEvent('session-loaded', (e) => {
-      placeholder.textContent = 'Click to Paste Patch';
-      patchArea.classList.remove('disabled');
-      copyBriefingBtn.disabled = false;
-      if(refreshBtn) refreshBtn.disabled = false;
-      
-      logToConsole(`Project loaded: ${e.detail.path}`);
-      setStatus('ready');
-      
-      // THIS IS THE NEW, CRITICAL PIECE
-      emitAppEvent('session-state-sync-requested');
-    });
-    
-    onAppEvent('session-load-failed', () => {
-        placeholder.textContent = 'Select a project to begin';
-        patchArea.classList.add('disabled');
-        copyBriefingBtn.disabled = true;
-        if(refreshBtn) refreshBtn.disabled = true;
-    });
-
-    onAppEvent('apply-successful', () => {
-      if (editorEl) {
-        editorEl.value = '';
-        window.AppState.currentPatch = '';
-        placeholder.style.display = 'block';
-      }
-      setStatus('idle');
-    });
-  }
-
-  async function onPatchAreaClick() {
-    if (patchArea.classList.contains('disabled')) return;
-
-    ensureEditorExists();
-    const textFromClipboard = await window.__TAURI__.clipboardManager.readText();
-
-    if (textFromClipboard && textFromClipboard.trim()) {
-      logToConsole(`📋 Pasted ${textFromClipboard.length} chars from clipboard.`);
-      editorEl.value = textFromClipboard;
-      window.AppState.currentPatch = textFromClipboard;
-      placeholder.style.display = 'none';
-      emitAppEvent('preview-requested', { patch: textFromClipboard });
-      editorEl.focus();
-    } else {
-      logToConsole('⌨️ Clipboard empty. Enter patch manually.');
-      editorEl.focus();
-    }
-  }
-
+  // Function to create the editor if it doesn't exist
   function ensureEditorExists() {
-    if (editorEl) return;
+    if (editorEl) {
+      return;
+    }
 
     editorEl = document.createElement('textarea');
     editorEl.className = 'patch-editor';
@@ -96,13 +33,90 @@
         const patch = editorEl.value.trim();
         if (patch) {
           window.AppState.currentPatch = patch;
-          emitAppEvent('preview-requested', { patch });
+          window.emitAppEvent('preview-requested', { patch });
         }
-      }, 1500); // 1.5 second debounce
+      }, 1500);
     });
   }
 
-  // Auto-init
+  // Handler for clicking the patch area to paste
+  async function onPatchAreaClick() {
+    if (patchArea.classList.contains('disabled')) {
+      return;
+    }
+
+    ensureEditorExists();
+
+    try {
+      const textFromClipboard = await window.__TAURI__.clipboardManager.readText();
+
+      if (textFromClipboard && textFromClipboard.trim()) {
+        logToConsole(`📋 Pasted ${textFromClipboard.length} chars from clipboard.`);
+        editorEl.value = textFromClipboard;
+        window.AppState.currentPatch = textFromClipboard;
+        placeholder.style.display = 'none';
+        window.emitAppEvent('preview-requested', { patch: textFromClipboard });
+        editorEl.focus();
+      } else {
+        logToConsole('⌨️ Clipboard empty. Enter patch manually.');
+        editorEl.focus();
+      }
+    } catch (error) {
+      logToConsole(`❌ Clipboard read failed: ${error}`, 'error');
+      // Still focus the editor for manual input
+      editorEl.focus();
+    }
+  }
+
+  // Main initialization function
+  function init() {
+    // Wire up header buttons
+    selectDirBtn.addEventListener('click', () => {
+      window.emitAppEvent('select-project-requested');
+    });
+
+    copyBriefingBtn.addEventListener('click', () => {
+      window.emitAppEvent('copy-briefing-requested');
+    });
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        window.emitAppEvent('refresh-session-requested');
+      });
+    }
+
+    // Main event listener
+    patchArea.addEventListener('click', onPatchAreaClick);
+
+    // App event listeners
+    window.onAppEvent('session-loaded', (e) => {
+      placeholder.textContent = 'Click to Paste Patch';
+      patchArea.classList.remove('disabled');
+      copyBriefingBtn.disabled = false;
+      if (refreshBtn) refreshBtn.disabled = false;
+      window.logToConsole(`Project loaded: ${e.detail.path}`);
+      window.setStatus('ready');
+      window.emitAppEvent('session-state-sync-requested');
+    });
+
+    window.onAppEvent('session-load-failed', () => {
+      placeholder.textContent = 'Select a project to begin';
+      patchArea.classList.add('disabled');
+      copyBriefingBtn.disabled = true;
+      if (refreshBtn) refreshBtn.disabled = true;
+    });
+
+    window.onAppEvent('apply-successful', () => {
+      if (editorEl) {
+        editorEl.value = '';
+        window.AppState.currentPatch = '';
+        placeholder.style.display = 'block';
+      }
+      window.setStatus('idle');
+    });
+  }
+
+  // Run init
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
