@@ -58,11 +58,12 @@ body {
   transition:.2s;
   white-space:nowrap;
 }
-.header-btn:hover { background:rgba(255,255,255,.05); }
+.header-btn:hover:not(:disabled) { background:rgba(255,255,255,.05); }
+.header-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .header-btn.icon-only { padding:6px 10px; }
 .btn-icon { width:14px; height:14px; opacity:.9; }
 
-/* NEW: Health Monitor Styles */
+/* Health Monitor Styles */
 .health-monitor {
   display: flex;
   align-items: center;
@@ -71,7 +72,7 @@ body {
   background: #1A1A1A;
   border: 1px solid var(--border);
   border-radius: 4px;
-  margin-right: 10px; /* Space from buttons */
+  margin-right: 10px;
 }
 .health-chip {
   font-size: 11px;

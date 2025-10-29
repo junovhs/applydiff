@@ -5,16 +5,12 @@ mod commands;
 
 fn main() {
     tauri::Builder::default()
-        .manage(commands::AppState(Default::default())) // Add the session state manager
+        .manage(commands::AppState(Default::default()))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
-            // Session and State Commands
-            commands::load_session,
-            commands::get_session_briefing,
-            commands::get_session_state,
-            commands::refresh_session,
-            // Core Patching Commands
+            commands::pick_project,
+            commands::get_ai_prompt,
             commands::preview_patch,
             commands::apply_patch,
         ])
