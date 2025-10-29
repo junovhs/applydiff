@@ -83,15 +83,13 @@ pub fn refresh_session(state: State<'_, AppState>) -> Result<(), String> {
 
 /* ========================== Patching Commands ========================== */
 
-// The `PatchArgs` struct is no longer needed.
-
 #[tauri::command]
 pub fn preview_patch(
-    patch: String, // CORRECTED: Directly accept the 'patch' string.
+    patch: String,
     state: State<'_, AppState>,
 ) -> Result<PreviewResult, String> {
-    let guard = state.0.lock().unwrap();
-    let session = guard.as_ref().ok_or("Session not loaded".to_string())?;
+    let mut guard = state.0.lock().unwrap();
+    let session = guard.as_mut().ok_or("Session not loaded".to_string())?;
     let project_root = session.project_root.clone();
 
     let rid = generate_rid();
@@ -102,7 +100,6 @@ pub fn preview_patch(
 
     let mut log_output = String::new();
     let mut diff_output = String::new();
-
     let applier = Applier::new(&logger, project_root.clone(), true);
 
     for (idx, block) in blocks.iter().enumerate() {
@@ -117,43 +114,37 @@ pub fn preview_patch(
                     result.matched_at, result.score
                 ));
 
-                // Generate a unified diff for the preview
                 let mut new_content = String::new();
                 new_content.push_str(&original_content[..result.matched_at]);
                 new_content.push_str(&block.to);
                 new_content.push_str(&original_content[result.matched_end..]);
                 
                 let udiff = similar::TextDiff::from_lines(&original_content, &new_content)
-                    .unified_diff()
-                    .header("before", "after")
-                    .to_string();
+                    .unified_diff().header("before", "after").to_string();
 
                 if !udiff.trim().is_empty() {
                     diff_output.push_str(&format!("--- a/{}\n", block.file.display()));
                     diff_output.push_str(&format!("+++ b/{}\n", block.file.display()));
                     diff_output.push_str(&udiff);
-                    if !diff_output.ends_with('\n') {
-                        diff_output.push('\n');
-                    }
+                    if !diff_output.ends_with('\n') { diff_output.push('\n'); }
                 }
             }
             Err(e) => {
+                // THIS IS THE CRITICAL FIX: Record the error on preview failure.
+                session.record_error();
+                to_string_error(session.save())?;
                 log_output.push_str(&format!("  ❌ {}\n", e));
             }
         }
     }
 
     log_output.push_str("\n💡 Preview complete. Press 'Apply Patch' to make changes.");
-    Ok(PreviewResult {
-        log: log_output,
-        diff: diff_output,
-    })
+    Ok(PreviewResult { log: log_output, diff: diff_output })
 }
-
 
 #[tauri::command]
 pub fn apply_patch(
-    patch: String, // CORRECTED: Directly accept the 'patch' string.
+    patch: String,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let mut guard = state.0.lock().unwrap();
@@ -177,21 +168,13 @@ pub fn apply_patch(
 
     let files_to_backup: Vec<PathBuf> = blocks.iter().map(|b| b.file.clone()).collect();
     let backup_dir = to_string_error(backup::create_backup(&project_root, &files_to_backup))?;
-    output.push_str(&format!(
-        "✔ Backup created at {}\n",
-        backup_dir.display()
-    ));
+    output.push_str(&format!("✔ Backup created at {}\n", backup_dir.display()));
 
     let applier = Applier::new(&logger, project_root.clone(), false);
     let mut success_count = 0;
 
     for (idx, block) in blocks.iter().enumerate() {
-        output.push_str(&format!(
-            "Block {}: {}\n",
-            idx + 1,
-            block.file.display()
-        ));
-
+        output.push_str(&format!("Block {}: {}\n", idx + 1, block.file.display()));
         let target_path = project_root.join(&block.file);
         let original_content = fs::read_to_string(&target_path).unwrap_or_default();
 
@@ -212,11 +195,7 @@ pub fn apply_patch(
         }
     }
 
-    output.push_str(&format!(
-        "\n✅ Done. {} applied, {} failed.\n",
-        success_count,
-        blocks.len() - success_count
-    ));
+    output.push_str(&format!("\n✅ Done. {} applied, {} failed.\n", success_count, blocks.len() - success_count));
     to_string_error(session.save())?;
     Ok(output)
 }

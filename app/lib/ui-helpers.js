@@ -8,40 +8,23 @@
   const statusChip = document.getElementById('status');
   const healthErrorsEl = document.getElementById('health-errors');
   const healthExchangesEl = document.getElementById('health-exchanges');
+  const copyBriefingBtn = document.getElementById('btn-copy-briefing');
+  const patchArea = document.getElementById('patch-area');
+  const patchPlaceholder = document.getElementById('patch-placeholder');
 
-  /**
-   * Escapes HTML special characters to prevent XSS.
-   * @param {string} str - The string to escape.
-   * @returns {string} The escaped string.
-   */
   window.escapeHtml = function (str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   };
 
-  /**
-   * Updates the status chip in the patch panel header.
-   * @param {string} text - The text to display.
-   * @param {string} [tone=''] - The color tone for the chip (e.g., 'ok', 'warn', 'err').
-   */
   window.setStatus = function (text, tone) {
     if (!statusChip) return;
     statusChip.textContent = text;
-    // The CSS uses border color to show status
     const colors = { ok: 'var(--ok)', warn: 'var(--warn)', err: 'var(--err)' };
     const color = colors[tone] || 'var(--border)';
     statusChip.style.borderColor = color;
     statusChip.style.color = color === 'var(--border)' ? 'var(--text-muted)' : color;
   };
 
-  /**
-   * Updates the Conversation Health Monitor display.
-   * @param {object} sessionMetrics - The session object from AppState.
-   */
   window.updateHealthDisplay = function (sessionMetrics) {
     if (healthErrorsEl) {
       healthErrorsEl.textContent = `Errors: ${sessionMetrics.total_errors}/3`;
@@ -52,15 +35,36 @@
     if (healthExchangesEl) {
       healthExchangesEl.textContent = `Exchanges: ${sessionMetrics.exchange_count}/10`;
       healthExchangesEl.style.color = 'var(--text-muted)';
-      if (sessionMetrics.exchange_count >= 7) healthExchangesEl.style.color = 'var(--warn)';
+      if (sessionMetrics.exchange_count >= 10) healthExchangesEl.style.color = 'var(--warn)';
     }
   };
 
-  /**
-   * Emits a console-log event to be handled by the console panel.
-   * @param {string} message - The message to log.
-   * @param {'info' | 'error' | 'warn' | 'success'} [level='info'] - The log level.
-   */
+  // THIS IS THE NEW CRITICAL FUNCTION
+  window.enforceThresholds = function (sessionMetrics) {
+    const errors = sessionMetrics.total_errors;
+    const exchanges = sessionMetrics.exchange_count;
+    let guidance = '';
+    let isBlocked = false;
+
+    if (errors >= 3) {
+      guidance = 'High error count. Refresh session.';
+      isBlocked = true;
+    } else if (exchanges >= 10) {
+      guidance = 'Exchange limit reached. Refresh session.';
+      isBlocked = true;
+    }
+
+    copyBriefingBtn.disabled = isBlocked;
+    patchArea.classList.toggle('disabled', isBlocked);
+
+    if (isBlocked) {
+      patchPlaceholder.textContent = guidance;
+      setStatus(guidance, 'err');
+    } else if (window.AppState.projectRoot) {
+      patchPlaceholder.textContent = 'Click to Paste Patch';
+    }
+  };
+
   window.logToConsole = function (message, level) {
     window.emitAppEvent('console-log', { message, level: level || 'info' });
   };
