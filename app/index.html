@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ApplyDiff</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <img src="/applydiff_logo.svg" alt="ApplyDiff" class="logo" />
+      </div>
+      <div class="header-right">
+        <!-- NEW: Conversation Health Monitor -->
+        <div class="health-monitor">
+          <span id="health-errors" class="health-chip" title="Prediction Errors (AI state vs. reality mismatch)">Errors: 0/3</span>
+          <span id="health-exchanges" class="health-chip" title="Conversation exchanges since last reset">Exchanges: 0/10</span>
+        </div>
+        <button class="header-btn" id="btn-copy-briefing">
+          <img src="/icon_ai.svg" class="btn-icon" />
+          Copy Briefing
+        </button>
+        <button class="header-btn" id="btn-select-dir">
+          <img src="/icon_folder.svg" class="btn-icon" />
+          Select Project
+        </button>
+        <button class="header-btn icon-only" id="console-toggle">
+          <img src="/icon_console.svg" class="btn-icon" />
+        </button>
+      </div>
+    </header>
+
+    <!-- Panel Labels -->
+    <div class="labels-row">
+      <div class="labels-container">
+        <span class="panel-label">PATCH</span>
+        <span class="panel-label">DIFF PREVIEW</span>
+        <span class="panel-label console-label-item" id="console-label">CONSOLE</span>
+        <button class="float-btn" id="clear-console-btn">Clear Console</button>
+        <button class="float-btn" id="self-test-btn">Run Self-Test</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="panels-container">
+        <div class="panels-top">
+          <!-- Patch Panel -->
+          <section class="panel patch-panel">
+            <div class="patch-area disabled" id="patch-area">
+              <span class="status-chip" id="status">idle</span>
+              <span class="patch-placeholder" id="patch-placeholder">Select a project to begin</span>
+            </div>
+          </section>
+
+          <!-- Diff Panel -->
+          <section class="panel diff-panel">
+            <div class="diff-area" id="diff-area">
+              <pre class="diff-pre" id="diff-pre" style="color:#777;">No preview yet.</pre>
+              <button class="apply-btn" id="btn-apply">Apply Patch</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- Console Panel -->
+        <section class="console-panel" id="console-panel">
+          <div class="console-area" id="console-area">ready.</div>
+        </section>
+
+        <!-- History Panel (formerly Version Tabs) -->
+        <div class="version-tabs-wrapper" id="history-panel-wrapper">
+          <span class="pagination-info">HISTORY (GIT-TREK PENDING)</span>
+          <!-- Future Git-Trek timeline will render here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Module Loading Order Matters -->
+  <script src="lib/app-state.js"></script>
+  <script src="lib/ui-helpers.js"></script>
+  <script src="lib/tauri-bridge.js"></script>
+  <script src="panels/PatchPanel.js"></script>
+  <script src="panels/DiffPanel.js"></script>
+  <script src="panels/HistoryPanel.js"></script>
+  <script src="panels/ConsolePanel.js"></script>
+</body>
+</html>

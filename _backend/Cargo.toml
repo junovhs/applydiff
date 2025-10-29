@@ -1,0 +1,29 @@
+[package]
+name = "applydiff-backend"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.76"
+
+[dependencies]
+# The core library we just built
+applydiff-core = { path = "../core" }
+
+# The Tauri framework and plugins
+tauri = { version = "2.0.0-beta.21", features = [] }
+tauri-plugin-dialog = "2.0.0-beta.8"
+tauri-plugin-clipboard-manager = "2.0.0-beta.8"
+
+# Serialization for command arguments and return values
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
+
+# For generating unique request IDs
+chrono = "0.4.38"
+
+[build-dependencies]
+tauri-build = { version = "2.0.0-beta.16", features = [] }
+
+[features]
+# By default, Cargo builds for development.
+# This feature flag is used by the Tauri CLI to build for production.
+custom-protocol = ["tauri/custom-protocol"]
