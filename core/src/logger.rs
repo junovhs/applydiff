@@ -32,8 +32,6 @@ impl Logger {
             "msg": message,
         });
 
-        // This ensures logs are machine-parseable (JSONL format)
-        // and errors go to the correct stream.
         if level == "error" {
             eprintln!("{}", log_entry);
         } else {

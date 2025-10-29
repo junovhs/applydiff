@@ -18,7 +18,8 @@ pub struct Parser;
 
 impl Parser {
     pub fn new() -> Self {
-        Self::default()
+        // CORRECTED: Direct construction of the unit struct.
+        Self
     }
 
     /// Parses an input string for "classic" style patch blocks.

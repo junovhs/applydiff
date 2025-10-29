@@ -1,4 +1,4 @@
-use crate::error::{ErrorCode, PatchError, Result};
+use crate::error::Result;
 use crate::logger::Logger;
 
 mod match_exact;
@@ -31,7 +31,6 @@ pub fn find_best_match(
     );
 
     // An empty "from" block means we are creating or appending to a file.
-    // The match is at the end of the file.
     if needle.is_empty() {
         logger.info("matcher", "empty_needle", "Append/create mode");
         return Ok(MatchResult {
@@ -46,7 +45,7 @@ pub fn find_best_match(
         return Ok(result);
     }
 
-    // Prepare line ranges for windowed search in subsequent tiers
+    // Prepare line ranges for windowed search
     let line_ranges = match_normalize::line_ranges(haystack);
     if line_ranges.is_empty() && !haystack.is_empty() {
         logger.error("matcher", "range_fail", "Failed to calculate line ranges for non-empty haystack");
@@ -55,9 +54,6 @@ pub fn find_best_match(
         return match_fuzzy::find_fuzzy_match(haystack, needle, &line_ranges, min_score, logger);
     }
 
-
-    // Tiers 2, 3, and 4 are handled by the fuzzy matcher, which internally
-    // uses normalization for whitespace and indentation before falling back to
-    // Damerau-Levenshtein distance.
+    // Tiers 2, 3, and 4
     match_fuzzy::find_fuzzy_match(haystack, needle, &line_ranges, min_score, logger)
 }
