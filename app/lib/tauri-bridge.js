@@ -9,7 +9,6 @@
 
   // --- Listen for UI requests and call the backend ---
 
-  // User wants to select a project directory
   onAppEvent('select-project-requested', async () => {
     try {
       logToConsole('📁 Requesting project directory...');
@@ -24,21 +23,18 @@
     }
   });
 
-  // User wants the AI briefing
   onAppEvent('copy-briefing-requested', async () => {
     if (!window.AppState.projectRoot) return;
     try {
       const briefing = await invoke('get_session_briefing');
       await window.__TAURI__.clipboardManager.writeText(briefing);
       logToConsole('📋 AI briefing copied to clipboard.');
-      // The backend increments the session count, so we need to sync state
       emitAppEvent('session-state-sync-requested');
     } catch (e) {
       logToConsole(`❌ Failed to get AI briefing: ${e}`, 'error');
     }
   });
   
-  // User wants to reset the session counters
   onAppEvent('refresh-session-requested', async () => {
     if (!window.AppState.projectRoot) return;
     try {
@@ -50,7 +46,6 @@
     }
   });
 
-  // A patch has been entered and needs a preview
   onAppEvent('preview-requested', async (e) => {
     const { patch } = e.detail;
     if (!window.AppState.projectRoot || !patch || window.AppState.ui.isPreviewInFlight) return;
@@ -82,7 +77,6 @@
     }
   });
 
-  // User clicked "Apply Patch"
   onAppEvent('apply-requested', async (e) => {
     const { patch } = e.detail;
     if (!window.AppState.projectRoot || !patch) return;
@@ -93,18 +87,15 @@
       logToConsole(`✅ Apply successful:\n${log}`);
       setStatus('applied', 'ok');
       emitAppEvent('apply-successful', { log });
-      // Sync state to reflect new error/success counts
       emitAppEvent('session-state-sync-requested');
     } catch (e) {
       logToConsole(`❌ Apply failed: ${e}`, 'error');
       setStatus('apply failed', 'err');
       emitAppEvent('apply-failed');
-      // Sync state to reflect the new error count
       emitAppEvent('session-state-sync-requested');
     }
   });
   
-  // A component needs to get the latest session state from the backend
   onAppEvent('session-state-sync-requested', async () => {
     try {
         const sessionState = await invoke('get_session_state');
@@ -115,6 +106,13 @@
     }
   });
 
+  // --- Listen for backend results and update the UI ---
+
+  // THIS IS THE NEW, CRITICAL PIECE
+  onAppEvent('session-state-updated', (e) => {
+    window.updateHealthDisplay(e.detail.session);
+    logToConsole('UI health metrics updated.');
+  });
 
   console.log('[tauri-bridge] Initialized.');
 })();

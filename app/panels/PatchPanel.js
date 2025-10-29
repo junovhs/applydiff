@@ -9,9 +9,7 @@
   const placeholder = document.getElementById('patch-placeholder');
   const selectDirBtn = document.getElementById('btn-select-dir');
   const copyBriefingBtn = document.getElementById('btn-copy-briefing');
-
-  let editorEl = null;
-  let typingTimer = null;
+  const refreshBtn = document.getElementById('btn-refresh-session'); // Assuming an ID for the refresh button
 
   function init() {
     // Wire up header buttons
@@ -22,6 +20,14 @@
     copyBriefingBtn.addEventListener('click', () => {
       emitAppEvent('copy-briefing-requested');
     });
+    
+    // Add event listener for the refresh button if it exists
+    if(refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            emitAppEvent('refresh-session-requested');
+        });
+    }
+
 
     // Handle clicks on the patch area (for pasting)
     patchArea.addEventListener('click', onPatchAreaClick);
@@ -31,14 +37,20 @@
       placeholder.textContent = 'Click to Paste Patch';
       patchArea.classList.remove('disabled');
       copyBriefingBtn.disabled = false;
+      if(refreshBtn) refreshBtn.disabled = false;
+      
       logToConsole(`Project loaded: ${e.detail.path}`);
       setStatus('ready');
+      
+      // THIS IS THE NEW, CRITICAL PIECE
+      emitAppEvent('session-state-sync-requested');
     });
     
     onAppEvent('session-load-failed', () => {
         placeholder.textContent = 'Select a project to begin';
         patchArea.classList.add('disabled');
         copyBriefingBtn.disabled = true;
+        if(refreshBtn) refreshBtn.disabled = true;
     });
 
     onAppEvent('apply-successful', () => {
@@ -55,7 +67,7 @@
     if (patchArea.classList.contains('disabled')) return;
 
     ensureEditorExists();
-    const textFromClipboard = await navigator.clipboard.readText();
+    const textFromClipboard = await window.__TAURI__.clipboardManager.readText();
 
     if (textFromClipboard && textFromClipboard.trim()) {
       logToConsole(`📋 Pasted ${textFromClipboard.length} chars from clipboard.`);

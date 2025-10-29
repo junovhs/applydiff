@@ -4,8 +4,7 @@
   "productName": "ApplyDiff-Refactored",
   "version": "0.2.0",
   "build": {
-    "frontendDist": "../app",
-    "devUrl": "http://localhost:1420"
+    "frontendDist": "../app"
   },
   "bundle": {
     "active": true,
@@ -42,7 +41,8 @@
           "permissions": [
             "core:default",
             "dialog:default",
-            "clipboard-manager:default"
+            "clipboard-manager:allow-write-text",
+            "clipboard-manager:allow-read-text"
           ]
         }
       ]
