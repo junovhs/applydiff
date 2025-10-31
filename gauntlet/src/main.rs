@@ -179,15 +179,15 @@ fn c7_session_refresh() -> Result<()> {
 
 fn setup_project(files: &[(&str, &str)]) -> Result<TestContext> {
     let temp_dir = TempDir::new()?;
-    let project_root = temp_dir.path();
+    let project_root = temp_dir.path().to_path_buf(); // Create an owned PathBuf immediately.
     for (name, content) in files {
         let path = project_root.join(name);
         fs::create_dir_all(path.parent().unwrap())?;
         fs::write(path, content)?;
     }
-    let session_state = commands::init_session_logic(project_root).map_err(|e| anyhow!(e))?;
+    let session_state = commands::init_session_logic(&project_root).map_err(|e| anyhow!(e))?;
     let app_state = AppState(Mutex::new(Some(session_state)));
-    Ok(TestContext { _temp_dir: temp_dir, project_root: project_root.to_path_buf(), app_state })
+    Ok(TestContext { _temp_dir: temp_dir, project_root, app_state })
 }
 
 fn read_session_state(project_root: &Path) -> Result<SessionState> {
