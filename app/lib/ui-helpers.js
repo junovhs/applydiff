@@ -6,11 +6,16 @@
   'use strict';
 
   const statusChip = document.getElementById('status');
-  const healthErrorsEl = document.getElementById('health-errors');
-  const healthExchangesEl = document.getElementById('health-exchanges');
   const copyBriefingBtn = document.getElementById('btn-copy-briefing');
   const patchArea = document.getElementById('patch-area');
   const patchPlaceholder = document.getElementById('patch-placeholder');
+  const healthErrorsEl = document.createElement('div'); // Create dynamically
+  const healthExchangesEl = document.createElement('div'); // Create dynamically
+
+  // This is a mock function as the health monitor UI was removed from HTML
+  window.updateHealthDisplay = function (sessionMetrics) {
+    // This function is now a no-op but kept for potential future use.
+  };
 
   window.escapeHtml = function (str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -25,22 +30,9 @@
     statusChip.style.color = color === 'var(--border)' ? 'var(--text-muted)' : color;
   };
 
-  window.updateHealthDisplay = function (sessionMetrics) {
-    if (healthErrorsEl) {
-      healthErrorsEl.textContent = `Errors: ${sessionMetrics.total_errors}/3`;
-      healthErrorsEl.style.color = 'var(--text-muted)';
-      if (sessionMetrics.total_errors >= 2) healthErrorsEl.style.color = 'var(--warn)';
-      if (sessionMetrics.total_errors >= 3) healthErrorsEl.style.color = 'var(--err)';
-    }
-    if (healthExchangesEl) {
-      healthExchangesEl.textContent = `Exchanges: ${sessionMetrics.exchange_count}/10`;
-      healthExchangesEl.style.color = 'var(--text-muted)';
-      if (sessionMetrics.exchange_count >= 10) healthExchangesEl.style.color = 'var(--warn)';
-    }
-  };
-
   // THIS IS THE NEW CRITICAL FUNCTION
-  window.enforceThresholds = function (sessionMetrics) {
+  window.enforceThresholds = function () {
+    const sessionMetrics = window.AppState.session;
     const errors = sessionMetrics.total_errors;
     const exchanges = sessionMetrics.exchange_count;
     let guidance = '';
@@ -54,20 +46,32 @@
       isBlocked = true;
     }
 
-    copyBriefingBtn.disabled = isBlocked;
-    patchArea.classList.toggle('disabled', isBlocked);
+    copyBriefingBtn.disabled = isBlocked || !window.AppState.projectRoot;
+
+    // Only block the patch area if a project is loaded AND thresholds are exceeded
+    const isDisabled = !window.AppState.projectRoot || isBlocked;
+    patchArea.classList.toggle('disabled', isDisabled);
 
     if (isBlocked) {
       patchPlaceholder.textContent = guidance;
       setStatus(guidance, 'err');
     } else if (window.AppState.projectRoot) {
-      patchPlaceholder.textContent = 'Click to Paste Patch';
+      patchPlaceholder.textContent = 'Click to Paste Patch or File Request';
+    } else {
+        patchPlaceholder.textContent = 'Select a project to begin';
     }
   };
 
   window.logToConsole = function (message, level) {
     window.emitAppEvent('console-log', { message, level: level || 'info' });
   };
+  
+  // Initial check on load
+  if (document.readyState !== 'loading') {
+    enforceThresholds();
+  } else {
+    document.addEventListener('DOMContentLoaded', enforceThresholds);
+  }
 
   console.log('[ui-helpers] Initialized.');
 })();

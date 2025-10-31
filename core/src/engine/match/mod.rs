@@ -5,7 +5,6 @@ mod match_exact;
 mod match_fuzzy;
 mod match_normalize;
 
-/// The result of a successful match, containing the location and confidence score.
 #[derive(Debug)]
 pub struct MatchResult {
     pub start_byte: usize,
@@ -14,6 +13,14 @@ pub struct MatchResult {
 }
 
 /// Top-level matching strategy. Implements the progressive fallback logic.
+///
+/// # Panics
+///
+/// Panics if `min_score` is not between 0.1 and 1.0.
+///
+/// # Errors
+///
+/// Returns an error if no suitable match can be found for the `needle`.
 pub fn find_best_match(
     haystack: &str,
     needle: &str,
@@ -30,7 +37,6 @@ pub fn find_best_match(
         &format!("needle_len={}, min_score={}", needle.len(), min_score),
     );
 
-    // An empty "from" block means we are creating or appending to a file.
     if needle.is_empty() {
         logger.info("matcher", "empty_needle", "Append/create mode");
         return Ok(MatchResult {
@@ -40,20 +46,16 @@ pub fn find_best_match(
         });
     }
 
-    // Tier 1: Exact Substring Match (Fast Path)
     if let Some(result) = match_exact::try_exact_match(haystack, needle, logger) {
         return Ok(result);
     }
 
-    // Prepare line ranges for windowed search
     let line_ranges = match_normalize::line_ranges(haystack);
     if line_ranges.is_empty() && !haystack.is_empty() {
         logger.error("matcher", "range_fail", "Failed to calculate line ranges for non-empty haystack");
-        // Fallback for files without newlines: treat the whole file as one line.
         let line_ranges = vec![(0, haystack.len())];
         return match_fuzzy::find_fuzzy_match(haystack, needle, &line_ranges, min_score, logger);
     }
 
-    // Tiers 2, 3, and 4
     match_fuzzy::find_fuzzy_match(haystack, needle, &line_ranges, min_score, logger)
 }

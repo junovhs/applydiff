@@ -17,6 +17,7 @@ pub enum ErrorCode {
     // --- Application ---
     NoMatch,
     AmbiguousMatch,
+    RegexError,
 
     // --- File I/O ---
     FileReadFailed,

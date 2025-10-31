@@ -15,49 +15,24 @@
   let typingTimer = null;
 
   function init() {
-    // Wire up header buttons
     selectDirBtn.addEventListener('click', () => emitAppEvent('select-project-requested'));
     copyBriefingBtn.addEventListener('click', () => emitAppEvent('copy-briefing-requested'));
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => emitAppEvent('refresh-session-requested'));
-    }
+    refreshBtn.addEventListener('click', () => emitAppEvent('refresh-session-requested'));
 
     patchArea.addEventListener('click', onPatchAreaClick);
 
-    // App event listeners
-    onAppEvent('session-loaded', (e) => {
-      // THIS IS THE RESTORED GUIDANCE
-      logToConsole(`
-      --------------------------------------------------
-      ✅ Project Loaded. To test the workflow:
-
-      1. Create a file named 'test.txt' in '${e.detail.path}'.
-      2. Put the word 'hello' inside it.
-      3. Copy the patch below and paste it into the patch panel.
-
-      >>> file: test.txt
-      --- from
-      hello
-      --- to
-      goodbye
-      <<<
-      --------------------------------------------------
-      `, 'success');
-
-      placeholder.textContent = 'Click to Paste Patch';
-      patchArea.classList.remove('disabled');
-      copyBriefingBtn.disabled = false;
-      if (refreshBtn) refreshBtn.disabled = false;
-      
-      setStatus('ready');
-      emitAppEvent('session-state-sync-requested');
+    onAppEvent('project-loaded', (e) => {
+      logToConsole(`✅ Project loaded at: ${e.detail.path}\nSession initialized.`, 'success');
+      refreshBtn.disabled = false;
+      enforceThresholds();
     });
     
-    onAppEvent('session-load-failed', () => {
-      placeholder.textContent = 'Select a project to begin';
-      patchArea.classList.add('disabled');
-      copyBriefingBtn.disabled = true;
-      if (refreshBtn) refreshBtn.disabled = true;
+    onAppEvent('project-load-failed', () => {
+      enforceThresholds();
+    });
+
+    onAppEvent('session-state-updated', () => {
+      enforceThresholds();
     });
 
     onAppEvent('apply-successful', () => {
@@ -65,6 +40,7 @@
         editorEl.value = '';
         window.AppState.currentPatch = '';
         placeholder.style.display = 'block';
+        editorEl.style.display = 'none';
       }
       setStatus('idle');
     });
@@ -72,22 +48,35 @@
 
   async function onPatchAreaClick() {
     if (patchArea.classList.contains('disabled')) return;
-    ensureEditorExists();
+    
     try {
-      const textFromClipboard = await window.__TAURI__.clipboardManager.readText();
-      if (textFromClipboard && textFromClipboard.trim()) {
-        logToConsole(`📋 Pasted ${textFromClipboard.length} chars from clipboard.`);
-        editorEl.value = textFromClipboard;
-        window.AppState.currentPatch = textFromClipboard;
-        placeholder.style.display = 'none';
-        emitAppEvent('preview-requested', { patch: textFromClipboard });
+      const clipboardText = await window.__TAURI__.clipboardManager.readText();
+      if (!clipboardText || !clipboardText.trim()) {
+        logToConsole('Clipboard is empty. Paste a patch or REQUEST_FILE block.', 'warn');
+        ensureEditorExists(); // Still show editor for manual input
         editorEl.focus();
+        return;
+      }
+      
+      const trimmedText = clipboardText.trim();
+      if (trimmedText.toUpperCase().startsWith('REQUEST_FILE:')) {
+        logToConsole('👁️ REQUEST_FILE protocol detected. Resolving...', 'info');
+        // The request string needs to be the text *after* the initial keyword
+        const requestYaml = trimmedText.substring(trimmedText.indexOf(':') + 1).trim();
+        emitAppEvent('resolve-file-request-requested', { requestYaml });
       } else {
-        logToConsole('⌨️ Clipboard empty. Enter patch manually or copy the example from the console.', 'warn');
+        logToConsole(`📋 Pasted ${clipboardText.length} chars from clipboard.`);
+        ensureEditorExists();
+        editorEl.value = clipboardText;
+        window.AppState.currentPatch = clipboardText;
+        placeholder.style.display = 'none';
+        editorEl.style.display = 'block';
+        emitAppEvent('preview-requested', { patch: clipboardText });
         editorEl.focus();
       }
     } catch (e) {
       logToConsole(`❌ Clipboard read failed: ${e}`, 'error');
+      ensureEditorExists();
       editorEl.focus();
     }
   }
@@ -97,20 +86,33 @@
     editorEl = document.createElement('textarea');
     editorEl.className = 'patch-editor';
     patchArea.appendChild(editorEl);
+    
+    editorEl.addEventListener('focus', () => {
+        placeholder.style.display = 'none';
+    });
+    
+    editorEl.addEventListener('blur', () => {
+        if (!editorEl.value.trim()) {
+            placeholder.style.display = 'block';
+        }
+    });
+
     editorEl.addEventListener('input', () => {
       setStatus('typing…', 'warn');
+      const patch = editorEl.value;
+      placeholder.style.display = patch ? 'none' : 'block';
+      
       clearTimeout(typingTimer);
       typingTimer = setTimeout(() => {
-        const patch = editorEl.value.trim();
-        if (patch) {
-          window.AppState.currentPatch = patch;
-          emitAppEvent('preview-requested', { patch });
+        const trimmedPatch = patch.trim();
+        if (trimmedPatch) {
+          window.AppState.currentPatch = trimmedPatch;
+          emitAppEvent('preview-requested', { patch: trimmedPatch });
         }
       }, 1500);
     });
   }
 
-  // Auto-init
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

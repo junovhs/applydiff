@@ -4,9 +4,21 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.76"
 
+# ADDED: To create a lib and a bin target
+[lib]
+name = "applydiff_backend"
+path = "src/lib.rs"
+
+[[bin]]
+name = "applydiff-backend"
+path = "src/main.rs"
+
+
 [dependencies]
 # The core library we just built
 applydiff-core = { path = "../core" }
+# ADDED: The Saccade library for context management
+saccade-core = { path = "../../saccade/core" }
 
 # The Tauri framework and plugins
 tauri = { version = "2.0.0-beta.21", features = [] }
@@ -18,10 +30,17 @@ serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 
 # For generating unique request IDs
-chrono = "0.4.38"
+chrono = { version = "0.4.38", features = ["serde"] }
 
-# ADDED: For generating diff previews
+# For generating diff previews
 similar = "2.5.0"
+
+# ADDED: For regex mode and glob patterns
+regex = "1.10.4"
+glob = "0.3.1"
+md5 = "0.7.0"
+walkdir = "2"
+
 
 [build-dependencies]
 tauri-build = { version = "2.0.0-beta.16", features = [] }

@@ -62,6 +62,14 @@ body {
 .header-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .header-btn.icon-only { padding:6px 10px; }
 .btn-icon { width:14px; height:14px; opacity:.9; }
+#btn-refresh-session .btn-icon {
+    /* Basic rotation animation */
+    transition: transform 0.5s ease;
+}
+#btn-refresh-session:active:not(:disabled) .btn-icon {
+    transform: rotate(180deg);
+}
+
 
 /* Health Monitor Styles */
 .health-monitor {
@@ -96,8 +104,14 @@ body {
   color:#E7B56F;
   position:absolute;
 }
-.panel-label:nth-child(1) { left:0; }
-.panel-label:nth-child(2) { left:calc(50% + 10px); }
+.panel-label-group {
+    position: absolute;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.diff-label { left:calc(50% + 10px); }
 .console-label-item {
   display:none;
   position:fixed;
@@ -164,19 +178,21 @@ body {
   position:relative;
 }
 .patch-area:hover { border-color:#E7B56F; }
-.patch-area.disabled { opacity:.5; cursor:not-allowed; }
+.patch-area.disabled { opacity:.5; cursor:not-allowed; border-color: #454545; }
 .patch-placeholder {
   font-size:12pt;
   font-weight:700;
   color:rgba(255,255,255,.15);
   user-select:none;
+  text-align: center;
+  padding: 10px;
 }
 .patch-editor {
   position:absolute;
   inset:0;
   width:100%;
   height:100%;
-  padding:36px 12px 12px 12px;
+  padding:12px;
   border:0;
   outline:0;
   background:transparent;
@@ -186,9 +202,6 @@ body {
 }
 .patch-editor::selection { background:rgba(245,158,11,0.3); }
 .status-chip {
-  position:absolute;
-  top:8px;
-  left:8px;
   background:#0f0f0f;
   border:1px solid var(--border);
   border-radius:9999px;

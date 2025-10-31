@@ -8,7 +8,7 @@ pub fn try_exact_match(haystack: &str, needle: &str, logger: &Logger) -> Option<
         logger.info(
             "matcher",
             "exact_match_unique",
-            &format!("Found unique exact match at byte {}", idx),
+            &format!("Found unique exact match at byte {idx}"),
         );
         return Some(MatchResult {
             start_byte: idx,

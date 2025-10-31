@@ -5,6 +5,7 @@ use super::{
     Logger, MatchResult,
 };
 use crate::error::{ErrorCode, PatchError, Result};
+use std::path::PathBuf;
 use strsim::normalized_damerau_levenshtein as ndl;
 
 /// Tiers 2, 3, and 4: Finds the best fuzzy match for the needle in the haystack.
@@ -27,7 +28,7 @@ pub fn find_fuzzy_match(
     }
     if ws_matches.len() == 1 {
         let (start, end) = ws_matches[0];
-        logger.info("matcher", "ws_normalized_match", &format!("Found unique whitespace-normalized match at bytes {}-{}", start, end));
+        logger.info("matcher", "ws_normalized_match", &format!("Found unique whitespace-normalized match at bytes {start}-{end}"));
         return Ok(MatchResult { start_byte: start, end_byte: end, score: 1.0 });
     }
 
@@ -42,7 +43,7 @@ pub fn find_fuzzy_match(
     }
     if indent_matches.len() == 1 {
         let (start, end) = indent_matches[0];
-        logger.info("matcher", "indent_normalized_match", &format!("Found unique indent-normalized match at bytes {}-{}", start, end));
+        logger.info("matcher", "indent_normalized_match", &format!("Found unique indent-normalized match at bytes {start}-{end}"));
         return Ok(MatchResult { start_byte: start, end_byte: end, score: 1.0 });
     }
     
@@ -51,8 +52,6 @@ pub fn find_fuzzy_match(
     let mut best_match: Option<MatchResult> = None;
     let mut second_best_score = -1.0;
 
-    // Iterate through windows of lines in the haystack.
-    // The window size is +/- 1 line from the needle's line count.
     for window_size in (needle_lines.saturating_sub(1))..=(needle_lines + 1) {
         if window_size == 0 || window_size > line_ranges.len() { continue; }
 
@@ -60,8 +59,6 @@ pub fn find_fuzzy_match(
             let start_byte = window[0].0;
             let end_byte = window[window_size - 1].1;
             let slice = &haystack[start_byte..end_byte];
-
-            // Use normalized Damerau-Levenshtein for scoring.
             let score = ndl(&normalize_newlines(slice), &normalize_newlines(needle));
 
             if best_match.is_none() || score > best_match.as_ref().unwrap().score {
@@ -76,14 +73,12 @@ pub fn find_fuzzy_match(
     }
 
     if let Some(bm) = best_match {
-        // Ambiguity Guard: If the best and second-best scores are too close,
-        // it's an ambiguous match, which is a Prediction Error.
         if (bm.score - second_best_score) < 0.02 && second_best_score > 0.0 {
             logger.error("matcher", "ambiguous_match", &format!("Ambiguous match detected. Best score: {:.2}, Second best: {:.2}", bm.score, second_best_score));
             return Err(PatchError::Apply {
                 code: ErrorCode::AmbiguousMatch,
                 message: "Ambiguous match detected. Multiple locations matched with similar confidence.".to_string(),
-                file: Default::default(), // File path will be added by the Applier
+                file: PathBuf::default(),
             });
         }
 
@@ -97,6 +92,6 @@ pub fn find_fuzzy_match(
     Err(PatchError::Apply {
         code: ErrorCode::NoMatch,
         message: "No suitable match found for the block.".to_string(),
-        file: Default::default(), // File path will be added by the Applier
+        file: PathBuf::default(),
     })
 }

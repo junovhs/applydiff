@@ -7,17 +7,21 @@ pub struct Logger {
 }
 
 impl Logger {
+    /// Creates a new `Logger`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `rid` is zero.
+    #[must_use]
     pub fn new(rid: u64) -> Self {
         assert!(rid > 0, "Logger rid must be non-zero");
         Self { rid }
     }
 
-    /// Logs a structured info message to stdout.
     pub fn info(&self, subsystem: &str, action: &str, message: &str) {
         self.emit("info", subsystem, action, message);
     }
 
-    /// Logs a structured error message to stderr.
     pub fn error(&self, subsystem: &str, action: &str, message: &str) {
         self.emit("error", subsystem, action, message);
     }
@@ -33,9 +37,9 @@ impl Logger {
         });
 
         if level == "error" {
-            eprintln!("{}", log_entry);
+            eprintln!("{log_entry}");
         } else {
-            println!("{}", log_entry);
+            println!("{log_entry}");
         }
     }
 }

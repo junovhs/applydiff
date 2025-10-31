@@ -5,9 +5,17 @@ pub mod parse_classic;
 
 const MAX_BLOCKS: usize = 1000;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PatchMode {
+    Classic,
+    Replace,
+    Regex,
+}
+
 #[derive(Debug, Clone)]
 pub struct PatchBlock {
     pub file: PathBuf,
+    pub mode: PatchMode,
     pub from: String,
     pub to: String,
     pub fuzz: f64,
@@ -17,12 +25,21 @@ pub struct PatchBlock {
 pub struct Parser;
 
 impl Parser {
+    #[must_use]
     pub fn new() -> Self {
-        // CORRECTED: Direct construction of the unit struct.
         Self
     }
 
-    /// Parses an input string for "classic" style patch blocks.
+    /// Parses an input string for patch blocks.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the input string size exceeds 100MB.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the number of blocks exceeds `MAX_BLOCKS` or if no
+    /// valid blocks are found.
     pub fn parse(&self, input: &str) -> Result<Vec<PatchBlock>> {
         assert!(
             input.len() < 100_000_000,
@@ -37,14 +54,14 @@ impl Parser {
                     if blocks.len() >= MAX_BLOCKS {
                         return Err(PatchError::Validation {
                             code: ErrorCode::BoundsExceeded,
-                            message: format!("Exceeded MAX_BLOCKS limit of {}", MAX_BLOCKS),
+                            message: format!("Exceeded MAX_BLOCKS limit of {MAX_BLOCKS}"),
                             context: "parser".to_string(),
                         });
                     }
                     let block = parse_classic::parse_classic_block(&mut lines)?;
                     blocks.push(block);
                 } else {
-                    lines.next(); // Skip non-header lines
+                    lines.next();
                 }
             }
         }

@@ -14,13 +14,17 @@
         <img src="/applydiff_logo.svg" alt="ApplyDiff" class="logo" />
       </div>
       <div class="header-right">
-        <button class="header-btn" id="btn-copy-prompt">
+        <button class="header-btn" id="btn-copy-briefing" disabled>
           <img src="/icon_ai.svg" class="btn-icon" />
-          Copy Prompt
+          Copy Briefing
         </button>
         <button class="header-btn" id="btn-select-dir">
           <img src="/icon_folder.svg" class="btn-icon" />
           Select Project
+        </button>
+        <button class="header-btn" id="btn-refresh-session" disabled>
+          <img src="/icon_refresh.svg" class="btn-icon" />
+          Refresh Session
         </button>
         <button class="header-btn icon-only" id="console-toggle">
           <img src="/icon_console.svg" class="btn-icon" />
@@ -32,7 +36,7 @@
     <div class="labels-row">
       <div class="labels-container">
         <div class="panel-label-group">
-            <span class="panel-label">PATCH</span>
+            <span class="panel-label">PATCH / REQUEST</span>
             <span class="status-chip" id="status">idle</span>
         </div>
         <span class="panel-label diff-label">DIFF PREVIEW</span>

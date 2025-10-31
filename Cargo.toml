@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "core",
     "_backend",
+    "gauntlet",
 ]
 
 # Shared profiles for consistent behavior

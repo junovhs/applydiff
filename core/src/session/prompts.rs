@@ -1,19 +1,37 @@
-/// Builds the static, reliable prompt for the AI.
-pub fn build_ai_prompt() -> String {
-    let mut prompt = String::new();
+use super::state::SessionState;
+use std::fmt::Write;
 
-    prompt.push_str("You are producing APPLYDIFF patches. Output ONLY the classic format below.\n");
-    prompt.push_str("Do NOT include explanations, markdown code fences, or extra commentary.\n\n");
-    prompt.push_str("Format (repeat per changed file):\n\n");
-    prompt.push_str(">>> file: <relative/path/from/project/root> | fuzz=0.85\n");
-    prompt.push_str("--- from\n");
-    prompt.push_str("<exact old text; may be empty to create/append>\n");
-    prompt.push_str("--- to\n");
-    prompt.push_str("<new text>\n");
-    prompt.push_str("<<<\n\n");
-    prompt.push_str("Rules:\n");
-    prompt.push_str("- Include 3+ lines of surrounding context in 'from' and 'to' to ensure a unique match.\n");
-    prompt.push_str("- Preserve exact indentation and whitespace.\n");
+/// Builds the dynamic session briefing for the AI based on current state.
+#[must_use]
+pub fn build_session_briefing(session: &SessionState) -> String {
+    let mut briefing = String::new();
 
-    prompt
+    writeln!(&mut briefing, "[SESSION CONTEXT]").unwrap();
+    writeln!(&mut briefing, "- Exchange Count: {}/10", session.exchange_count).unwrap();
+    writeln!(&mut briefing, "- Prediction Errors: {}/3", session.total_errors).unwrap();
+
+    if session.total_errors >= 3 {
+        briefing.push_str("\n!! DRIFT LIKELY - HIGH ERROR COUNT !!\n");
+    } else if session.exchange_count >= 10 {
+        briefing.push_str("\n!! EXCHANGE LIMIT REACHED !!\n");
+    }
+
+    if !session.keystone_files.is_empty() {
+        briefing.push_str("\n[KEYSTONE FILES (CRITICAL)]\n");
+        for file in &session.keystone_files {
+            writeln!(&mut briefing, "- {}", file.display()).unwrap();
+        }
+    }
+
+    briefing.push_str("\n[ACTION TEMPLATE]\n");
+    briefing.push_str("Goal: <...>\n");
+    briefing.push_str("Evidence: <PASTE COMPILER/TEST ERRORS HERE.>\n\n");
+
+    briefing.push_str("[APPLYDIFF PATCH FORMAT]\n");
+    briefing.push_str(">>> file: <path> [| mode=replace]\n");
+    briefing.push_str("--- from\n<...>\n");
+    briefing.push_str("--- to\n<...>\n");
+    briefing.push_str("<<<\n");
+
+    briefing
 }

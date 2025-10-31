@@ -27,7 +27,7 @@
       applyBtn.style.display = 'none';
     });
     
-    onAppEvent('session-loaded', () => {
+    onAppEvent('project-loaded', () => {
         diffPre.innerHTML = 'No preview yet.';
         diffPre.style.color = '#777';
         applyBtn.style.display = 'none';

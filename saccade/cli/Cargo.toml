@@ -1,0 +1,15 @@
+[package]
+name = "saccade"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "saccade"
+path = "src/main.rs"
+
+[dependencies]
+saccade-core = { path = "../core" }
+anyhow.workspace = true
+clap.workspace = true
