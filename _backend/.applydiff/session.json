@@ -1,0 +1,52 @@
+{
+  "last_refresh_ts": "2025-11-01T04:33:13.810903209Z",
+  "exchange_count": 0,
+  "total_errors": 0,
+  "file_metrics": {
+    "src/commands.rs": {
+      "original_hash": "0058e89357b0ef64d2e6f0d5a55ce922",
+      "patch_count": 0
+    },
+    "gen/schemas/linux-schema.json": {
+      "original_hash": "a496e1c44654df639b40376cc7341425",
+      "patch_count": 0
+    },
+    "gen/schemas/windows-schema.json": {
+      "original_hash": "a496e1c44654df639b40376cc7341425",
+      "patch_count": 0
+    },
+    "build.rs": {
+      "original_hash": "865a9af8fce0c44d35f01d044dc7bf3c",
+      "patch_count": 0
+    },
+    "tauri.conf.json": {
+      "original_hash": "a04a62d73c67c4df91d5f8345330b500",
+      "patch_count": 0
+    },
+    "gen/schemas/capabilities.json": {
+      "original_hash": "99914b932bd37a50b983c5e7c90ae93b",
+      "patch_count": 0
+    },
+    "src/lib.rs": {
+      "original_hash": "b13b03ff01541654c1ae4255bca70204",
+      "patch_count": 0
+    },
+    "Cargo.toml": {
+      "original_hash": "d92892ad964e974684eb5bbe1e88fc1f",
+      "patch_count": 0
+    },
+    "src/main.rs": {
+      "original_hash": "97601093838eea0361335f0db66dc201",
+      "patch_count": 0
+    },
+    "gen/schemas/acl-manifests.json": {
+      "original_hash": "7376b4294d5c68d466f7984e9aa7c0b8",
+      "patch_count": 0
+    },
+    "gen/schemas/desktop-schema.json": {
+      "original_hash": "a496e1c44654df639b40376cc7341425",
+      "patch_count": 0
+    }
+  },
+  "keystone_files": []
+}

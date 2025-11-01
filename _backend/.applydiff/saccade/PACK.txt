@@ -1,0 +1,628 @@
+=======PROJECT=======
+========================================
+PROJECT OVERVIEW
+========================================
+
+Generated: 2025-10-31 21:33:13 -07:00
+Output dir: /home/juno/applydiff/_backend/.applydiff/saccade
+
+STATS
+------
+- files.raw: 11
+- files.kept: 11
+- code_only: false
+- max_depth: 3
+
+TOOLS & BUILD SYSTEMS
+----------------------
+- tools.git: true
+- git.commit: a534975
+- detected_build_systems: [Rust]
+
+WHAT'S IN THE PACK
+-------------------
+1. GUIDE.txt               - How to use the pack
+2. PROJECT.txt             - Overview, metadata
+3. STRUCTURE.txt           - Directory tree, file index, token heatmap
+4. APIS.txt                - API surfaces (Rust/TS/Python/Go)
+5. DEPS.txt (optional)     - Dependencies (from `cargo tree`)
+6. PACK_STAGE2_COMPRESSED.xml (optional) - Compressed skeleton if repomix present
+
+LANGUAGE STATISTICS
+========================================
+
+Language/Extension Snapshot
+
+| Extension | Files |
+|----------:|------:|
+| json | 6 |
+| rs | 4 |
+| toml | 1 |
+
+Total files: 11
+
+=======END-OF-PROJECT=======
+
+=======STRUCTURE=======
+========================================
+DIRECTORY TREE
+========================================
+
+Directories (depth <= 3, with detected project roots):
+
+.  <-- [Rust Project]
+gen
+gen/schemas
+src
+
+========================================
+FILE INDEX
+========================================
+
+All files (n = 11):
+
+Cargo.toml
+build.rs
+gen/schemas/acl-manifests.json
+gen/schemas/capabilities.json
+gen/schemas/desktop-schema.json
+gen/schemas/linux-schema.json
+gen/schemas/windows-schema.json
+src/commands.rs
+src/lib.rs
+src/main.rs
+tauri.conf.json
+
+========================================
+TOKEN HEATMAP
+========================================
+
+Size estimates (bytes → ~tokens via /3.5). Top 50:
+
+      120821 bytes  ~   34520 tokens  gen/schemas/desktop-schema.json
+      120821 bytes  ~   34520 tokens  gen/schemas/linux-schema.json
+      120821 bytes  ~   34520 tokens  gen/schemas/windows-schema.json
+       68532 bytes  ~   19580 tokens  gen/schemas/acl-manifests.json
+       12529 bytes  ~    3579 tokens  src/commands.rs
+        1238 bytes  ~     353 tokens  Cargo.toml
+        1131 bytes  ~     323 tokens  tauri.conf.json
+         750 bytes  ~     214 tokens  src/lib.rs
+         194 bytes  ~      55 tokens  src/main.rs
+          39 bytes  ~      11 tokens  build.rs
+           2 bytes  ~       0 tokens  gen/schemas/capabilities.json
+
+=======END-OF-STRUCTURE=======
+
+=======APIS=======
+========================================
+API SURFACE: RUST
+========================================
+
+src/commands.rs:22:pub struct AppState(pub Mutex<Option<SessionState>>);
+src/commands.rs:25:pub struct PreviewResult {
+src/commands.rs:31:pub struct CommandResult {
+src/commands.rs:66:pub fn init_session_logic(project_root: &Path) -> Result<SessionState, String> {
+src/commands.rs:97:pub fn get_session_briefing_logic(app_state: &AppState) -> Result<String, String> {
+src/commands.rs:107:pub fn refresh_session_logic(app_state: &AppState) -> Result<SessionState, String> {
+src/commands.rs:121:pub fn resolve_file_request_logic(request_yaml: &str, app_state: &AppState) -> Result<String, String> {
+src/commands.rs:162:pub fn preview_patch_logic(patch: &str, app_state: &AppState) -> Result<PreviewResult, String> {
+src/commands.rs:210:pub fn apply_patch_logic(patch: &str, app_state: &AppState) -> Result<CommandResult, String> {
+src/commands.rs:276:pub fn get_session_briefing(state: State<'_, AppState>) -> Result<String, String> {
+src/commands.rs:284:pub fn refresh_session(state: State<'_, AppState>) -> Result<SessionState, String> {
+src/commands.rs:292:pub fn resolve_file_request(request_yaml: String, state: State<'_, AppState>) -> Result<String, String> {
+src/commands.rs:300:pub fn preview_patch(patch: String, state: State<'_, AppState>) -> Result<PreviewResult, String> {
+src/commands.rs:308:pub fn apply_patch(patch: String, state: State<'_, AppState>) -> Result<CommandResult, String> {
+src/lib.rs:3:pub mod commands;
+src/lib.rs:10:pub fn main() {
+
+========================================
+API SURFACE: TYPESCRIPT/JAVASCRIPT
+========================================
+
+(no TS/JS items found)
+
+========================================
+API SURFACE: PYTHON
+========================================
+
+(no Python items found)
+
+========================================
+API SURFACE: GO
+========================================
+
+(no Go items found)
+
+=======END-OF-APIS=======
+
+=======DEPS=======
+========================================
+DEPENDENCIES (multi-ecosystem, summarized)
+========================================
+
+RUST (cargo)
+Tools: cargo tree
+cargo tree -d (duplicates)
+bitflags v1.3.2
+├── javascriptcore-rs v1.1.2
+│   ├── webkit2gtk v2.0.1
+│   │   ├── tauri v2.9.1
+│   │   │   ├── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend)
+│   │   │   ├── tauri-plugin-clipboard-manager v2.3.2
+│   │   │   │   └── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend)
+│   │   │   ├── tauri-plugin-dialog v2.4.2
+│   │   │   │   └── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend)
+│   │   │   └── tauri-plugin-fs v2.4.4
+│   │   │       └── tauri-plugin-dialog v2.4.2 (*)
+│   │   ├── tauri-runtime v2.9.1
+│   │   │   ├── tauri v2.9.1 (*)
+│   │   │   └── tauri-runtime-wry v2.9.1
+│   │   │       └── tauri v2.9.1 (*)
+│   │   ├── tauri-runtime-wry v2.9.1 (*)
+│   │   └── wry v0.53.5
+│   │       └── tauri-runtime-wry v2.9.1 (*)
+│   └── wry v0.53.5 (*)
+├── png v0.17.16
+│   ├── ico v0.4.0
+│   │   └── tauri-codegen v2.5.0
+│   │       └── tauri-macros v2.5.0 (proc-macro)
+│   │           └── tauri v2.9.1 (*)
+│   └── tauri-codegen v2.5.0 (*)
+├── selectors v0.24.0
+│   └── kuchikiki v0.8.8-speedreader
+│       └── tauri-utils v2.8.0
+│           ├── tauri-build v2.5.1
+│           │   [build-dependencies]
+│           │   ├── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend)
+│           │   └── tauri v2.9.1 (*)
+│           ├── tauri-codegen v2.5.0 (*)
+│           ├── tauri-macros v2.5.0 (proc-macro) (*)
+│           └── tauri-plugin v2.5.1
+│               [build-dependencies]
+│               ├── tauri-plugin-clipboard-manager v2.3.2 (*)
+│               ├── tauri-plugin-dialog v2.4.2 (*)
+│               └── tauri-plugin-fs v2.4.4 (*)
+│           [build-dependencies]
+│           ├── tauri v2.9.1 (*)
+│           └── tauri-plugin-fs v2.4.4 (*)
+├── webkit2gtk v2.0.1 (*)
+└── webkit2gtk-sys v2.0.1
+    ├── webkit2gtk v2.0.1 (*)
+    └── wry v0.53.5 (*)
+
+bitflags v2.10.0
+├── cairo-rs v0.18.5
+│   ├── gdk v0.18.2
+│   │   ├── gdkx11 v0.18.2
+│   │   │   └── wry v0.53.5 (*)
+│   │   ├── gtk v0.18.2
+│   │   │   ├── muda v0.17.1
+│   │   │   │   └── tauri v2.9.1 (*)
+│   │   │   ├── tao v0.34.5
+│   │   │   │   └── tauri-runtime-wry v2.9.1 (*)
+│   │   │   ├── tauri v2.9.1 (*)
+│   │   │   ├── tauri-runtime v2.9.1 (*)
+│   │   │   ├── tauri-runtime-wry v2.9.1 (*)
+│   │   │   ├── webkit2gtk v2.0.1 (*)
+│   │   │   └── wry v0.53.5 (*)
+│   │   └── webkit2gtk v2.0.1 (*)
+│   ├── gtk v0.18.2 (*)
+│   └── webkit2gtk v2.0.1 (*)
+├── glib v0.18.5
+│   ├── atk v0.18.2
+│   │   └── gtk v0.18.2 (*)
+│   ├── cairo-rs v0.18.5 (*)
+│   ├── gdk v0.18.2 (*)
+│   ├── gdk-pixbuf v0.18.5
+│   │   ├── gdk v0.18.2 (*)
+│   │   └── gtk v0.18.2 (*)
+│   ├── gdkx11 v0.18.2 (*)
+│   ├── gio v0.18.4
+│   │   ├── gdk v0.18.2 (*)
+│   │   ├── gdk-pixbuf v0.18.5 (*)
+│   │   ├── gdkx11 v0.18.2 (*)
+│   │   ├── gtk v0.18.2 (*)
+│   │   ├── pango v0.18.3
+│   │   │   ├── gdk v0.18.2 (*)
+│   │   │   └── gtk v0.18.2 (*)
+│   │   ├── soup3 v0.5.0
+│   │   │   ├── webkit2gtk v2.0.1 (*)
+│   │   │   └── wry v0.53.5 (*)
+│   │   └── webkit2gtk v2.0.1 (*)
+│   ├── gtk v0.18.2 (*)
+│   ├── javascriptcore-rs v1.1.2 (*)
+│   ├── pango v0.18.3 (*)
+│   ├── soup3 v0.5.0 (*)
+│   └── webkit2gtk v2.0.1 (*)
+├── keyboard-types v0.7.0
+│   └── muda v0.17.1 (*)
+├── png v0.18.0
+│   └── image v0.25.8
+│       └── arboard v3.6.1
+│           └── tauri-plugin-clipboard-manager v2.3.2 (*)
+├── rustix v0.38.44
+│   └── wl-clipboard-rs v0.9.2
+│       └── arboard v3.6.1 (*)
+├── rustix v1.1.2
+│   ├── gethostname v1.1.0
+│   │   └── x11rb v0.13.2
+│   │       └── arboard v3.6.1 (*)
+│   ├── tempfile v3.23.0
+│   │   └── wl-clipboard-rs v0.9.2 (*)
+│   ├── wayland-backend v0.3.11
+│   │   ├── wayland-client v0.31.11
+│   │   │   ├── wayland-protocols v0.32.9
+│   │   │   │   ├── wayland-protocols-wlr v0.3.9
+│   │   │   │   │   └── wl-clipboard-rs v0.9.2 (*)
+│   │   │   │   └── wl-clipboard-rs v0.9.2 (*)
+│   │   │   ├── wayland-protocols-wlr v0.3.9 (*)
+│   │   │   └── wl-clipboard-rs v0.9.2 (*)
+│   │   ├── wayland-protocols v0.32.9 (*)
+│   │   ├── wayland-protocols-wlr v0.3.9 (*)
+│   │   └── wl-clipboard-rs v0.9.2 (*)
+│   ├── wayland-client v0.31.11 (*)
+│   └── x11rb v0.13.2 (*)
+├── tao v0.34.5 (*)
+├── wayland-client v0.31.11 (*)
+├── wayland-protocols v0.32.9 (*)
+└── wayland-protocols-wlr v0.3.9 (*)
+
+getrandom v0.1.16
+├── rand v0.7.3
+│   └── phf_generator v0.8.0
+│       └── phf_codegen v0.8.0
+│           [build-dependencies]
+│           └── selectors v0.24.0 (*)
+└── rand_core v0.5.1
+    ├── rand v0.7.3 (*)
+    ├── rand_chacha v0.2.2
+    │   └── rand v0.7.3 (*)
+    └── rand_pcg v0.2.1
+        └── rand v0.7.3 (*)
+
+getrandom v0.2.16
+└── rand_core v0.6.4
+    ├── rand v0.8.5
+    │   ├── phf_generator v0.10.0
+    │   │   └── phf_macros v0.10.0 (proc-macro)
+    │   │       └── phf v0.10.1
+    │   │           └── cssparser v0.29.6
+    │   │               ├── kuchikiki v0.8.8-speedreader (*)
+    │   │               └── selectors v0.24.0 (*)
+    │   └── phf_generator v0.11.3
+    │       ├── phf_codegen v0.11.3
+    │       │   [build-dependencies]
+    │       │   └── markup5ever v0.14.1
+    │       │       └── html5ever v0.29.1
+    │       │           ├── kuchikiki v0.8.8-speedreader (*)
+    │       │           └── tauri-utils v2.8.0 (*)
+    │       ├── phf_macros v0.11.3 (proc-macro)
+    │       │   └── phf v0.11.3
+    │       │       ├── markup5ever v0.14.1 (*)
+    │       │       ├── tauri-utils v2.8.0 (*)
+    │       │       └── tauri-utils v2.8.0
+    │       │           ├── tauri v2.9.1 (*)
+    │       │           ├── tauri-runtime v2.9.1 (*)
+    │       │           └── tauri-runtime-wry v2.9.1 (*)
+    │       └── string_cache_codegen v0.5.4
+    │           [build-dependencies]
+    │           └── markup5ever v0.14.1 (*)
+    └── rand_chacha v0.3.1
+        └── rand v0.8.5 (*)
+
+getrandom v0.3.4
+├── tauri v2.9.1 (*)
+├── tempfile v3.23.0 (*)
+└── uuid v1.18.1
+    ├── cfb v0.7.3
+    │   └── infer v0.19.0
+    │       ├── tauri-utils v2.8.0 (*)
+    │       └── tauri-utils v2.8.0 (*)
+    ├── schemars v0.8.22
+    │   ├── tauri-build v2.5.1 (*)
+    │   ├── tauri-plugin v2.5.1 (*)
+    │   └── tauri-utils v2.8.0 (*)
+    │   [build-dependencies]
+    │   └── tauri-plugin-fs v2.4.4 (*)
+    ├── tauri-codegen v2.5.0 (*)
+    └── tauri-utils v2.8.0 (*)
+
+hashbrown v0.12.3
+└── indexmap v1.9.3
+    └── schemars v0.8.22 (*)
+
+hashbrown v0.16.0
+└── indexmap v2.12.0
+    ├── kuchikiki v0.8.8-speedreader (*)
+    ├── petgraph v0.6.5
+    │   └── tree_magic_mini v3.2.0
+    │       └── wl-clipboard-rs v0.9.2 (*)
+    ├── toml_edit v0.19.15
+    │   └── proc-macro-crate v1.3.1
+    │       └── gtk3-macros v0.18.2 (proc-macro)
+    │           └── gtk v0.18.2 (*)
+    └── toml_edit v0.20.2
+        ├── proc-macro-crate v2.0.2
+        │   └── glib-macros v0.18.5 (proc-macro)
+        │       └── glib v0.18.5 (*)
+        └── toml v0.8.2
+            ├── embed-resource v3.0.4
+            │   └── tauri-winres v0.3.3
+            │       └── tauri-build v2.5.1 (*)
+            └── system-deps v6.2.2
+                [build-dependencies]
+                ├── atk-sys v0.18.2
+                │   ├── atk v0.18.2 (*)
+                │   └── gtk-sys v0.18.2
+                │       ├── gtk v0.18.2 (*)
+                │       ├── rfd v0.15.4
+                │       │   └── tauri-plugin-dialog v2.4.2 (*)
+                │       ├── webkit2gtk v2.0.1 (*)
+                │       └── webkit2gtk-sys v2.0.1 (*)
+                ├── cairo-sys-rs v0.18.2
+                │   ├── cairo-rs v0.18.5 (*)
+                │   ├── gdk-sys v0.18.2
+                │   │   ├── gdk v0.18.2 (*)
+                │   │   ├── gdkwayland-sys v0.18.2
+                │   │   │   └── tao v0.34.5 (*)
+                │   │   ├── gdkx11-sys v0.18.2
+                │   │   │   ├── gdkx11 v0.18.2 (*)
+                │   │   │   └── tao v0.34.5 (*)
+                │   │   ├── gtk-sys v0.18.2 (*)
+                │   │   ├── webkit2gtk v2.0.1 (*)
+                │   │   └── webkit2gtk-sys v2.0.1 (*)
+                │   ├── gtk-sys v0.18.2 (*)
+                │   └── webkit2gtk-sys v2.0.1 (*)
+                ├── gdk-pixbuf-sys v0.18.0
+                │   ├── gdk-pixbuf v0.18.5 (*)
+                │   ├── gdk-sys v0.18.2 (*)
+                │   └── gtk-sys v0.18.2 (*)
+                ├── gdk-sys v0.18.2 (*)
+                ├── gdkwayland-sys v0.18.2 (*)
+                ├── gdkx11-sys v0.18.2 (*)
+                ├── gio-sys v0.18.1
+                │   ├── gdk-pixbuf-sys v0.18.0 (*)
+                │   ├── gdk-sys v0.18.2 (*)
+                │   ├── gio v0.18.4 (*)
+                │   ├── glib v0.18.5 (*)
+                │   ├── gtk-sys v0.18.2 (*)
+                │   ├── soup3-sys v0.5.0
+                │   │   ├── soup3 v0.5.0 (*)
+                │   │   └── webkit2gtk-sys v2.0.1 (*)
+                │   ├── webkit2gtk v2.0.1 (*)
+                │   └── webkit2gtk-sys v2.0.1 (*)
+                ├── glib-sys v0.18.1
+                │   ├── atk-sys v0.18.2 (*)
+                │   ├── cairo-sys-rs v0.18.2 (*)
+                │   ├── gdk-pixbuf-sys v0.18.0 (*)
+                │   ├── gdk-sys v0.18.2 (*)
+                │   ├── gdkwayland-sys v0.18.2 (*)
+                │   ├── gdkx11-sys v0.18.2 (*)
+                │   ├── gio-sys v0.18.1 (*)
+                │   ├── glib v0.18.5 (*)
+                │   ├── gobject-sys v0.18.0
+                │   │   ├── atk-sys v0.18.2 (*)
+                │   │   ├── gdk-pixbuf-sys v0.18.0 (*)
+                │   │   ├── gdk-sys v0.18.2 (*)
+                │   │   ├── gdkwayland-sys v0.18.2 (*)
+                │   │   ├── gio-sys v0.18.1 (*)
+                │   │   ├── glib v0.18.5 (*)
+                │   │   ├── gtk-sys v0.18.2 (*)
+                │   │   ├── javascriptcore-rs-sys v1.1.1
+                │   │   │   ├── javascriptcore-rs v1.1.2 (*)
+                │   │   │   └── webkit2gtk-sys v2.0.1 (*)
+                │   │   ├── pango-sys v0.18.0
+                │   │   │   ├── gdk-sys v0.18.2 (*)
+                │   │   │   ├── gtk-sys v0.18.2 (*)
+                │   │   │   └── pango v0.18.3 (*)
+                │   │   ├── rfd v0.15.4 (*)
+                │   │   ├── soup3-sys v0.5.0 (*)
+                │   │   ├── webkit2gtk v2.0.1 (*)
+                │   │   └── webkit2gtk-sys v2.0.1 (*)
+                │   ├── gtk-sys v0.18.2 (*)
+                │   ├── javascriptcore-rs-sys v1.1.1 (*)
+                │   ├── pango-sys v0.18.0 (*)
+                │   ├── rfd v0.15.4 (*)
+                │   ├── soup3-sys v0.5.0 (*)
+                │   ├── webkit2gtk v2.0.1 (*)
+                │   └── webkit2gtk-sys v2.0.1 (*)
+                ├── gobject-sys v0.18.0 (*)
+                ├── gtk-sys v0.18.2 (*)
+                ├── javascriptcore-rs-sys v1.1.1 (*)
+                ├── pango-sys v0.18.0 (*)
+                ├── soup3-sys v0.5.0 (*)
+                └── webkit2gtk-sys v2.0.1 (*)
+
+heck v0.4.1
+└── glib-macros v0.18.5 (proc-macro) (*)
+
+heck v0.5.0
+├── system-deps v6.2.2 (*)
+├── tauri v2.9.1 (*)
+├── tauri-build v2.5.1 (*)
+└── tauri-macros v2.5.0 (proc-macro) (*)
+[build-dependencies]
+└── tauri v2.9.1 (*)
+… [truncated to 300 lines for cargo tree -d]
+
+cargo tree -e normal,build --depth 2
+applydiff-backend v0.1.0 (/home/juno/applydiff/_backend)
+├── applydiff-core v0.1.0 (/home/juno/applydiff/core)
+│   ├── chrono v0.4.42
+│   ├── md5 v0.7.0
+│   ├── regex v1.12.2
+│   ├── serde v1.0.228
+│   ├── serde_json v1.0.145
+│   ├── similar v2.7.0
+│   ├── strsim v0.11.1
+│   └── thiserror v1.0.69
+├── chrono v0.4.42 (*)
+├── glob v0.3.3
+├── md5 v0.7.0
+├── regex v1.12.2 (*)
+├── saccade-core v0.3.1 (/home/juno/saccade/core)
+│   ├── anyhow v1.0.100
+│   ├── chrono v0.4.42 (*)
+│   ├── dunce v1.0.5
+│   ├── glob v0.3.3
+│   ├── ignore v0.4.25
+│   ├── once_cell v1.21.3
+│   ├── rayon v1.11.0
+│   ├── regex v1.12.2 (*)
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── thiserror v1.0.69 (*)
+│   ├── tree-sitter v0.22.6
+│   │   [build-dependencies]
+│   ├── tree-sitter-cmake v0.5.0
+│   │   [build-dependencies]
+│   ├── tree-sitter-javascript v0.21.4
+│   │   [build-dependencies]
+│   ├── tree-sitter-python v0.21.0
+│   │   [build-dependencies]
+│   ├── tree-sitter-rust v0.21.2
+│   │   [build-dependencies]
+│   ├── tree-sitter-typescript v0.21.2
+│   │   [build-dependencies]
+│   └── walkdir v2.5.0
+├── serde v1.0.228 (*)
+├── serde_json v1.0.145 (*)
+├── similar v2.7.0
+├── tauri v2.9.1
+│   ├── anyhow v1.0.100
+│   ├── cookie v0.18.1
+│   │   [build-dependencies]
+│   ├── dirs v6.0.0
+│   ├── dunce v1.0.5
+│   ├── getrandom v0.3.4
+│   ├── glob v0.3.3
+│   ├── gtk v0.18.2
+│   │   [build-dependencies]
+│   ├── heck v0.5.0
+│   ├── http v1.3.1
+│   ├── log v0.4.28
+│   ├── mime v0.3.17
+│   ├── muda v0.17.1
+│   ├── percent-encoding v2.3.2
+│   ├── raw-window-handle v0.6.2
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── serde_repr v0.1.20 (proc-macro)
+│   ├── serialize-to-javascript v0.1.2
+│   ├── tauri-macros v2.5.0 (proc-macro)
+│   ├── tauri-runtime v2.9.1
+│   ├── tauri-runtime-wry v2.9.1
+│   ├── tauri-utils v2.8.0
+│   ├── thiserror v2.0.17
+│   ├── tokio v1.48.0
+│   ├── url v2.5.7
+│   └── webkit2gtk v2.0.1
+│   [build-dependencies]
+│   ├── glob v0.3.3
+│   ├── heck v0.5.0
+│   ├── tauri-build v2.5.1
+│   └── tauri-utils v2.8.0
+├── tauri-plugin-clipboard-manager v2.3.2
+│   ├── arboard v3.6.1
+│   ├── log v0.4.28
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── tauri v2.9.1 (*)
+│   └── thiserror v2.0.17 (*)
+│   [build-dependencies]
+│   └── tauri-plugin v2.5.1
+├── tauri-plugin-dialog v2.4.2
+│   ├── log v0.4.28
+│   ├── raw-window-handle v0.6.2
+│   ├── rfd v0.15.4
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── tauri v2.9.1 (*)
+│   ├── tauri-plugin-fs v2.4.4
+│   │   [build-dependencies]
+│   ├── thiserror v2.0.17 (*)
+│   └── url v2.5.7 (*)
+│   [build-dependencies]
+│   └── tauri-plugin v2.5.1 (*)
+└── walkdir v2.5.0 (*)
+[build-dependencies]
+└── tauri-build v2.5.1 (*)
+
+
+
+=======END-OF-DEPS=======
+
+=======GUIDE=======
+========================================
+SACCADE PACK GUIDE (Single-File)
+========================================
+
+Saccade now generates ONE file: PACK.txt
+with clearly labeled sections so an LLM
+can parse deterministically.
+
+SECTION MARKERS (exact):
+
+=======PROJECT=======
+... metadata, stats, languages
+=======END-OF-PROJECT=======
+
+=======STRUCTURE=======
+... directory tree, file index, token heatmap
+=======END-OF-STRUCTURE=======
+
+=======APIS=======
+... API surface across Rust / TS-JS / Python / Go
+=======END-OF-APIS=======
+
+=======DEPS=======
+... multi-ecosystem dependency snapshot (if present)
+=======END-OF-DEPS=======
+
+=======GUIDE=======
+... this protocol & usage guide
+=======END-OF-GUIDE=======
+
+========================================
+REAL-WORLD USE (DO THIS)
+========================================
+
+Attach: PACK.txt  (and PACK_STAGE2_COMPRESSED.xml if asked)
+
+Paste a short brief (copy & edit):
+  Goal: <what you want changed/added/fixed>
+  Evidence: <errors/logs/stack traces; short and relevant>
+  Context: <entry points, recent changes, repro>
+  Constraints: <perf, API compatibility, deadlines>
+  Definition of Done: <tests green, clippy clean, no API break, etc.>
+
+If you provide nothing, the AI must still begin by triaging intent (bug/feature/refactor),
+proposing a minimal plan, and requesting code slices via REQUEST_FILE when needed.
+
+Escalation rule:
+  • After the first failed attempt OR when layout/contracts are unclear,
+    ask for PACK_STAGE2_COMPRESSED.xml (signatures-only skeleton).
+  • If still blocked, request the smallest useful code slice via REQUEST_FILE.
+
+========================================
+REQUEST_FILE — EXACT FORMAT
+========================================
+
+REQUEST_FILE:
+  path: relative/path/to/file.ext
+  reason: >
+    What you will inspect or implement.
+  range: lines 80-140        # or: symbol: FunctionName
+
+Guidelines:
+  - Minimize tokens: prefer line ranges over whole files.
+  - Use STRUCTURE and APIS sections to pick targets.
+  - Never hallucinate missing code—request it explicitly.
+
+========================================
+TIPS
+========================================
+  - Use --code-only, --include/--exclude, and --max-depth to reduce tokens.
+  - Re-run Saccade after changes; packs are quick to refresh.
+
+=======END-OF-GUIDE=======

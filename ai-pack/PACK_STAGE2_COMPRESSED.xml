@@ -1,0 +1,1405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files>
+  <file path="_backend/build.rs">
+    fn main()
+  </file>
+  <file path="_backend/src/commands.rs">
+    use applydiff_core::{
+        engine::{apply::Applier, backup},
+        error::{ErrorCode, PatchError, Result as CoreResult},
+        logger::Logger,
+        parse::Parser,
+        session::{prompts, state::{FileMetrics, SessionState}},
+    };
+    ---⋯
+    use chrono::{Local, Utc};
+    ---⋯
+    use saccade_core::{
+        config::Config as SaccadeConfig,
+        request::{RequestFile, RequestRange, RequestTarget},
+        SaccadePack,
+    };
+    ---⋯
+    use serde::Serialize;
+    ---⋯
+    use std::fmt::Write;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::{Path, PathBuf};
+    ---⋯
+    use std::sync::Mutex;
+    ---⋯
+    use tauri::{AppHandle, State};
+    ---⋯
+    use tauri_plugin_dialog::{DialogExt, FilePath};
+    ---⋯
+    pub struct AppState(pub Mutex&lt;Option&lt;SessionState&gt;&gt;);
+    ---⋯
+    pub struct PreviewResult {
+        pub log: String,
+        pub diff: String,
+    }
+    ---⋯
+    pub struct CommandResult {
+        pub output: String,
+        pub session_state: Option&lt;SessionState&gt;,
+    }
+    ---⋯
+    fn to_string_error&lt;T&gt;(result: CoreResult&lt;T&gt;) -&gt; Result&lt;T, String&gt;
+    ---⋯
+    fn generate_rid() -&gt; u64
+    ---⋯
+    // Note: timestamp_millis() is i64. Cast is acknowledged as acceptable for a unique ID.
+    ---⋯
+    fn get_session_path(project_root: &amp;Path) -&gt; PathBuf
+    ---⋯
+    fn save_session_state(session_state: &amp;SessionState) -&gt; Result&lt;(), String&gt;
+    ---⋯
+    // ======================================================================
+    ---⋯
+    // TESTABLE LOGIC FUNCTIONS
+    ---⋯
+    // ======================================================================
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Will return an error if it fails to set the CWD, run Saccade, or initialize state.
+    ---⋯
+    pub fn init_session_logic(project_root: &amp;Path) -&gt; Result&lt;SessionState, String&gt;
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded.
+    ---⋯
+    pub fn get_session_briefing_logic(app_state: &amp;AppState) -&gt; Result&lt;String, String&gt;
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded.
+    ---⋯
+    pub fn refresh_session_logic(app_state: &amp;AppState) -&gt; Result&lt;SessionState, String&gt;
+    ---⋯
+    // ... (rest of the refresh logic)
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded or the request is invalid.
+    ---⋯
+    pub fn resolve_file_request_logic(request_yaml: &amp;str, app_state: &amp;AppState) -&gt; Result&lt;String, String&gt;
+    ---⋯
+    // More robustly find the first separator (space or colon)
+    ---⋯
+    // The rest of the string, skipping the separator itself.
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded or the patch is invalid.
+    ---⋯
+    pub fn preview_patch_logic(patch: &amp;str, app_state: &amp;AppState) -&gt; Result&lt;PreviewResult, String&gt;
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded or the patch is invalid.
+    ---⋯
+    pub fn apply_patch_logic(patch: &amp;str, app_state: &amp;AppState) -&gt; Result&lt;CommandResult, String&gt;
+    ---⋯
+    // ======================================================================
+    ---⋯
+    // TAURI COMMAND WRAPPERS
+    ---⋯
+    // ======================================================================
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if folder selection is cancelled or session init fails.
+    ---⋯
+    pub async fn init_session(app: AppHandle, state: State&lt;'_, AppState&gt;) -&gt; Result&lt;SessionState, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn get_session_briefing(state: State&lt;'_, AppState&gt;) -&gt; Result&lt;String, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn refresh_session(state: State&lt;'_, AppState&gt;) -&gt; Result&lt;SessionState, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn resolve_file_request(request_yaml: String, state: State&lt;'_, AppState&gt;) -&gt; Result&lt;String, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn preview_patch(patch: String, state: State&lt;'_, AppState&gt;) -&gt; Result&lt;PreviewResult, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn apply_patch(patch: String, state: State&lt;'_, AppState&gt;) -&gt; Result&lt;CommandResult, String&gt;
+  </file>
+  <file path="_backend/src/lib.rs">
+    pub mod commands;
+    ---⋯
+    /// Runs the Tauri application.
+    ---⋯
+    ///
+    ---⋯
+    /// # Panics
+    ---⋯
+    ///
+    ---⋯
+    /// Panics if the Tauri application fails to run.
+    ---⋯
+    pub fn main()
+  </file>
+  <file path="_backend/src/main.rs">
+    // The main binary now just calls the library's main function.
+    ---⋯
+    fn main()
+  </file>
+  <file path="app/lib/app-state.js">
+    /**
+     * app-state.js
+     * Global application state. Centralized and reactive.
+     */
+    ---⋯
+    // Session health metrics, mirrored from the backend
+    ---⋯
+    // UI-specific state
+    ---⋯
+    /**
+       * Emits a custom event on the window object.
+       * @param {string} name - The name of the event (e.g., 'session-loaded').
+       * @param {object} [detail={}] - The data payload for the event.
+       */
+    ---⋯
+    /**
+       * Listens for a custom app event on the window object.
+       * @param {string} name - The name of the event to listen for.
+       * @param {Function} handler - The callback function to execute.
+       */
+  </file>
+  <file path="app/lib/tauri-bridge.js">
+    /**
+     * tauri-bridge.js
+     * All Tauri IPC calls. Listens for UI events, calls the backend, and emits results.
+     */
+    ---⋯
+    function syncSessionState(sessionState)
+    ---⋯
+    // User wants to select a project directory and initialize a session
+    ---⋯
+    async () =&gt;
+    ---⋯
+    // User wants the dynamic session briefing
+    ---⋯
+    async () =&gt;
+    ---⋯
+    // User wants to refresh the session
+    ---⋯
+    async () =&gt;
+    ---⋯
+    // A file request has been pasted
+    ---⋯
+    async (e) =&gt;
+    ---⋯
+    // A patch has been entered and needs a preview
+    ---⋯
+    async (e) =&gt;
+    ---⋯
+    // User clicked "Apply Patch"
+    ---⋯
+    async (e) =&gt;
+  </file>
+  <file path="app/lib/ui-helpers.js">
+    /**
+     * ui-helpers.js
+     * Shared UI utility functions. No state. Interacts with the original DOM.
+     */
+    ---⋯
+    // Create dynamically
+    ---⋯
+    // Create dynamically
+    ---⋯
+    // This is a mock function as the health monitor UI was removed from HTML
+    ---⋯
+    // This function is now a no-op but kept for potential future use.
+    ---⋯
+    // THIS IS THE NEW CRITICAL FUNCTION
+    ---⋯
+    // Only block the patch area if a project is loaded AND thresholds are exceeded
+    ---⋯
+    // Initial check on load
+  </file>
+  <file path="app/panels/ConsolePanel.js">
+    /**
+     * ConsolePanel.js
+     * Manages the slide-out console panel.
+     */
+    ---⋯
+    function init()
+    ---⋯
+    (e) =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    function toggleConsole()
+    ---⋯
+    function appendLog(message, level)
+    ---⋯
+    // Auto-init
+  </file>
+  <file path="app/panels/DiffPanel.js">
+    /**
+     * DiffPanel.js
+     * Manages rendering the diff preview and the "Apply" button.
+     */
+    ---⋯
+    function init()
+    ---⋯
+    () =&gt;
+    ---⋯
+    (e) =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    function renderDiff(udiff)
+    ---⋯
+    // Reset color
+    ---⋯
+    line =&gt;
+    ---⋯
+    function updateApplyButton(hasDiff, hasError)
+    ---⋯
+    // Auto-init
+  </file>
+  <file path="app/panels/HistoryPanel.js">
+    /**
+     * HistoryPanel.js
+     * Manages the history/version display. Placeholder for Git-Trek.
+     */
+    ---⋯
+    // This file is a placeholder for the future Git-Trek integration.
+    ---⋯
+    // For now, it will do nothing.
+  </file>
+  <file path="app/panels/PatchPanel.js">
+    /**
+     * PatchPanel.js
+     * Manages the patch input area and associated header buttons.
+     */
+    ---⋯
+    function init()
+    ---⋯
+    () =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    (e) =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    async function onPatchAreaClick()
+    ---⋯
+    // Still show editor for manual input
+    ---⋯
+    // The request string needs to be the text *after* the initial keyword
+    ---⋯
+    function ensureEditorExists()
+    ---⋯
+    () =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    () =&gt;
+    ---⋯
+    () =&gt;
+  </file>
+  <file path="core/src/engine/apply.rs">
+    use super::r#match::find_best_match;
+    ---⋯
+    use crate::error::{ErrorCode, PatchError, Result};
+    ---⋯
+    use crate::logger::Logger;
+    ---⋯
+    use crate::parse::{PatchBlock, PatchMode};
+    ---⋯
+    use regex::Regex;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::{Component, Path, PathBuf};
+    ---⋯
+    pub struct ApplyResult {
+        pub matched_at: usize,
+        pub matched_end: usize,
+        pub score: f64,
+    }
+    ---⋯
+    pub struct Applier&lt;'a&gt; {
+        logger: &amp;'a Logger,
+        project_root: PathBuf,
+        dry_run: bool,
+    }
+    ---⋯
+    /// Helper to write file and create parent directories if needed.
+    ---⋯
+    fn write_file(path: &amp;Path, content: &amp;str) -&gt; Result&lt;()&gt;
+    ---⋯
+    impl&lt;'a&gt; Applier&lt;'a&gt;
+    ---⋯
+    /// Creates a new `Applier`.
+    ---⋯
+    ///
+    ---⋯
+    /// # Panics
+    ---⋯
+    ///
+    ---⋯
+    /// Panics if `project_root` is not a directory.
+    ---⋯
+    pub fn new(logger: &amp;'a Logger, project_root: PathBuf, dry_run: bool) -&gt; Self
+    ---⋯
+    /// Applies a single patch block to the corresponding file.
+    ---⋯
+    ///
+    ---⋯
+    /// # Errors
+    ---⋯
+    ///
+    ---⋯
+    /// Returns an error if path traversal is detected, if the file cannot be
+    ---⋯
+    /// read, or if the patch application itself fails.
+    ---⋯
+    pub fn apply_block(&amp;self, block: &amp;PatchBlock) -&gt; Result&lt;ApplyResult&gt;
+    ---⋯
+    fn apply_classic_block(
+            &amp;self,
+            block: &amp;PatchBlock,
+            original_content: &amp;str,
+            target_path: &amp;Path,
+        ) -&gt; Result&lt;ApplyResult&gt;
+    ---⋯
+    fn apply_replace_block(
+            &amp;self,
+            block: &amp;PatchBlock,
+            original_content: &amp;str,
+            target_path: &amp;Path,
+        ) -&gt; Result&lt;ApplyResult&gt;
+    ---⋯
+    fn apply_regex_block(
+            &amp;self,
+            block: &amp;PatchBlock,
+            original_content: &amp;str,
+            target_path: &amp;Path,
+        ) -&gt; Result&lt;ApplyResult&gt;
+  </file>
+  <file path="core/src/engine/backup.rs">
+    use crate::error::{ErrorCode, PatchError, Result};
+    ---⋯
+    use chrono::Local;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::{Path, PathBuf};
+    ---⋯
+    /// Creates a timestamped backup of specified files within a base directory.
+    ---⋯
+    ///
+    ---⋯
+    /// # Panics
+    ---⋯
+    ///
+    ---⋯
+    /// Panics if `base` is not a directory.
+    ---⋯
+    ///
+    ---⋯
+    /// # Errors
+    ---⋯
+    ///
+    ---⋯
+    /// Returns an error if the backup directory or any parent directories for
+    ---⋯
+    /// backed-up files cannot be created, or if a file copy operation fails.
+    ---⋯
+    pub fn create_backup(base: &amp;Path, files_to_backup: &amp;[PathBuf]) -&gt; Result&lt;PathBuf&gt;
+  </file>
+  <file path="core/src/engine/match/match_exact.rs">
+    use super::{MatchResult, Logger};
+    ---⋯
+    pub enum ExactMatch {
+        None,
+        Unique(MatchResult),
+        Ambiguous,
+    }
+    ---⋯
+    /// Tier 1: Fast path for an exact substring match.
+    ---⋯
+    pub fn try_exact_match(haystack: &amp;str, needle: &amp;str, logger: &amp;Logger) -&gt; ExactMatch
+  </file>
+  <file path="core/src/engine/match/match_fuzzy.rs">
+    use super::{
+        match_normalize::{
+            normalize_horizontal_whitespace, normalize_newlines, normalize_relative_indent,
+        },
+        Logger, MatchResult,
+    };
+    ---⋯
+    use crate::error::{ErrorCode, PatchError, Result};
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    use strsim::normalized_damerau_levenshtein as ndl;
+    ---⋯
+    /// Tiers 2, 3, and 4: Finds the best fuzzy match for the needle in the haystack.
+    ---⋯
+    pub fn find_fuzzy_match(
+        haystack: &amp;str,
+        needle: &amp;str,
+        line_ranges: &amp;[(usize, usize)],
+        min_score: f64,
+        logger: &amp;Logger,
+    ) -&gt; Result&lt;MatchResult&gt;
+    ---⋯
+    // Tier 2: Whitespace-Normalized Equality
+    ---⋯
+    // Tier 3: Relative-Indentation-Normalized Equality
+    ---⋯
+    // Tier 4: Damerau-Levenshtein Fuzzy Search
+  </file>
+  <file path="core/src/engine/match/match_normalize.rs">
+    /// Returns a vector of (`start_byte`, `end_byte`) for each line in the string.
+    ---⋯
+    /// The `end_byte` includes the newline characters.
+    ---⋯
+    pub fn line_ranges(s: &amp;str) -&gt; Vec&lt;(usize, usize)&gt;
+    ---⋯
+    /// Normalizes all line endings to a single `\n` (LF).
+    ---⋯
+    pub fn normalize_newlines(s: &amp;str) -&gt; String
+    ---⋯
+    /// Normalizes horizontal whitespace (spaces, tabs) on each line.
+    ---⋯
+    pub fn normalize_horizontal_whitespace(s: &amp;str) -&gt; String
+    ---⋯
+    /// Normalizes indentation by removing the common leading whitespace from all non-empty lines.
+    ---⋯
+    pub fn normalize_relative_indent(s: &amp;str) -&gt; String
+  </file>
+  <file path="core/src/engine/match/mod.rs">
+    use crate::error::{ErrorCode, PatchError, Result};
+    ---⋯
+    use crate::logger::Logger;
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    mod match_exact;
+    ---⋯
+    mod match_fuzzy;
+    ---⋯
+    mod match_normalize;
+    ---⋯
+    pub struct MatchResult {
+        pub start_byte: usize,
+        pub end_byte: usize,
+        pub score: f64,
+    }
+    ---⋯
+    /// Top-level matching strategy. Implements the progressive fallback logic.
+    ---⋯
+    ///
+    ---⋯
+    /// # Panics
+    ---⋯
+    ///
+    ---⋯
+    /// Panics if `min_score` is not between 0.1 and 1.0.
+    ---⋯
+    ///
+    ---⋯
+    /// # Errors
+    ---⋯
+    ///
+    ---⋯
+    /// Returns an error if no suitable match can be found for the `needle`.
+    ---⋯
+    pub fn find_best_match(
+        haystack: &amp;str,
+        needle: &amp;str,
+        min_score: f64,
+        logger: &amp;Logger,
+    ) -&gt; Result&lt;MatchResult&gt;
+    ---⋯
+    // Proceed to fuzzy matching
+  </file>
+  <file path="core/src/engine/mod.rs">
+    // This file acts as the public API for the engine module.
+    ---⋯
+    pub mod apply;
+    ---⋯
+    pub mod backup;
+    ---⋯
+    pub mod r#match;
+    ---⋯
+    // Using r# to allow `match` as a module name
+  </file>
+  <file path="core/src/error.rs">
+    use std::path::PathBuf;
+    ---⋯
+    use thiserror::Error;
+    ---⋯
+    pub type Result&lt;T&gt; = std::result::Result&lt;T, PatchError&gt;;
+    ---⋯
+    pub enum ErrorCode {
+        // --- Session &amp; State ---
+        SessionReadFailed,
+        SessionWriteFailed,
+        SessionCorrupt,
+    
+        // --- Parsing ---
+        ParseFailed,
+        NoBlocksFound,
+    
+        // --- Application ---
+        NoMatch,
+        AmbiguousMatch,
+        RegexError,
+    
+        // --- File I/O ---
+        FileReadFailed,
+        FileWriteFailed,
+        BackupFailed,
+    
+        // --- Validation ---
+        ValidationFailed,
+        BoundsExceeded,
+        PathTraversal,
+    }
+    ---⋯
+    // --- Session &amp; State ---
+    ---⋯
+    // --- Parsing ---
+    ---⋯
+    // --- Application ---
+    ---⋯
+    // --- File I/O ---
+    ---⋯
+    // --- Validation ---
+    ---⋯
+    pub enum PatchError {
+        #[error("Session Error: {message} (path: {path:?})")]
+        Session { code: ErrorCode, message: String, path: PathBuf },
+    
+        #[error("Validation Error: {message} (context: {context})")]
+        Validation { code: ErrorCode, message: String, context: String },
+    
+        #[error("File Error: {message} (path: {path:?})")]
+        File { code: ErrorCode, message: String, path: PathBuf },
+    
+        #[error("Parse Error: {message} (context: {context})")]
+        Parse { code: ErrorCode, message: String, context: String },
+    
+        #[error("Apply Error: {message} (file: {file:?})")]
+        Apply { code: ErrorCode, message: String, file: PathBuf },
+    }
+  </file>
+  <file path="core/src/lib.rs">
+    // Top-level modules reflecting the new architecture
+    ---⋯
+    pub mod engine;
+    ---⋯
+    pub mod error;
+    ---⋯
+    pub mod logger;
+    ---⋯
+    pub mod parse;
+    ---⋯
+    pub mod session;
+  </file>
+  <file path="core/src/logger.rs">
+    use chrono::Utc;
+    ---⋯
+    use serde_json::json;
+    ---⋯
+    pub struct Logger {
+        rid: u64,
+    }
+    ---⋯
+    impl Logger
+    ---⋯
+    /// Creates a new `Logger`.
+    ---⋯
+    ///
+    ---⋯
+    /// # Panics
+    ---⋯
+    ///
+    ---⋯
+    /// Panics if `rid` is zero.
+    ---⋯
+    pub fn new(rid: u64) -&gt; Self
+    ---⋯
+    pub fn info(&amp;self, subsystem: &amp;str, action: &amp;str, message: &amp;str)
+    ---⋯
+    pub fn error(&amp;self, subsystem: &amp;str, action: &amp;str, message: &amp;str)
+    ---⋯
+    fn emit(&amp;self, level: &amp;str, subsystem: &amp;str, action: &amp;str, message: &amp;str)
+  </file>
+  <file path="core/src/parse/mod.rs">
+    use crate::error::{ErrorCode, PatchError, Result};
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    pub mod parse_classic;
+    ---⋯
+    pub enum PatchMode {
+        Classic,
+        Replace,
+        Regex,
+    }
+    ---⋯
+    pub struct PatchBlock {
+        pub file: PathBuf,
+        pub mode: PatchMode,
+        pub from: String,
+        pub to: String,
+        pub fuzz: f64,
+    }
+    ---⋯
+    pub struct Parser;
+    ---⋯
+    impl Parser
+    ---⋯
+    pub fn new() -&gt; Self
+    ---⋯
+    /// Parses an input string for patch blocks.
+    ---⋯
+    ///
+    ---⋯
+    /// # Panics
+    ---⋯
+    ///
+    ---⋯
+    /// Panics if the input string size exceeds 100MB.
+    ---⋯
+    ///
+    ---⋯
+    /// # Errors
+    ---⋯
+    ///
+    ---⋯
+    /// Returns an error if the number of blocks exceeds `MAX_BLOCKS` or if no
+    ---⋯
+    /// valid blocks are found.
+    ---⋯
+    pub fn parse(&amp;self, input: &amp;str) -&gt; Result&lt;Vec&lt;PatchBlock&gt;&gt;
+  </file>
+  <file path="core/src/parse/parse_classic.rs">
+    use super::{PatchBlock, PatchMode};
+    ---⋯
+    use crate::error::{ErrorCode, PatchError, Result};
+    ---⋯
+    use regex::Regex;
+    ---⋯
+    use std::iter::Peekable;
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    use std::str::Lines;
+    ---⋯
+    /// Parses a classic patch block, now supporting `mode=replace` and `mode=regex`.
+    ---⋯
+    ///
+    ---⋯
+    /// # Panics
+    ---⋯
+    ///
+    ---⋯
+    /// Panics if the header regex fails to compile.
+    ---⋯
+    ///
+    ---⋯
+    /// # Errors
+    ---⋯
+    ///
+    ---⋯
+    /// Returns an error if the block has an invalid header format or is missing
+    ---⋯
+    /// expected markers (`--- from`, `--- to`, `&lt;&lt;&lt;`).
+    ---⋯
+    pub fn parse_classic_block(lines: &amp;mut Peekable&lt;Lines&lt;'_&gt;&gt;) -&gt; Result&lt;PatchBlock&gt;
+    ---⋯
+    fn consume_until_marker&lt;'a&gt;(
+        lines: &amp;mut Peekable&lt;Lines&lt;'a&gt;&gt;,
+        marker: &amp;str,
+    ) -&gt; Vec&lt;&amp;'a str&gt;
+    ---⋯
+    fn consume_marker(
+        lines: &amp;mut Peekable&lt;Lines&lt;'_&gt;&gt;,
+        expected_marker: &amp;str,
+        context_file: &amp;str,
+    ) -&gt; Result&lt;()&gt;
+    ---⋯
+    fn consume_end_marker(lines: &amp;mut Peekable&lt;Lines&lt;'_&gt;&gt;, context_file: &amp;str) -&gt; Result&lt;()&gt;
+  </file>
+  <file path="core/src/session/mod.rs">
+    // This module is intentionally left mostly empty after the pivot.
+    ---⋯
+    // It now only contains the prompts submodule.
+    ---⋯
+    pub mod prompts;
+    ---⋯
+    pub mod state;
+  </file>
+  <file path="core/src/session/prompts.rs">
+    use super::state::SessionState;
+    ---⋯
+    use std::fmt::Write;
+    ---⋯
+    /// Builds the dynamic session briefing for the AI based on current state.
+    ---⋯
+    pub fn build_session_briefing(session: &amp;SessionState) -&gt; String
+  </file>
+  <file path="core/src/session/state.rs">
+    use chrono::{DateTime, Utc};
+    ---⋯
+    use serde::{Deserialize, Serialize};
+    ---⋯
+    use std::collections::HashMap;
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    pub struct SessionState {
+        pub last_refresh_ts: DateTime&lt;Utc&gt;,
+        pub exchange_count: u32,
+        pub total_errors: u32,
+        pub file_metrics: HashMap&lt;PathBuf, FileMetrics&gt;,
+        pub keystone_files: Vec&lt;PathBuf&gt;,
+        #[serde(skip)]
+        pub project_root: PathBuf,
+    }
+    ---⋯
+    pub struct FileMetrics {
+        pub original_hash: String,
+        pub patch_count: u32,
+    }
+    ---⋯
+    impl SessionState
+    ---⋯
+    /// Creates a new, empty session state for a given project root.
+    ---⋯
+    pub fn new(project_root: PathBuf) -&gt; Self
+  </file>
+  <file path="gauntlet/src/main.rs">
+    use anyhow::{anyhow, Result};
+    ---⋯
+    use applydiff_backend::commands::{self, AppState};
+    ---⋯
+    use applydiff_core::session::state::SessionState;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::{Path, PathBuf};
+    ---⋯
+    use std::sync::Mutex;
+    ---⋯
+    use tempfile::TempDir;
+    ---⋯
+    struct TestContext {
+        _temp_dir: TempDir,
+        project_root: PathBuf,
+        app_state: AppState,
+    }
+    ---⋯
+    struct Test {
+        name: &amp;'static str,
+        run: fn() -&gt; Result&lt;()&gt;,
+    }
+    ---⋯
+    macro_rules! tests {
+        ($($test_name:ident),*) =&gt; { [ $(Test { name: stringify!($test_name), run: $test_name }),* ] };
+    }
+    ---⋯
+    fn main()
+    ---⋯
+    fn a1_whole_file_parser() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn a2_regex_parser() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn a3_session_initialization() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn a4_initial_state_check() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn b1_pe_tracking_no_match() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn b2_pe_tracking_ambiguous_match() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn b3_successful_patch_metrics() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn c1_automated_file_request_path() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn c2_automated_file_request_range() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn c3_automated_file_request_symbol() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn c4_dynamic_briefing_content() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn c5_threshold_enforcement_error_block() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn c6_threshold_enforcement_exchange_block() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn c7_session_refresh() -&gt; Result&lt;()&gt;
+    ---⋯
+    fn setup_project(files: &amp;[(&amp;str, &amp;str)]) -&gt; Result&lt;TestContext&gt;
+    ---⋯
+    // Create an owned PathBuf immediately.
+    ---⋯
+    fn read_session_state(project_root: &amp;Path) -&gt; Result&lt;SessionState&gt;
+  </file>
+  <file path="saccade/cli/src/main.rs">
+    use anyhow::Result;
+    ---⋯
+    use clap::Parser;
+    ---⋯
+    use saccade_core::config::{Config, GitMode};
+    ---⋯
+    use saccade_core::SaccadePack;
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    struct Cli {
+        #[arg(short, long, default_value = "ai-pack")]
+        out: PathBuf,
+        #[arg(long, default_value = "3")]
+        max_depth: usize,
+        #[arg(long)]
+        git_only: bool,
+        #[arg(long)]
+        no_git: bool,
+        #[arg(long)]
+        code_only: bool,
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        verbose: bool,
+    }
+    ---⋯
+    fn main() -&gt; Result&lt;()&gt;
+  </file>
+  <file path="saccade/core/src/config.rs">
+    use crate::error::{Result, SaccadeError};
+    ---⋯
+    use regex::Regex;
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    pub enum GitMode { Auto, Yes, No }
+    ---⋯
+    pub struct Config {
+        pub pack_dir: PathBuf,
+        pub max_depth: usize,
+        pub git_mode: GitMode,
+        pub include_patterns: Vec&lt;Regex&gt;,
+        pub exclude_patterns: Vec&lt;Regex&gt;,
+        pub code_only: bool,
+        pub dry_run: bool,
+        pub verbose: bool,
+    }
+    ---⋯
+    impl Config
+    ---⋯
+    pub fn new() -&gt; Self
+    ---⋯
+    pub fn validate(&amp;self) -&gt; Result&lt;()&gt;
+    ---⋯
+    pub fn parse_patterns(input: &amp;str) -&gt; Result&lt;Vec&lt;Regex&gt;&gt;
+    ---⋯
+    impl Default for Config
+    ---⋯
+    fn default() -&gt; Self
+  </file>
+  <file path="saccade/core/src/detection.rs">
+    use crate::error::Result;
+    ---⋯
+    use std::collections::HashSet;
+    ---⋯
+    use std::fmt;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::Path;
+    ---⋯
+    use tree_sitter::{Parser, Query};
+    ---⋯
+    pub enum BuildSystemType { Rust, Node, Python, Go, CMake, Conan }
+    ---⋯
+    impl fmt::Display for BuildSystemType
+    ---⋯
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result
+    ---⋯
+    pub struct Detector;
+    ---⋯
+    impl Detector
+    ---⋯
+    pub fn new() -&gt; Self
+    ---⋯
+    pub fn detect_build_systems(&amp;self, files: &amp;[std::path::PathBuf]) -&gt; Result&lt;Vec&lt;BuildSystemType&gt;&gt;
+    ---⋯
+    fn is_cmake_validated(&amp;self, path: &amp;Path) -&gt; Result&lt;bool&gt;
+  </file>
+  <file path="saccade/core/src/enumerate.rs">
+    use crate::config::{Config, PRUNE_DIRS};
+    ---⋯
+    use crate::error::{Result, SaccadeError};
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    use std::process::Command;
+    ---⋯
+    use walkdir::WalkDir;
+    ---⋯
+    pub struct FileEnumerator { config: Config }
+    ---⋯
+    impl FileEnumerator
+    ---⋯
+    pub fn new(config: Config) -&gt; Self
+    ---⋯
+    pub fn enumerate(&amp;self) -&gt; Result&lt;Vec&lt;PathBuf&gt;&gt;
+    ---⋯
+    use crate::config::GitMode;
+    ---⋯
+    fn in_git_repo(&amp;self) -&gt; Result&lt;bool&gt;
+    ---⋯
+    fn git_ls_files(&amp;self) -&gt; Result&lt;Vec&lt;PathBuf&gt;&gt;
+    ---⋯
+    fn walk_all_files(&amp;self) -&gt; Result&lt;Vec&lt;PathBuf&gt;&gt;
+  </file>
+  <file path="saccade/core/src/error.rs">
+    use std::path::PathBuf;
+    ---⋯
+    use thiserror::Error;
+    ---⋯
+    pub enum SaccadeError {
+        #[error("I/O error: {source} (path: {path})")]
+        Io { source: std::io::Error, path: PathBuf },
+        #[error("Invalid configuration: {field} = {value} ({reason})")]
+        InvalidConfig { field: String, value: String, reason: String },
+        #[error("Mutex lock failed: a thread panicked while holding the lock")]
+        MutexPoisoned,
+        #[error("Generic error: {0}")]
+        Other(String),
+    }
+    ---⋯
+    pub type Result&lt;T&gt; = std::result::Result&lt;T, SaccadeError&gt;;
+    ---⋯
+    impl From&lt;std::io::Error&gt; for SaccadeError
+    ---⋯
+    fn from(source: std::io::Error) -&gt; Self
+    ---⋯
+    impl From&lt;walkdir::Error&gt; for SaccadeError
+    ---⋯
+    fn from(e: walkdir::Error) -&gt; Self
+  </file>
+  <file path="saccade/core/src/filter.rs">
+    use crate::config::{Config, BIN_EXT_PATTERN, CODE_BARE_PATTERN, CODE_EXT_PATTERN, SECRET_PATTERN};
+    ---⋯
+    use crate::error::Result;
+    ---⋯
+    use regex::Regex;
+    ---⋯
+    use std::path::Path;
+    ---⋯
+    pub struct FileFilter {
+        config: Config,
+        bin_ext_re: Regex,
+        secret_re: Regex,
+        code_ext_re: Option&lt;Regex&gt;,
+        code_bare_re: Option&lt;Regex&gt;,
+    }
+    ---⋯
+    impl FileFilter
+    ---⋯
+    pub fn new(config: Config) -&gt; Result&lt;Self&gt;
+    ---⋯
+    pub fn filter(&amp;self, files: Vec&lt;std::path::PathBuf&gt;) -&gt; Vec&lt;std::path::PathBuf&gt;
+    ---⋯
+    fn should_keep(&amp;self, path: &amp;Path) -&gt; bool
+  </file>
+  <file path="saccade/core/src/guide.rs">
+    use crate::error::Result;
+    ---⋯
+    use std::path::Path;
+    ---⋯
+    pub struct GuideGenerator;
+    ---⋯
+    impl GuideGenerator
+    ---⋯
+    pub fn new() -&gt; Self
+    ---⋯
+    pub fn generate_guide(&amp;self) -&gt; Result&lt;String&gt;
+    ---⋯
+    pub fn print_guide(&amp;self, pack_dir: &amp;Path, _has_deps: bool) -&gt; Result&lt;()&gt;
+  </file>
+  <file path="saccade/core/src/heuristics.rs">
+    use crate::config::{CODE_BARE_PATTERN, CODE_EXT_PATTERN};
+    ---⋯
+    use once_cell::sync::Lazy;
+    ---⋯
+    use regex::Regex;
+    ---⋯
+    use std::collections::HashMap;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::Path;
+    ---⋯
+    pub struct HeuristicFilter;
+    ---⋯
+    impl HeuristicFilter
+    ---⋯
+    pub fn new() -&gt; Self
+    ---⋯
+    pub fn filter(&amp;self, files: Vec&lt;std::path::PathBuf&gt;) -&gt; Vec&lt;std::path::PathBuf&gt;
+    ---⋯
+    fn should_keep(&amp;self, path: &amp;Path) -&gt; bool
+    ---⋯
+    fn calculate_entropy(path: &amp;Path) -&gt; std::io::Result&lt;f64&gt;
+  </file>
+  <file path="saccade/core/src/lib.rs">
+    // In saccade/core/src/lib.rs
+    ---⋯
+    pub mod config;
+    ---⋯
+    pub mod detection;
+    ---⋯
+    pub mod enumerate;
+    ---⋯
+    pub mod error;
+    ---⋯
+    pub mod filter;
+    ---⋯
+    pub mod guide;
+    ---⋯
+    pub mod heuristics;
+    ---⋯
+    pub mod manifest;
+    ---⋯
+    pub mod parser;
+    ---⋯
+    pub mod request;
+    ---⋯
+    pub mod stage0;
+    ---⋯
+    pub mod stage1;
+    ---⋯
+    pub mod stage2;
+    ---⋯
+    use config::Config;
+    ---⋯
+    use detection::Detector;
+    ---⋯
+    use enumerate::FileEnumerator;
+    ---⋯
+    use error::{Result, SaccadeError};
+    ---⋯
+    use filter::FileFilter;
+    ---⋯
+    use guide::GuideGenerator;
+    ---⋯
+    use heuristics::HeuristicFilter;
+    ---⋯
+    use manifest::{ManifestGenerator, ProjectInfoContext};
+    ---⋯
+    use stage0::Stage0Generator;
+    ---⋯
+    use stage1::Stage1Generator;
+    ---⋯
+    use stage2::Stage2Generator;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    use std::process::Command;
+    ---⋯
+    pub struct SaccadePack {
+        config: Config,
+    }
+    ---⋯
+    struct PackContent {
+        project: String,
+        structure: String,
+        apis: String,
+        deps: String,
+        guide: String,
+    }
+    ---⋯
+    impl SaccadePack
+    ---⋯
+    pub fn new(config: Config) -&gt; Self
+    ---⋯
+    pub fn generate(&amp;self) -&gt; Result&lt;()&gt;
+    ---⋯
+    fn enumerate_and_filter_files(&amp;self) -&gt; Result&lt;(usize, Vec&lt;PathBuf&gt;)&gt;
+    ---⋯
+    fn prepare_output_directory(&amp;self) -&gt; Result&lt;()&gt;
+    ---⋯
+    fn generate_pack_content(&amp;self, raw_count: usize, files: &amp;[PathBuf], rust_crates: &amp;[PathBuf], frontend_dirs: &amp;[PathBuf], detected_systems: &amp;[detection::BuildSystemType]) -&gt; Result&lt;PackContent&gt;
+    ---⋯
+    fn write_pack_file(&amp;self, content: &amp;PackContent, _filtered_files: &amp;[PathBuf]) -&gt; Result&lt;()&gt;
+    ---⋯
+    fn generate_stage2(&amp;self, filtered_files: &amp;[PathBuf]) -&gt; Result&lt;Option&lt;String&gt;&gt;
+    ---⋯
+    fn print_summary(&amp;self, filtered_files: &amp;[PathBuf], has_deps: bool, stage2_result: &amp;Result&lt;Option&lt;String&gt;&gt;) -&gt; Result&lt;()&gt;
+    ---⋯
+    fn print_dry_run_stats(&amp;self, filtered_count: usize, rust_crates: &amp;[PathBuf], frontend_dirs: &amp;[PathBuf]) -&gt; Result&lt;()&gt;
+    ---⋯
+    fn is_in_git_repo() -&gt; bool
+  </file>
+  <file path="saccade/core/src/manifest.rs">
+    use crate::config::Config;
+    ---⋯
+    use crate::detection::BuildSystemType;
+    ---⋯
+    use crate::error::Result;
+    ---⋯
+    use crate::stage0::Stage0Generator;
+    ---⋯
+    use chrono::{DateTime, Local};
+    ---⋯
+    use std::path::{Path, PathBuf};
+    ---⋯
+    use std::process::Command;
+    ---⋯
+    pub struct ManifestGenerator { config: Config }
+    ---⋯
+    pub struct ProjectInfoContext&lt;'a&gt; {
+        pub raw_count: usize,
+        pub filtered_count: usize,
+        pub pack_dir: &amp;'a Path,
+        pub in_git: bool,
+        pub files: &amp;'a [PathBuf],
+        pub detected_systems: &amp;'a [BuildSystemType],
+    }
+    ---⋯
+    impl ManifestGenerator
+    ---⋯
+    pub fn new(config: Config) -&gt; Self
+    ---⋯
+    pub fn generate_project_info(&amp;self, ctx: &amp;ProjectInfoContext) -&gt; Result&lt;String&gt;
+    ---⋯
+    fn get_git_commit(&amp;self) -&gt; Option&lt;String&gt;
+  </file>
+  <file path="saccade/core/src/parser.rs">
+    use std::collections::{HashMap, HashSet};
+    ---⋯
+    use tree_sitter::{Node, Parser, Query, QueryCursor};
+    ---⋯
+    pub fn skeletonize_file(content: &amp;str, file_extension: &amp;str) -&gt; Option&lt;String&gt;
+  </file>
+  <file path="saccade/core/src/request.rs">
+    use glob::Pattern;
+    ---⋯
+    use serde::{Deserialize, Serialize};
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::{Path, PathBuf};
+    ---⋯
+    use thiserror::Error;
+    ---⋯
+    pub enum RequestError {
+        #[error("File not found: {0}")]
+        FileNotFound(String),
+        #[error("No files match pattern: {0}")]
+        NoMatches(String),
+        #[error("Invalid glob pattern: {0}")]
+        InvalidPattern(String),
+        #[error("Invalid line range: {0}")]
+        InvalidLineRange(String),
+        #[error("Symbol not found: {0}")]
+        SymbolNotFound(String),
+        #[error("I/O error: {0}")]
+        Io(#[from] std::io::Error),
+    }
+    ---⋯
+    pub type Result&lt;T&gt; = std::result::Result&lt;T, RequestError&gt;;
+    ---⋯
+    pub struct RequestFile {
+        #[serde(flatten)]
+        pub target: RequestTarget,
+        pub reason: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub range: Option&lt;RequestRange&gt;,
+    }
+    ---⋯
+    pub enum RequestTarget {
+        SinglePath { path: String },
+        Pattern { pattern: String },
+    }
+    ---⋯
+    pub enum RequestRange {
+        Lines { lines: String },
+        Symbol { symbol: String },
+    }
+    ---⋯
+    pub struct ResolvedRequest {
+        pub files: Vec&lt;FileContent&gt;,
+        pub reason: String,
+    }
+    ---⋯
+    pub struct FileContent {
+        pub path: PathBuf,
+        pub content: String,
+        pub range_info: Option&lt;String&gt;,
+    }
+    ---⋯
+    impl RequestFile
+    ---⋯
+    pub fn resolve(&amp;self, available_files: &amp;[PathBuf], base_dir: &amp;Path) -&gt; Result&lt;ResolvedRequest&gt;
+    ---⋯
+    fn find_matching_files(&amp;self, available_files: &amp;[PathBuf]) -&gt; Result&lt;Vec&lt;PathBuf&gt;&gt;
+    ---⋯
+    fn read_file_with_range(&amp;self, abs_path: &amp;Path, rel_path: &amp;Path) -&gt; Result&lt;FileContent&gt;
+    ---⋯
+    fn extract_line_range(&amp;self, content: &amp;str, range_spec: &amp;str) -&gt; Result&lt;(String, String)&gt;
+    ---⋯
+    // Convert 1-based line numbers to 0-based indices for slicing.
+    ---⋯
+    // `lines` is 0-indexed. A request for line `1` is index `0`.
+    ---⋯
+    // A range `start..end` in Rust is exclusive of `end`.
+    ---⋯
+    // So for "2-4", we want indices 1, 2, 3. The slice is `[1..4]`.
+    ---⋯
+    fn extract_symbol(&amp;self, content: &amp;str, symbol: &amp;str) -&gt; Result&lt;(String, String)&gt;
+    ---⋯
+    impl ResolvedRequest
+    ---⋯
+    pub fn to_markdown(&amp;self) -&gt; String
+  </file>
+  <file path="saccade/core/src/stage0.rs">
+    use crate::config::Config;
+    ---⋯
+    use crate::error::Result;
+    ---⋯
+    use std::collections::{BTreeSet, BTreeMap};
+    ---⋯
+    use std::fs;
+    ---⋯
+    pub struct Stage0Generator { config: Config }
+    ---⋯
+    impl Stage0Generator
+    ---⋯
+    pub fn new(config: Config) -&gt; Self
+    ---⋯
+    pub fn generate_combined_structure(&amp;self, files: &amp;[std::path::PathBuf], detected_systems: &amp;[crate::detection::BuildSystemType]) -&gt; Result&lt;String&gt;
+    ---⋯
+    pub fn generate_languages(&amp;self, files: &amp;[std::path::PathBuf]) -&gt; Result&lt;String&gt;
+  </file>
+  <file path="saccade/core/src/stage1.rs">
+    use crate::detection::BuildSystemType;
+    ---⋯
+    use crate::error::Result;
+    ---⋯
+    use regex::Regex;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::PathBuf;
+    ---⋯
+    use std::process::Command;
+    ---⋯
+    pub struct Stage1Generator;
+    ---⋯
+    impl Stage1Generator
+    ---⋯
+    pub fn new() -&gt; Self
+    ---⋯
+    pub fn generate_combined_apis(&amp;self, rust_crates: &amp;[PathBuf], frontend_dirs: &amp;[PathBuf], file_index: &amp;[PathBuf]) -&gt; Result&lt;String&gt;
+    ---⋯
+    /* Placeholder */
+    ---⋯
+    pub fn find_rust_crates(&amp;self) -&gt; Result&lt;Vec&lt;PathBuf&gt;&gt;
+    ---⋯
+    /* Placeholder */
+    ---⋯
+    pub fn find_frontend_dirs(&amp;self) -&gt; Result&lt;Vec&lt;PathBuf&gt;&gt;
+    ---⋯
+    /* Placeholder */
+    ---⋯
+    pub fn generate_all_deps(&amp;self, detected_systems: &amp;[BuildSystemType]) -&gt; Result&lt;String&gt;
+    ---⋯
+    /* Placeholder */
+  </file>
+  <file path="saccade/core/src/stage2.rs">
+    use crate::error::{Result, SaccadeError};
+    ---⋯
+    use crate::parser;
+    ---⋯
+    use rayon::prelude::*;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::{Path, PathBuf};
+    ---⋯
+    use std::sync::Mutex;
+    ---⋯
+    use std::panic;
+    ---⋯
+    pub struct Stage2Generator { verbose: bool }
+    ---⋯
+    type ParseResult = (PathBuf, String);
+    ---⋯
+    impl Stage2Generator
+    ---⋯
+    pub fn new() -&gt; Self
+    ---⋯
+    pub fn with_verbose(mut self, verbose: bool) -&gt; Self
+    ---⋯
+    pub fn generate(&amp;self, files: &amp;[PathBuf], output_path: &amp;Path) -&gt; Result&lt;Option&lt;String&gt;&gt;
+  </file>
+</files>

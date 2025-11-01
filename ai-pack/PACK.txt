@@ -1,0 +1,870 @@
+=======PROJECT=======
+========================================
+PROJECT OVERVIEW
+========================================
+
+Generated: 2025-10-31 21:20:04 -07:00
+Output dir: ai-pack
+
+STATS
+------
+- files.raw: 60
+- files.kept: 60
+- code_only: false
+- max_depth: 3
+
+TOOLS & BUILD SYSTEMS
+----------------------
+- tools.git: true
+- git.commit: a534975
+- detected_build_systems: [Rust]
+
+WHAT'S IN THE PACK
+-------------------
+1. GUIDE.txt               - How to use the pack
+2. PROJECT.txt             - Overview, metadata
+3. STRUCTURE.txt           - Directory tree, file index, token heatmap
+4. APIS.txt                - API surfaces (Rust/TS/Python/Go)
+5. DEPS.txt (optional)     - Dependencies (from `cargo tree`)
+6. PACK_STAGE2_COMPRESSED.xml (optional) - Compressed skeleton if repomix present
+
+LANGUAGE STATISTICS
+========================================
+
+Language/Extension Snapshot
+
+| Extension | Files |
+|----------:|------:|
+| rs | 35 |
+| js | 7 |
+| toml | 7 |
+| json | 6 |
+| (noext) | 2 |
+| css | 1 |
+| html | 1 |
+| md | 1 |
+
+Total files: 60
+
+=======END-OF-PROJECT=======
+
+=======STRUCTURE=======
+========================================
+DIRECTORY TREE
+========================================
+
+Directories (depth <= 3, with detected project roots):
+
+.  <-- [Rust Project]
+_backend  <-- [Rust Project]
+_backend/gen
+_backend/gen/schemas
+_backend/src
+app
+app/lib
+app/panels
+core  <-- [Rust Project]
+core/src
+core/src/engine
+core/src/parse
+core/src/session
+gauntlet  <-- [Rust Project]
+gauntlet/src
+saccade  <-- [Rust Project]
+saccade/cli  <-- [Rust Project]
+saccade/cli/src
+saccade/core  <-- [Rust Project]
+saccade/core/src
+
+========================================
+FILE INDEX
+========================================
+
+All files (n = 60):
+
+.gitignore
+Cargo.toml
+_backend/Cargo.toml
+_backend/build.rs
+_backend/gen/schemas/acl-manifests.json
+_backend/gen/schemas/capabilities.json
+_backend/gen/schemas/desktop-schema.json
+_backend/gen/schemas/linux-schema.json
+_backend/gen/schemas/windows-schema.json
+_backend/src/commands.rs
+_backend/src/lib.rs
+_backend/src/main.rs
+_backend/tauri.conf.json
+app/index.html
+app/lib/app-state.js
+app/lib/tauri-bridge.js
+app/lib/ui-helpers.js
+app/panels/ConsolePanel.js
+app/panels/DiffPanel.js
+app/panels/HistoryPanel.js
+app/panels/PatchPanel.js
+app/styles.css
+core/Cargo.toml
+core/src/engine/apply.rs
+core/src/engine/backup.rs
+core/src/engine/match/match_exact.rs
+core/src/engine/match/match_fuzzy.rs
+core/src/engine/match/match_normalize.rs
+core/src/engine/match/mod.rs
+core/src/engine/mod.rs
+core/src/error.rs
+core/src/lib.rs
+core/src/logger.rs
+core/src/parse/mod.rs
+core/src/parse/parse_classic.rs
+core/src/session/mod.rs
+core/src/session/prompts.rs
+core/src/session/state.rs
+gauntlet/Cargo.toml
+gauntlet/src/main.rs
+roadmap.md
+saccade/Cargo.toml
+saccade/LICENSE
+saccade/cli/Cargo.toml
+saccade/cli/src/main.rs
+saccade/core/Cargo.toml
+saccade/core/src/config.rs
+saccade/core/src/detection.rs
+saccade/core/src/enumerate.rs
+saccade/core/src/error.rs
+saccade/core/src/filter.rs
+saccade/core/src/guide.rs
+saccade/core/src/heuristics.rs
+saccade/core/src/lib.rs
+saccade/core/src/manifest.rs
+saccade/core/src/parser.rs
+saccade/core/src/request.rs
+saccade/core/src/stage0.rs
+saccade/core/src/stage1.rs
+saccade/core/src/stage2.rs
+
+========================================
+TOKEN HEATMAP
+========================================
+
+Size estimates (bytes → ~tokens via /3.5). Top 50:
+
+      120821 bytes  ~   34520 tokens  _backend/gen/schemas/desktop-schema.json
+      120821 bytes  ~   34520 tokens  _backend/gen/schemas/linux-schema.json
+      120821 bytes  ~   34520 tokens  _backend/gen/schemas/windows-schema.json
+       68532 bytes  ~   19580 tokens  _backend/gen/schemas/acl-manifests.json
+       12752 bytes  ~    3643 tokens  _backend/src/commands.rs
+        8325 bytes  ~    2378 tokens  roadmap.md
+        8160 bytes  ~    2331 tokens  gauntlet/src/main.rs
+        6470 bytes  ~    1848 tokens  app/styles.css
+        6114 bytes  ~    1746 tokens  saccade/core/src/request.rs
+        5693 bytes  ~    1626 tokens  saccade/core/src/lib.rs
+        5343 bytes  ~    1526 tokens  core/src/engine/apply.rs
+        4385 bytes  ~    1252 tokens  app/lib/tauri-bridge.js
+        4196 bytes  ~    1198 tokens  core/src/parse/parse_classic.rs
+        4102 bytes  ~    1172 tokens  core/src/engine/match/match_fuzzy.rs
+        4044 bytes  ~    1155 tokens  app/panels/PatchPanel.js
+        3232 bytes  ~     923 tokens  app/index.html
+        2822 bytes  ~     806 tokens  saccade/core/src/parser.rs
+        2803 bytes  ~     800 tokens  app/lib/ui-helpers.js
+        2714 bytes  ~     775 tokens  saccade/core/src/detection.rs
+        2161 bytes  ~     617 tokens  core/src/engine/match/mod.rs
+        2112 bytes  ~     603 tokens  app/panels/DiffPanel.js
+        2111 bytes  ~     603 tokens  core/src/parse/mod.rs
+        1967 bytes  ~     562 tokens  saccade/core/src/config.rs
+        1926 bytes  ~     550 tokens  saccade/core/src/stage0.rs
+        1920 bytes  ~     548 tokens  app/panels/ConsolePanel.js
+        1791 bytes  ~     511 tokens  core/src/engine/backup.rs
+        1784 bytes  ~     509 tokens  saccade/core/src/manifest.rs
+        1747 bytes  ~     499 tokens  saccade/core/src/enumerate.rs
+        1712 bytes  ~     489 tokens  saccade/core/src/stage2.rs
+        1673 bytes  ~     478 tokens  core/src/engine/match/match_normalize.rs
+        1628 bytes  ~     465 tokens  saccade/core/src/filter.rs
+        1413 bytes  ~     403 tokens  saccade/core/src/heuristics.rs
+        1357 bytes  ~     387 tokens  core/src/session/prompts.rs
+        1245 bytes  ~     355 tokens  core/src/error.rs
+        1237 bytes  ~     353 tokens  _backend/Cargo.toml
+        1153 bytes  ~     329 tokens  app/lib/app-state.js
+        1131 bytes  ~     323 tokens  _backend/tauri.conf.json
+        1075 bytes  ~     307 tokens  core/src/logger.rs
+        1069 bytes  ~     305 tokens  saccade/LICENSE
+         987 bytes  ~     282 tokens  core/src/engine/match/match_exact.rs
+         972 bytes  ~     277 tokens  saccade/cli/src/main.rs
+         963 bytes  ~     275 tokens  core/src/session/state.rs
+         824 bytes  ~     235 tokens  saccade/core/src/error.rs
+         809 bytes  ~     231 tokens  saccade/core/src/guide.rs
+         750 bytes  ~     214 tokens  _backend/src/lib.rs
+         728 bytes  ~     208 tokens  saccade/core/src/stage1.rs
+         671 bytes  ~     191 tokens  saccade/core/Cargo.toml
+         473 bytes  ~     135 tokens  core/Cargo.toml
+         451 bytes  ~     128 tokens  saccade/Cargo.toml
+         299 bytes  ~      85 tokens  gauntlet/Cargo.toml
+
+=======END-OF-STRUCTURE=======
+
+=======APIS=======
+========================================
+API SURFACE: RUST
+========================================
+
+saccade/core/src/config.rs:6:pub enum GitMode { Auto, Yes, No }
+saccade/core/src/config.rs:9:pub struct Config {
+saccade/core/src/config.rs:21:    pub fn new() -> Self {
+saccade/core/src/config.rs:34:    pub fn validate(&self) -> Result<()> {
+saccade/core/src/config.rs:45:    pub fn parse_patterns(input: &str) -> Result<Vec<Regex>> {
+saccade/core/src/config.rs:54:pub const PRUNE_DIRS: &[&str] = &[".git", "node_modules", "dist", "build", "target", "vendor"];
+saccade/core/src/config.rs:55:pub const BIN_EXT_PATTERN: &str = r"(?i)\.(png|jpe?g|gif|svg|ico|webp|woff2?|ttf|otf|pdf|mp4|mov|zip|gz|rar|bin|exe|dll|so|dylib)$";
+saccade/core/src/config.rs:56:pub const SECRET_PATTERN: &str = r"(?i)(^\.?env(\..*)?$|/\.?env(\..*)?$|(^|/)(id_rsa|id_ed25519|.*\.(pem|p12|jks|keystore|pfx))$)";
+saccade/core/src/config.rs:57:pub const CODE_EXT_PATTERN: &str = r"(?i)\.(c|h|cpp|hpp|rs|go|py|js|jsx|ts|tsx|java|kt|rb|php|sh|sql|html|xml|yaml|yml|toml|json|md)$";
+saccade/core/src/config.rs:58:pub const CODE_BARE_PATTERN: &str = r"(?i)(Makefile|Dockerfile|CMakeLists\.txt)$";
+saccade/core/src/detection.rs:9:pub enum BuildSystemType { Rust, Node, Python, Go, CMake, Conan }
+saccade/core/src/detection.rs:15:pub struct Detector;
+saccade/core/src/detection.rs:21:    pub fn new() -> Self { Self }
+saccade/core/src/detection.rs:23:    pub fn detect_build_systems(&self, files: &[std::path::PathBuf]) -> Result<Vec<BuildSystemType>> {
+saccade/core/src/enumerate.rs:7:pub struct FileEnumerator { config: Config }
+saccade/core/src/enumerate.rs:10:    pub fn new(config: Config) -> Self { Self { config } }
+saccade/core/src/enumerate.rs:11:    pub fn enumerate(&self) -> Result<Vec<PathBuf>> {
+saccade/core/src/error.rs:5:pub enum SaccadeError {
+saccade/core/src/error.rs:15:pub type Result<T> = std::result::Result<T, SaccadeError>;
+saccade/core/src/filter.rs:6:pub struct FileFilter {
+saccade/core/src/filter.rs:15:    pub fn new(config: Config) -> Result<Self> {
+saccade/core/src/filter.rs:26:    pub fn filter(&self, files: Vec<std::path::PathBuf>) -> Vec<std::path::PathBuf> {
+saccade/core/src/guide.rs:15:pub struct GuideGenerator;
+saccade/core/src/guide.rs:18:    pub fn new() -> Self { Self }
+saccade/core/src/guide.rs:19:    pub fn generate_guide(&self) -> Result<String> { Ok(GUIDE_CONTENT.to_string()) }
+saccade/core/src/guide.rs:20:    pub fn print_guide(&self, pack_dir: &Path, _has_deps: bool) -> Result<()> {
+saccade/core/src/heuristics.rs:11:pub struct HeuristicFilter;
+saccade/core/src/heuristics.rs:14:    pub fn new() -> Self { Self }
+saccade/core/src/heuristics.rs:15:    pub fn filter(&self, files: Vec<std::path::PathBuf>) -> Vec<std::path::PathBuf> {
+saccade/core/src/lib.rs:3:pub mod config;
+saccade/core/src/lib.rs:4:pub mod detection;
+saccade/core/src/lib.rs:5:pub mod enumerate;
+saccade/core/src/lib.rs:6:pub mod error;
+saccade/core/src/lib.rs:7:pub mod filter;
+saccade/core/src/lib.rs:8:pub mod guide;
+saccade/core/src/lib.rs:9:pub mod heuristics;
+saccade/core/src/lib.rs:10:pub mod manifest;
+saccade/core/src/lib.rs:11:pub mod parser;
+saccade/core/src/lib.rs:12:pub mod request;
+saccade/core/src/lib.rs:13:pub mod stage0;
+saccade/core/src/lib.rs:14:pub mod stage1;
+saccade/core/src/lib.rs:15:pub mod stage2;
+saccade/core/src/lib.rs:33:pub(crate) const PACK_FILE_NAME: &str = "PACK.txt";
+saccade/core/src/lib.rs:35:pub struct SaccadePack {
+saccade/core/src/lib.rs:48:    pub fn new(config: Config) -> Self { Self { config } }
+saccade/core/src/lib.rs:50:    pub fn generate(&self) -> Result<()> {
+saccade/core/src/manifest.rs:9:pub struct ManifestGenerator { config: Config }
+saccade/core/src/manifest.rs:10:pub struct ProjectInfoContext<'a> {
+saccade/core/src/manifest.rs:20:    pub fn new(config: Config) -> Self { Self { config } }
+saccade/core/src/manifest.rs:21:    pub fn generate_project_info(&self, ctx: &ProjectInfoContext) -> Result<String> {
+saccade/core/src/parser.rs:10:pub fn skeletonize_file(content: &str, file_extension: &str) -> Option<String> {
+saccade/core/src/request.rs:8:pub enum RequestError {
+saccade/core/src/request.rs:22:pub type Result<T> = std::result::Result<T, RequestError>;
+saccade/core/src/request.rs:25:pub struct RequestFile {
+saccade/core/src/request.rs:34:pub enum RequestTarget {
+saccade/core/src/request.rs:40:pub enum RequestRange {
+saccade/core/src/request.rs:45:pub struct ResolvedRequest {
+saccade/core/src/request.rs:50:pub struct FileContent {
+saccade/core/src/request.rs:57:    pub fn resolve(&self, available_files: &[PathBuf], base_dir: &Path) -> Result<ResolvedRequest> {
+saccade/core/src/request.rs:150:    pub fn to_markdown(&self) -> String {
+saccade/core/src/stage0.rs:6:pub struct Stage0Generator { config: Config }
+saccade/core/src/stage0.rs:9:    pub fn new(config: Config) -> Self { Self { config } }
+saccade/core/src/stage0.rs:10:    pub fn generate_combined_structure(&self, files: &[std::path::PathBuf], detected_systems: &[crate::detection::BuildSystemType]) -> Result<String> {
+saccade/core/src/stage0.rs:31:    pub fn generate_languages(&self, files: &[std::path::PathBuf]) -> Result<String> {
+saccade/core/src/stage1.rs:8:pub struct Stage1Generator;
+saccade/core/src/stage1.rs:11:    pub fn new() -> Self { Self }
+saccade/core/src/stage1.rs:12:    pub fn generate_combined_apis(&self, rust_crates: &[PathBuf], frontend_dirs: &[PathBuf], file_index: &[PathBuf]) -> Result<String> { Ok(String::new()) /* Placeholder */ }
+saccade/core/src/stage1.rs:13:    pub fn find_rust_crates(&self) -> Result<Vec<PathBuf>> { Ok(vec![]) /* Placeholder */ }
+saccade/core/src/stage1.rs:14:    pub fn find_frontend_dirs(&self) -> Result<Vec<PathBuf>> { Ok(vec![]) /* Placeholder */ }
+saccade/core/src/stage1.rs:15:    pub fn generate_all_deps(&self, detected_systems: &[BuildSystemType]) -> Result<String> { Ok(String::new()) /* Placeholder */ }
+saccade/core/src/stage2.rs:9:pub struct Stage2Generator { verbose: bool }
+saccade/core/src/stage2.rs:13:    pub fn new() -> Self { Self { verbose: false } }
+saccade/core/src/stage2.rs:14:    pub fn with_verbose(mut self, verbose: bool) -> Self { self.verbose = verbose; self }
+saccade/core/src/stage2.rs:16:    pub fn generate(&self, files: &[PathBuf], output_path: &Path) -> Result<Option<String>> {
+core/src/engine/apply.rs:9:pub struct ApplyResult {
+core/src/engine/apply.rs:15:pub struct Applier<'a> {
+core/src/engine/apply.rs:46:    pub fn new(logger: &'a Logger, project_root: PathBuf, dry_run: bool) -> Self {
+core/src/engine/apply.rs:64:    pub fn apply_block(&self, block: &PatchBlock) -> Result<ApplyResult> {
+core/src/engine/backup.rs:16:pub fn create_backup(base: &Path, files_to_backup: &[PathBuf]) -> Result<PathBuf> {
+core/src/engine/match/match_exact.rs:3:pub enum ExactMatch {
+core/src/engine/match/match_exact.rs:10:pub fn try_exact_match(haystack: &str, needle: &str, logger: &Logger) -> ExactMatch {
+core/src/engine/match/match_fuzzy.rs:12:pub fn find_fuzzy_match(
+core/src/engine/match/match_normalize.rs:3:pub fn line_ranges(s: &str) -> Vec<(usize, usize)> {
+core/src/engine/match/match_normalize.rs:19:pub fn normalize_newlines(s: &str) -> String {
+core/src/engine/match/match_normalize.rs:24:pub fn normalize_horizontal_whitespace(s: &str) -> String {
+core/src/engine/match/match_normalize.rs:34:pub fn normalize_relative_indent(s: &str) -> String {
+core/src/engine/match/mod.rs:10:pub struct MatchResult {
+core/src/engine/match/mod.rs:25:pub fn find_best_match(
+core/src/engine/mod.rs:3:pub mod apply;
+core/src/engine/mod.rs:4:pub mod backup;
+core/src/engine/mod.rs:5:pub mod r#match; // Using r# to allow `match` as a module name
+core/src/error.rs:4:pub type Result<T> = std::result::Result<T, PatchError>;
+core/src/error.rs:7:pub enum ErrorCode {
+core/src/error.rs:34:pub enum PatchError {
+core/src/lib.rs:4:pub mod engine;
+core/src/lib.rs:5:pub mod error;
+core/src/lib.rs:6:pub mod logger;
+core/src/lib.rs:7:pub mod parse;
+core/src/lib.rs:8:pub mod session;
+core/src/logger.rs:5:pub struct Logger {
+core/src/logger.rs:16:    pub fn new(rid: u64) -> Self {
+core/src/logger.rs:21:    pub fn info(&self, subsystem: &str, action: &str, message: &str) {
+core/src/logger.rs:25:    pub fn error(&self, subsystem: &str, action: &str, message: &str) {
+core/src/parse/mod.rs:4:pub mod parse_classic;
+core/src/parse/mod.rs:9:pub enum PatchMode {
+core/src/parse/mod.rs:16:pub struct PatchBlock {
+core/src/parse/mod.rs:18:    pub mode: PatchMode,
+core/src/parse/mod.rs:25:pub struct Parser;
+core/src/parse/mod.rs:29:    pub fn new() -> Self {
+core/src/parse/mod.rs:43:    pub fn parse(&self, input: &str) -> Result<Vec<PatchBlock>> {
+core/src/parse/parse_classic.rs:18:pub fn parse_classic_block(lines: &mut Peekable<Lines<'_>>) -> Result<PatchBlock> {
+core/src/session/mod.rs:3:pub mod prompts;
+core/src/session/mod.rs:4:pub mod state;
+core/src/session/prompts.rs:6:pub fn build_session_briefing(session: &SessionState) -> String {
+core/src/session/state.rs:7:pub struct SessionState {
+core/src/session/state.rs:18:pub struct FileMetrics {
+core/src/session/state.rs:26:    pub fn new(project_root: PathBuf) -> Self {
+gauntlet/src/main.rs:110:    let ctx = setup_project(&[("src/lib.rs", "pub fn hello() {}")])?;
+gauntlet/src/main.rs:113:    assert!(markdown.contains("src/lib.rs") && markdown.contains("pub fn hello() {}"));
+_backend/src/commands.rs:22:pub struct AppState(pub Mutex<Option<SessionState>>);
+_backend/src/commands.rs:25:pub struct PreviewResult {
+_backend/src/commands.rs:31:pub struct CommandResult {
+_backend/src/commands.rs:66:pub fn init_session_logic(project_root: &Path) -> Result<SessionState, String> {
+_backend/src/commands.rs:97:pub fn get_session_briefing_logic(app_state: &AppState) -> Result<String, String> {
+_backend/src/commands.rs:107:pub fn refresh_session_logic(app_state: &AppState) -> Result<SessionState, String> {
+_backend/src/commands.rs:121:pub fn resolve_file_request_logic(request_yaml: &str, app_state: &AppState) -> Result<String, String> {
+_backend/src/commands.rs:166:pub fn preview_patch_logic(patch: &str, app_state: &AppState) -> Result<PreviewResult, String> {
+_backend/src/commands.rs:214:pub fn apply_patch_logic(patch: &str, app_state: &AppState) -> Result<CommandResult, String> {
+_backend/src/commands.rs:280:pub fn get_session_briefing(state: State<'_, AppState>) -> Result<String, String> {
+_backend/src/commands.rs:288:pub fn refresh_session(state: State<'_, AppState>) -> Result<SessionState, String> {
+_backend/src/commands.rs:296:pub fn resolve_file_request(request_yaml: String, state: State<'_, AppState>) -> Result<String, String> {
+_backend/src/commands.rs:304:pub fn preview_patch(patch: String, state: State<'_, AppState>) -> Result<PreviewResult, String> {
+_backend/src/commands.rs:312:pub fn apply_patch(patch: String, state: State<'_, AppState>) -> Result<CommandResult, String> {
+_backend/src/lib.rs:3:pub mod commands;
+_backend/src/lib.rs:10:pub fn main() {
+
+========================================
+API SURFACE: TYPESCRIPT/JAVASCRIPT
+========================================
+
+(no TS/JS items found)
+
+========================================
+API SURFACE: PYTHON
+========================================
+
+(no Python items found)
+
+========================================
+API SURFACE: GO
+========================================
+
+(no Go items found)
+
+=======END-OF-APIS=======
+
+=======DEPS=======
+========================================
+DEPENDENCIES (multi-ecosystem, summarized)
+========================================
+
+RUST (cargo)
+Tools: cargo tree
+cargo tree -d (duplicates)
+bitflags v1.3.2
+├── javascriptcore-rs v1.1.2
+│   ├── webkit2gtk v2.0.1
+│   │   ├── tauri v2.9.1
+│   │   │   ├── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend)
+│   │   │   │   └── gauntlet v0.1.0 (/home/juno/applydiff/gauntlet)
+│   │   │   ├── tauri-plugin-clipboard-manager v2.3.2
+│   │   │   │   └── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend) (*)
+│   │   │   ├── tauri-plugin-dialog v2.4.2
+│   │   │   │   └── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend) (*)
+│   │   │   └── tauri-plugin-fs v2.4.4
+│   │   │       └── tauri-plugin-dialog v2.4.2 (*)
+│   │   ├── tauri-runtime v2.9.1
+│   │   │   ├── tauri v2.9.1 (*)
+│   │   │   └── tauri-runtime-wry v2.9.1
+│   │   │       └── tauri v2.9.1 (*)
+│   │   ├── tauri-runtime-wry v2.9.1 (*)
+│   │   └── wry v0.53.5
+│   │       └── tauri-runtime-wry v2.9.1 (*)
+│   └── wry v0.53.5 (*)
+├── png v0.17.16
+│   ├── ico v0.4.0
+│   │   └── tauri-codegen v2.5.0
+│   │       └── tauri-macros v2.5.0 (proc-macro)
+│   │           └── tauri v2.9.1 (*)
+│   └── tauri-codegen v2.5.0 (*)
+├── selectors v0.24.0
+│   └── kuchikiki v0.8.8-speedreader
+│       └── tauri-utils v2.8.0
+│           ├── tauri-build v2.5.1
+│           │   [build-dependencies]
+│           │   ├── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend) (*)
+│           │   └── tauri v2.9.1 (*)
+│           ├── tauri-codegen v2.5.0 (*)
+│           ├── tauri-macros v2.5.0 (proc-macro) (*)
+│           └── tauri-plugin v2.5.1
+│               [build-dependencies]
+│               ├── tauri-plugin-clipboard-manager v2.3.2 (*)
+│               ├── tauri-plugin-dialog v2.4.2 (*)
+│               └── tauri-plugin-fs v2.4.4 (*)
+│           [build-dependencies]
+│           ├── tauri v2.9.1 (*)
+│           └── tauri-plugin-fs v2.4.4 (*)
+├── webkit2gtk v2.0.1 (*)
+└── webkit2gtk-sys v2.0.1
+    ├── webkit2gtk v2.0.1 (*)
+    └── wry v0.53.5 (*)
+
+bitflags v2.10.0
+├── cairo-rs v0.18.5
+│   ├── gdk v0.18.2
+│   │   ├── gdkx11 v0.18.2
+│   │   │   └── wry v0.53.5 (*)
+│   │   ├── gtk v0.18.2
+│   │   │   ├── muda v0.17.1
+│   │   │   │   └── tauri v2.9.1 (*)
+│   │   │   ├── tao v0.34.5
+│   │   │   │   └── tauri-runtime-wry v2.9.1 (*)
+│   │   │   ├── tauri v2.9.1 (*)
+│   │   │   ├── tauri-runtime v2.9.1 (*)
+│   │   │   ├── tauri-runtime-wry v2.9.1 (*)
+│   │   │   ├── webkit2gtk v2.0.1 (*)
+│   │   │   └── wry v0.53.5 (*)
+│   │   └── webkit2gtk v2.0.1 (*)
+│   ├── gtk v0.18.2 (*)
+│   └── webkit2gtk v2.0.1 (*)
+├── glib v0.18.5
+│   ├── atk v0.18.2
+│   │   └── gtk v0.18.2 (*)
+│   ├── cairo-rs v0.18.5 (*)
+│   ├── gdk v0.18.2 (*)
+│   ├── gdk-pixbuf v0.18.5
+│   │   ├── gdk v0.18.2 (*)
+│   │   └── gtk v0.18.2 (*)
+│   ├── gdkx11 v0.18.2 (*)
+│   ├── gio v0.18.4
+│   │   ├── gdk v0.18.2 (*)
+│   │   ├── gdk-pixbuf v0.18.5 (*)
+│   │   ├── gdkx11 v0.18.2 (*)
+│   │   ├── gtk v0.18.2 (*)
+│   │   ├── pango v0.18.3
+│   │   │   ├── gdk v0.18.2 (*)
+│   │   │   └── gtk v0.18.2 (*)
+│   │   ├── soup3 v0.5.0
+│   │   │   ├── webkit2gtk v2.0.1 (*)
+│   │   │   └── wry v0.53.5 (*)
+│   │   └── webkit2gtk v2.0.1 (*)
+│   ├── gtk v0.18.2 (*)
+│   ├── javascriptcore-rs v1.1.2 (*)
+│   ├── pango v0.18.3 (*)
+│   ├── soup3 v0.5.0 (*)
+│   └── webkit2gtk v2.0.1 (*)
+├── keyboard-types v0.7.0
+│   └── muda v0.17.1 (*)
+├── png v0.18.0
+│   └── image v0.25.8
+│       └── arboard v3.6.1
+│           └── tauri-plugin-clipboard-manager v2.3.2 (*)
+├── rustix v0.38.44
+│   └── wl-clipboard-rs v0.9.2
+│       └── arboard v3.6.1 (*)
+├── rustix v1.1.2
+│   ├── gethostname v1.1.0
+│   │   └── x11rb v0.13.2
+│   │       └── arboard v3.6.1 (*)
+│   ├── tempfile v3.23.0
+│   │   ├── gauntlet v0.1.0 (/home/juno/applydiff/gauntlet)
+│   │   └── wl-clipboard-rs v0.9.2 (*)
+│   ├── wayland-backend v0.3.11
+│   │   ├── wayland-client v0.31.11
+│   │   │   ├── wayland-protocols v0.32.9
+│   │   │   │   ├── wayland-protocols-wlr v0.3.9
+│   │   │   │   │   └── wl-clipboard-rs v0.9.2 (*)
+│   │   │   │   └── wl-clipboard-rs v0.9.2 (*)
+│   │   │   ├── wayland-protocols-wlr v0.3.9 (*)
+│   │   │   └── wl-clipboard-rs v0.9.2 (*)
+│   │   ├── wayland-protocols v0.32.9 (*)
+│   │   ├── wayland-protocols-wlr v0.3.9 (*)
+│   │   └── wl-clipboard-rs v0.9.2 (*)
+│   ├── wayland-client v0.31.11 (*)
+│   └── x11rb v0.13.2 (*)
+├── tao v0.34.5 (*)
+├── wayland-client v0.31.11 (*)
+├── wayland-protocols v0.32.9 (*)
+└── wayland-protocols-wlr v0.3.9 (*)
+
+getrandom v0.1.16
+├── rand v0.7.3
+│   └── phf_generator v0.8.0
+│       └── phf_codegen v0.8.0
+│           [build-dependencies]
+│           └── selectors v0.24.0 (*)
+└── rand_core v0.5.1
+    ├── rand v0.7.3 (*)
+    ├── rand_chacha v0.2.2
+    │   └── rand v0.7.3 (*)
+    └── rand_pcg v0.2.1
+        └── rand v0.7.3 (*)
+
+getrandom v0.2.16
+└── rand_core v0.6.4
+    ├── rand v0.8.5
+    │   ├── phf_generator v0.10.0
+    │   │   └── phf_macros v0.10.0 (proc-macro)
+    │   │       └── phf v0.10.1
+    │   │           └── cssparser v0.29.6
+    │   │               ├── kuchikiki v0.8.8-speedreader (*)
+    │   │               └── selectors v0.24.0 (*)
+    │   └── phf_generator v0.11.3
+    │       ├── phf_codegen v0.11.3
+    │       │   [build-dependencies]
+    │       │   └── markup5ever v0.14.1
+    │       │       └── html5ever v0.29.1
+    │       │           ├── kuchikiki v0.8.8-speedreader (*)
+    │       │           └── tauri-utils v2.8.0 (*)
+    │       ├── phf_macros v0.11.3 (proc-macro)
+    │       │   └── phf v0.11.3
+    │       │       ├── markup5ever v0.14.1 (*)
+    │       │       ├── tauri-utils v2.8.0 (*)
+    │       │       └── tauri-utils v2.8.0
+    │       │           ├── tauri v2.9.1 (*)
+    │       │           ├── tauri-runtime v2.9.1 (*)
+    │       │           └── tauri-runtime-wry v2.9.1 (*)
+    │       └── string_cache_codegen v0.5.4
+    │           [build-dependencies]
+    │           └── markup5ever v0.14.1 (*)
+    └── rand_chacha v0.3.1
+        └── rand v0.8.5 (*)
+
+getrandom v0.3.4
+├── tauri v2.9.1 (*)
+├── tempfile v3.23.0 (*)
+└── uuid v1.18.1
+    ├── cfb v0.7.3
+    │   └── infer v0.19.0
+    │       ├── tauri-utils v2.8.0 (*)
+    │       └── tauri-utils v2.8.0 (*)
+    ├── schemars v0.8.22
+    │   ├── tauri-build v2.5.1 (*)
+    │   ├── tauri-plugin v2.5.1 (*)
+    │   └── tauri-utils v2.8.0 (*)
+    │   [build-dependencies]
+    │   └── tauri-plugin-fs v2.4.4 (*)
+    ├── tauri-codegen v2.5.0 (*)
+    └── tauri-utils v2.8.0 (*)
+
+hashbrown v0.12.3
+└── indexmap v1.9.3
+    └── schemars v0.8.22 (*)
+
+hashbrown v0.16.0
+└── indexmap v2.12.0
+    ├── kuchikiki v0.8.8-speedreader (*)
+    ├── petgraph v0.6.5
+    │   └── tree_magic_mini v3.2.0
+    │       └── wl-clipboard-rs v0.9.2 (*)
+    ├── toml_edit v0.19.15
+    │   └── proc-macro-crate v1.3.1
+    │       └── gtk3-macros v0.18.2 (proc-macro)
+    │           └── gtk v0.18.2 (*)
+    └── toml_edit v0.20.2
+        ├── proc-macro-crate v2.0.2
+        │   └── glib-macros v0.18.5 (proc-macro)
+        │       └── glib v0.18.5 (*)
+        └── toml v0.8.2
+            ├── embed-resource v3.0.4
+            │   └── tauri-winres v0.3.3
+            │       └── tauri-build v2.5.1 (*)
+            └── system-deps v6.2.2
+                [build-dependencies]
+                ├── atk-sys v0.18.2
+                │   ├── atk v0.18.2 (*)
+                │   └── gtk-sys v0.18.2
+                │       ├── gtk v0.18.2 (*)
+                │       ├── rfd v0.15.4
+                │       │   └── tauri-plugin-dialog v2.4.2 (*)
+                │       ├── webkit2gtk v2.0.1 (*)
+                │       └── webkit2gtk-sys v2.0.1 (*)
+                ├── cairo-sys-rs v0.18.2
+                │   ├── cairo-rs v0.18.5 (*)
+                │   ├── gdk-sys v0.18.2
+                │   │   ├── gdk v0.18.2 (*)
+                │   │   ├── gdkwayland-sys v0.18.2
+                │   │   │   └── tao v0.34.5 (*)
+                │   │   ├── gdkx11-sys v0.18.2
+                │   │   │   ├── gdkx11 v0.18.2 (*)
+                │   │   │   └── tao v0.34.5 (*)
+                │   │   ├── gtk-sys v0.18.2 (*)
+                │   │   ├── webkit2gtk v2.0.1 (*)
+                │   │   └── webkit2gtk-sys v2.0.1 (*)
+                │   ├── gtk-sys v0.18.2 (*)
+                │   └── webkit2gtk-sys v2.0.1 (*)
+                ├── gdk-pixbuf-sys v0.18.0
+                │   ├── gdk-pixbuf v0.18.5 (*)
+                │   ├── gdk-sys v0.18.2 (*)
+                │   └── gtk-sys v0.18.2 (*)
+                ├── gdk-sys v0.18.2 (*)
+                ├── gdkwayland-sys v0.18.2 (*)
+                ├── gdkx11-sys v0.18.2 (*)
+                ├── gio-sys v0.18.1
+                │   ├── gdk-pixbuf-sys v0.18.0 (*)
+                │   ├── gdk-sys v0.18.2 (*)
+                │   ├── gio v0.18.4 (*)
+                │   ├── glib v0.18.5 (*)
+                │   ├── gtk-sys v0.18.2 (*)
+                │   ├── soup3-sys v0.5.0
+                │   │   ├── soup3 v0.5.0 (*)
+                │   │   └── webkit2gtk-sys v2.0.1 (*)
+                │   ├── webkit2gtk v2.0.1 (*)
+                │   └── webkit2gtk-sys v2.0.1 (*)
+                ├── glib-sys v0.18.1
+                │   ├── atk-sys v0.18.2 (*)
+                │   ├── cairo-sys-rs v0.18.2 (*)
+                │   ├── gdk-pixbuf-sys v0.18.0 (*)
+                │   ├── gdk-sys v0.18.2 (*)
+                │   ├── gdkwayland-sys v0.18.2 (*)
+                │   ├── gdkx11-sys v0.18.2 (*)
+                │   ├── gio-sys v0.18.1 (*)
+                │   ├── glib v0.18.5 (*)
+                │   ├── gobject-sys v0.18.0
+                │   │   ├── atk-sys v0.18.2 (*)
+                │   │   ├── gdk-pixbuf-sys v0.18.0 (*)
+                │   │   ├── gdk-sys v0.18.2 (*)
+                │   │   ├── gdkwayland-sys v0.18.2 (*)
+                │   │   ├── gio-sys v0.18.1 (*)
+                │   │   ├── glib v0.18.5 (*)
+                │   │   ├── gtk-sys v0.18.2 (*)
+                │   │   ├── javascriptcore-rs-sys v1.1.1
+                │   │   │   ├── javascriptcore-rs v1.1.2 (*)
+                │   │   │   └── webkit2gtk-sys v2.0.1 (*)
+                │   │   ├── pango-sys v0.18.0
+                │   │   │   ├── gdk-sys v0.18.2 (*)
+                │   │   │   ├── gtk-sys v0.18.2 (*)
+                │   │   │   └── pango v0.18.3 (*)
+                │   │   ├── rfd v0.15.4 (*)
+                │   │   ├── soup3-sys v0.5.0 (*)
+                │   │   ├── webkit2gtk v2.0.1 (*)
+                │   │   └── webkit2gtk-sys v2.0.1 (*)
+                │   ├── gtk-sys v0.18.2 (*)
+                │   ├── javascriptcore-rs-sys v1.1.1 (*)
+                │   ├── pango-sys v0.18.0 (*)
+                │   ├── rfd v0.15.4 (*)
+                │   ├── soup3-sys v0.5.0 (*)
+                │   ├── webkit2gtk v2.0.1 (*)
+                │   └── webkit2gtk-sys v2.0.1 (*)
+                ├── gobject-sys v0.18.0 (*)
+                ├── gtk-sys v0.18.2 (*)
+                ├── javascriptcore-rs-sys v1.1.1 (*)
+                ├── pango-sys v0.18.0 (*)
+                ├── soup3-sys v0.5.0 (*)
+                └── webkit2gtk-sys v2.0.1 (*)
+
+heck v0.4.1
+└── glib-macros v0.18.5 (proc-macro) (*)
+
+heck v0.5.0
+├── system-deps v6.2.2 (*)
+├── tauri v2.9.1 (*)
+├── tauri-build v2.5.1 (*)
+└── tauri-macros v2.5.0 (proc-macro) (*)
+… [truncated to 300 lines for cargo tree -d]
+
+cargo tree -e normal,build --depth 2
+applydiff-backend v0.1.0 (/home/juno/applydiff/_backend)
+├── applydiff-core v0.1.0 (/home/juno/applydiff/core)
+│   ├── chrono v0.4.42
+│   ├── md5 v0.7.0
+│   ├── regex v1.12.2
+│   ├── serde v1.0.228
+│   ├── serde_json v1.0.145
+│   ├── similar v2.7.0
+│   ├── strsim v0.11.1
+│   └── thiserror v1.0.69
+├── chrono v0.4.42 (*)
+├── glob v0.3.3
+├── md5 v0.7.0
+├── regex v1.12.2 (*)
+├── saccade-core v0.3.1 (/home/juno/saccade/core)
+│   ├── anyhow v1.0.100
+│   ├── chrono v0.4.42 (*)
+│   ├── dunce v1.0.5
+│   ├── glob v0.3.3
+│   ├── ignore v0.4.25
+│   ├── once_cell v1.21.3
+│   ├── rayon v1.11.0
+│   ├── regex v1.12.2 (*)
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── thiserror v1.0.69 (*)
+│   ├── tree-sitter v0.22.6
+│   │   [build-dependencies]
+│   ├── tree-sitter-cmake v0.5.0
+│   │   [build-dependencies]
+│   ├── tree-sitter-javascript v0.21.4
+│   │   [build-dependencies]
+│   ├── tree-sitter-python v0.21.0
+│   │   [build-dependencies]
+│   ├── tree-sitter-rust v0.21.2
+│   │   [build-dependencies]
+│   ├── tree-sitter-typescript v0.21.2
+│   │   [build-dependencies]
+│   └── walkdir v2.5.0
+├── serde v1.0.228 (*)
+├── serde_json v1.0.145 (*)
+├── similar v2.7.0
+├── tauri v2.9.1
+│   ├── anyhow v1.0.100
+│   ├── cookie v0.18.1
+│   │   [build-dependencies]
+│   ├── dirs v6.0.0
+│   ├── dunce v1.0.5
+│   ├── getrandom v0.3.4
+│   ├── glob v0.3.3
+│   ├── gtk v0.18.2
+│   │   [build-dependencies]
+│   ├── heck v0.5.0
+│   ├── http v1.3.1
+│   ├── log v0.4.28
+│   ├── mime v0.3.17
+│   ├── muda v0.17.1
+│   ├── percent-encoding v2.3.2
+│   ├── raw-window-handle v0.6.2
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── serde_repr v0.1.20 (proc-macro)
+│   ├── serialize-to-javascript v0.1.2
+│   ├── tauri-macros v2.5.0 (proc-macro)
+│   ├── tauri-runtime v2.9.1
+│   ├── tauri-runtime-wry v2.9.1
+│   ├── tauri-utils v2.8.0
+│   ├── thiserror v2.0.17
+│   ├── tokio v1.48.0
+│   ├── url v2.5.7
+│   └── webkit2gtk v2.0.1
+│   [build-dependencies]
+│   ├── glob v0.3.3
+│   ├── heck v0.5.0
+│   ├── tauri-build v2.5.1
+│   └── tauri-utils v2.8.0
+├── tauri-plugin-clipboard-manager v2.3.2
+│   ├── arboard v3.6.1
+│   ├── log v0.4.28
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── tauri v2.9.1 (*)
+│   └── thiserror v2.0.17 (*)
+│   [build-dependencies]
+│   └── tauri-plugin v2.5.1
+├── tauri-plugin-dialog v2.4.2
+│   ├── log v0.4.28
+│   ├── raw-window-handle v0.6.2
+│   ├── rfd v0.15.4
+│   ├── serde v1.0.228 (*)
+│   ├── serde_json v1.0.145 (*)
+│   ├── tauri v2.9.1 (*)
+│   ├── tauri-plugin-fs v2.4.4
+│   │   [build-dependencies]
+│   ├── thiserror v2.0.17 (*)
+│   └── url v2.5.7 (*)
+│   [build-dependencies]
+│   └── tauri-plugin v2.5.1 (*)
+└── walkdir v2.5.0 (*)
+[build-dependencies]
+└── tauri-build v2.5.1 (*)
+
+applydiff-core v0.1.0 (/home/juno/applydiff/core) (*)
+
+gauntlet v0.1.0 (/home/juno/applydiff/gauntlet)
+├── anyhow v1.0.100
+├── applydiff-backend v0.1.0 (/home/juno/applydiff/_backend) (*)
+├── applydiff-core v0.1.0 (/home/juno/applydiff/core) (*)
+├── md5 v0.7.0
+├── serde_json v1.0.145 (*)
+└── tempfile v3.23.0
+    ├── fastrand v2.3.0
+    ├── getrandom v0.3.4 (*)
+    ├── once_cell v1.21.3
+    └── rustix v1.1.2
+
+
+
+=======END-OF-DEPS=======
+
+=======GUIDE=======
+========================================
+SACCADE PACK GUIDE (Single-File)
+========================================
+
+Saccade now generates ONE file: PACK.txt
+with clearly labeled sections so an LLM
+can parse deterministically.
+
+SECTION MARKERS (exact):
+
+=======PROJECT=======
+... metadata, stats, languages
+=======END-OF-PROJECT=======
+
+=======STRUCTURE=======
+... directory tree, file index, token heatmap
+=======END-OF-STRUCTURE=======
+
+=======APIS=======
+... API surface across Rust / TS-JS / Python / Go
+=======END-OF-APIS=======
+
+=======DEPS=======
+... multi-ecosystem dependency snapshot (if present)
+=======END-OF-DEPS=======
+
+=======GUIDE=======
+... this protocol & usage guide
+=======END-OF-GUIDE=======
+
+========================================
+REAL-WORLD USE (DO THIS)
+========================================
+
+Attach: PACK.txt  (and PACK_STAGE2_COMPRESSED.xml if asked)
+
+Paste a short brief (copy & edit):
+  Goal: <what you want changed/added/fixed>
+  Evidence: <errors/logs/stack traces; short and relevant>
+  Context: <entry points, recent changes, repro>
+  Constraints: <perf, API compatibility, deadlines>
+  Definition of Done: <tests green, clippy clean, no API break, etc.>
+
+If you provide nothing, the AI must still begin by triaging intent (bug/feature/refactor),
+proposing a minimal plan, and requesting code slices via REQUEST_FILE when needed.
+
+Escalation rule:
+  • After the first failed attempt OR when layout/contracts are unclear,
+    ask for PACK_STAGE2_COMPRESSED.xml (signatures-only skeleton).
+  • If still blocked, request the smallest useful code slice via REQUEST_FILE.
+
+========================================
+REQUEST_FILE — EXACT FORMAT
+========================================
+
+REQUEST_FILE:
+  path: relative/path/to/file.ext
+  reason: >
+    What you will inspect or implement.
+  range: lines 80-140        # or: symbol: FunctionName
+
+Guidelines:
+  - Minimize tokens: prefer line ranges over whole files.
+  - Use STRUCTURE and APIS sections to pick targets.
+  - Never hallucinate missing code—request it explicitly.
+
+========================================
+TIPS
+========================================
+  - Use --code-only, --include/--exclude, and --max-depth to reduce tokens.
+  - Re-run Saccade after changes; packs are quick to refresh.
+
+=======END-OF-GUIDE=======

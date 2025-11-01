@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files>
+  <file path="build.rs">
+    fn main()
+  </file>
+  <file path="src/commands.rs">
+    use applydiff_core::{
+        engine::{apply::Applier, backup},
+        error::{ErrorCode, PatchError, Result as CoreResult},
+        logger::Logger,
+        parse::Parser,
+        session::{prompts, state::{FileMetrics, SessionState}},
+    };
+    ---⋯
+    use chrono::{Local, Utc};
+    ---⋯
+    use saccade_core::{
+        config::Config as SaccadeConfig,
+        request::{RequestFile, RequestRange, RequestTarget},
+        SaccadePack,
+    };
+    ---⋯
+    use serde::Serialize;
+    ---⋯
+    use std::fmt::Write;
+    ---⋯
+    use std::fs;
+    ---⋯
+    use std::path::{Path, PathBuf};
+    ---⋯
+    use std::sync::Mutex;
+    ---⋯
+    use tauri::{AppHandle, State};
+    ---⋯
+    use tauri_plugin_dialog::{DialogExt, FilePath};
+    ---⋯
+    pub struct AppState(pub Mutex&lt;Option&lt;SessionState&gt;&gt;);
+    ---⋯
+    pub struct PreviewResult {
+        pub log: String,
+        pub diff: String,
+    }
+    ---⋯
+    pub struct CommandResult {
+        pub output: String,
+        pub session_state: Option&lt;SessionState&gt;,
+    }
+    ---⋯
+    fn to_string_error&lt;T&gt;(result: CoreResult&lt;T&gt;) -&gt; Result&lt;T, String&gt;
+    ---⋯
+    fn generate_rid() -&gt; u64
+    ---⋯
+    // Note: timestamp_millis() is i64. Cast is acknowledged as acceptable for a unique ID.
+    ---⋯
+    fn get_session_path(project_root: &amp;Path) -&gt; PathBuf
+    ---⋯
+    fn save_session_state(session_state: &amp;SessionState) -&gt; Result&lt;(), String&gt;
+    ---⋯
+    // ======================================================================
+    ---⋯
+    // TESTABLE LOGIC FUNCTIONS
+    ---⋯
+    // ======================================================================
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Will return an error if it fails to set the CWD, run Saccade, or initialize state.
+    ---⋯
+    pub fn init_session_logic(project_root: &amp;Path) -&gt; Result&lt;SessionState, String&gt;
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded.
+    ---⋯
+    pub fn get_session_briefing_logic(app_state: &amp;AppState) -&gt; Result&lt;String, String&gt;
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded.
+    ---⋯
+    pub fn refresh_session_logic(app_state: &amp;AppState) -&gt; Result&lt;SessionState, String&gt;
+    ---⋯
+    // ... (rest of the refresh logic)
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded or the request is invalid.
+    ---⋯
+    pub fn resolve_file_request_logic(request_yaml: &amp;str, app_state: &amp;AppState) -&gt; Result&lt;String, String&gt;
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded or the patch is invalid.
+    ---⋯
+    pub fn preview_patch_logic(patch: &amp;str, app_state: &amp;AppState) -&gt; Result&lt;PreviewResult, String&gt;
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the session is not loaded or the patch is invalid.
+    ---⋯
+    pub fn apply_patch_logic(patch: &amp;str, app_state: &amp;AppState) -&gt; Result&lt;CommandResult, String&gt;
+    ---⋯
+    // ======================================================================
+    ---⋯
+    // TAURI COMMAND WRAPPERS
+    ---⋯
+    // ======================================================================
+    ---⋯
+    /// # Panics
+    ---⋯
+    /// Panics if the mutex is poisoned.
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if folder selection is cancelled or session init fails.
+    ---⋯
+    pub async fn init_session(app: AppHandle, state: State&lt;'_, AppState&gt;) -&gt; Result&lt;SessionState, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn get_session_briefing(state: State&lt;'_, AppState&gt;) -&gt; Result&lt;String, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn refresh_session(state: State&lt;'_, AppState&gt;) -&gt; Result&lt;SessionState, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn resolve_file_request(request_yaml: String, state: State&lt;'_, AppState&gt;) -&gt; Result&lt;String, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn preview_patch(patch: String, state: State&lt;'_, AppState&gt;) -&gt; Result&lt;PreviewResult, String&gt;
+    ---⋯
+    /// # Errors
+    ---⋯
+    /// Returns an error if the logic function fails.
+    ---⋯
+    pub fn apply_patch(patch: String, state: State&lt;'_, AppState&gt;) -&gt; Result&lt;CommandResult, String&gt;
+  </file>
+  <file path="src/lib.rs">
+    pub mod commands;
+    ---⋯
+    /// Runs the Tauri application.
+    ---⋯
+    ///
+    ---⋯
+    /// # Panics
+    ---⋯
+    ///
+    ---⋯
+    /// Panics if the Tauri application fails to run.
+    ---⋯
+    pub fn main()
+  </file>
+  <file path="src/main.rs">
+    // The main binary now just calls the library's main function.
+    ---⋯
+    fn main()
+  </file>
+</files>

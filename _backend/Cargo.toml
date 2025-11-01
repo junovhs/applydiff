@@ -18,7 +18,7 @@ path = "src/main.rs"
 # The core library we just built
 applydiff-core = { path = "../core" }
 # ADDED: The Saccade library for context management
-saccade-core = { path = "../../saccade/core" }
+saccade-core = { path = "../saccade/core" }
 
 # The Tauri framework and plugins
 tauri = { version = "2.0.0-beta.21", features = [] }
