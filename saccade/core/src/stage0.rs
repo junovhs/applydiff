@@ -1,13 +1,12 @@
 use crate::config::Config;
 use crate::error::Result;
 use std::collections::{BTreeSet, BTreeMap};
-use std::fs;
 
 pub struct Stage0Generator { config: Config }
 
 impl Stage0Generator {
     pub fn new(config: Config) -> Self { Self { config } }
-    pub fn generate_combined_structure(&self, files: &[std::path::PathBuf], detected_systems: &[crate::detection::BuildSystemType]) -> Result<String> {
+    pub fn generate_combined_structure(&self, files: &[std::path::PathBuf], _detected_systems: &[crate::detection::BuildSystemType]) -> Result<String> {
         let mut output = String::new();
         output.push_str("DIRECTORY TREE\n----------------\n");
         let mut dirs = BTreeSet::new();

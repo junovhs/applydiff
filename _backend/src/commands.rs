@@ -126,26 +126,20 @@ pub fn resolve_file_request_logic(request_yaml: &str, app_state: &AppState) -> R
     let mut reason = "No reason provided".to_string();
     let mut range = None;
 
-    eprintln!("DEBUG resolve_file_request_logic:");
-    eprintln!("  request_yaml: {:?}", request_yaml);
-
     for line in request_yaml.lines() {
         if let Some((key, value)) = line.split_once(':') {
             let val = value.trim();
-            eprintln!("  key: {:?}, val: {:?}", key.trim(), val);
             match key.trim() {
                 "path" => path = Some(val.to_string()),
                 "reason" => reason = val.to_string(),
                 "range" => {
                     if let Some((r_key, r_val)) = val.split_once(|c: char| c.is_whitespace() || c == ':') {
                         let final_val = r_val.trim_start_matches(|c: char| c.is_whitespace() || c == ':').trim();
-                        eprintln!("    r_key: {:?}, r_val: {:?}, final_val: {:?}", r_key, r_val, final_val);
                         range = match r_key.trim() {
                             "lines" => Some(RequestRange::Lines { lines: final_val.to_string() }),
                             "symbol" => Some(RequestRange::Symbol { symbol: final_val.to_string() }),
                             _ => None,
                         };
-                        eprintln!("    range set to: {:?}", range);
                     }
                 }
                 _ => {}
@@ -157,17 +151,8 @@ pub fn resolve_file_request_logic(request_yaml: &str, app_state: &AppState) -> R
     let req = RequestFile { target, reason, range };
     let available_files: Vec<PathBuf> = session.file_metrics.keys().cloned().collect();
 
-    eprintln!("  Creating RequestFile with range: {:?}", req.range);
-    eprintln!("  available_files: {:?}", available_files);
-
     let resolved = req.resolve(&available_files, &session.project_root).map_err(|e| e.to_string())?;
     let markdown = resolved.to_markdown();
-    
-    eprintln!("  Final markdown:");
-    eprintln!("{}", markdown);
-    eprintln!("  markdown.contains('1'): {}", markdown.contains('1'));
-    eprintln!("  markdown.contains(\"2\\n3\\n4\"): {}", markdown.contains("2\n3\n4"));
-    eprintln!("  markdown.contains(\"lines 2-4 of 5\"): {}", markdown.contains("lines 2-4 of 5"));
     
     Ok(markdown)
 }

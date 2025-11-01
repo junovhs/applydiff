@@ -4,10 +4,8 @@ use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::panic;
 
 pub struct Stage2Generator { verbose: bool }
-type ParseResult = (PathBuf, String);
 
 impl Stage2Generator {
     pub fn new() -> Self { Self { verbose: false } }
@@ -27,12 +25,19 @@ impl Stage2Generator {
         let mut final_results = results.into_inner().map_err(|_| SaccadeError::MutexPoisoned)?;
         if final_results.is_empty() { return Ok(None); }
         final_results.sort_by(|a, b| a.0.cmp(&b.0));
-        let mut xml = String::from("<?xml version=\"1.0\"?>\n<files>\n");
-        for (path, skeleton) in final_results {
-            xml.push_str(&format!("  <file path=\"{}\">\n    {}\n  </file>\n", path.display(), skeleton.replace('&', "&amp;").replace('<', "&lt;")));
-        }
-        xml.push_str("</files>\n");
+        let xml = Self::build_xml(&final_results);
         fs::write(output_path, xml).map_err(|e| SaccadeError::Io { source: e, path: output_path.to_path_buf() })?;
-        Ok(Some(format!("Wrote skeleton to {}", output_path.display())))
+        Ok(Some(format!("Generated {} skeletons", final_results.len())))
+    }
+
+    fn build_xml(results: &[(PathBuf, String)]) -> String {
+        let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<skeletons>\n");
+        for (path, skeleton) in results {
+            xml.push_str(&format!("  <file path=\"{}\">\n", path.display()));
+            xml.push_str(skeleton);
+            xml.push_str("  </file>\n");
+        }
+        xml.push_str("</skeletons>\n");
+        xml
     }
 }

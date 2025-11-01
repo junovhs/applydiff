@@ -118,7 +118,7 @@ impl SaccadePack {
         Stage2Generator::new().with_verbose(self.config.verbose).generate(filtered_files, &stage2_path)
     }
 
-    fn print_summary(&self, filtered_files: &[PathBuf], has_deps: bool, stage2_result: &Result<Option<String>>) -> Result<()> {
+    fn print_summary(&self, _filtered_files: &[PathBuf], has_deps: bool, _stage2_result: &Result<Option<String>>) -> Result<()> {
         GuideGenerator::new().print_guide(&self.config.pack_dir, has_deps)?;
         Ok(())
     }
