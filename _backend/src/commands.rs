@@ -133,10 +133,15 @@ pub fn resolve_file_request_logic(request_yaml: &str, app_state: &AppState) -> R
                 "path" => path = Some(val.to_string()),
                 "reason" => reason = val.to_string(),
                 "range" => {
-                     if let Some((r_key, r_val)) = val.split_once(' ') {
+                    // More robustly find the first separator (space or colon)
+                    let separator_idx = val.find(|c: char| c == ' ' || c == ':');
+                    if let Some(idx) = separator_idx {
+                        let (r_key, r_val_with_sep) = val.split_at(idx);
+                        // The rest of the string, skipping the separator itself.
+                        let r_val = r_val_with_sep.get(1..).unwrap_or("").trim();
                         range = match r_key.trim() {
-                            "lines" => Some(RequestRange::Lines { lines: r_val.trim().to_string() }),
-                            "symbol" => Some(RequestRange::Symbol { symbol: r_val.trim().to_string() }),
+                            "lines" => Some(RequestRange::Lines { lines: r_val.to_string() }),
+                            "symbol" => Some(RequestRange::Symbol { symbol: r_val.to_string() }),
                             _ => None,
                         };
                     }

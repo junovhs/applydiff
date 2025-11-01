@@ -1,5 +1,6 @@
-use crate::error::Result;
+use crate::error::{ErrorCode, PatchError, Result};
 use crate::logger::Logger;
+use std::path::PathBuf;
 
 mod match_exact;
 mod match_fuzzy;
@@ -46,8 +47,18 @@ pub fn find_best_match(
         });
     }
 
-    if let Some(result) = match_exact::try_exact_match(haystack, needle, logger) {
-        return Ok(result);
+    match match_exact::try_exact_match(haystack, needle, logger) {
+        match_exact::ExactMatch::Unique(result) => return Ok(result),
+        match_exact::ExactMatch::Ambiguous => {
+            return Err(PatchError::Apply {
+                code: ErrorCode::AmbiguousMatch,
+                message: "Ambiguous match detected. Multiple exact matches found.".to_string(),
+                file: PathBuf::default(),
+            });
+        }
+        match_exact::ExactMatch::None => {
+            // Proceed to fuzzy matching
+        }
     }
 
     let line_ranges = match_normalize::line_ranges(haystack);
